@@ -11,7 +11,7 @@ Onirigiri is in **beta**. The API is settling; see [Known issues](#known-issues)
 
 | Capability                                             | Requirement                                                                   |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| Workspace, navigation, overview, native content        | Current Chrome and Edge; Firefox and Safari are expected to work but untested |
+| Workspace, navigation, overview, native content        | Current Chrome and Edge; Firefox and Safari pass smoke checks only            |
 | Retained pane pictures and HTML-in-Canvas presentation | Chrome with WebGPU and HTML-in-Canvas (`chrome://flags/#canvas-draw-element`) |
 
 Without WebGPU or HTML-in-Canvas nothing is blocked: panes present their native
