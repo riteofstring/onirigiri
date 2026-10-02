@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import {
   resolveOnirigiriSlotProps,
   type OnirigiriStylingOptions,
-} from "../styles/onirigiri-styling";
+} from "../styles/onirigiri-styling.js";
 
 interface OnirigiriWorkspaceSlotProps {
   className: string;

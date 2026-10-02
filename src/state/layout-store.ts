@@ -3,26 +3,26 @@ import {
   copyWorkspaceCameraModes,
   deriveWorkspaceState,
   nextWorkspaceRevision,
-} from "./layout-store-state";
+} from "./layout-store-state.js";
 
-import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
+import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
 import {
   WorkspaceCameraMotion,
   workspaceScrollRowIsSettled,
-} from "./layout-store-animation";
-import type { ResolvedCameraMotion } from "../presentation/motion-curve";
-import { PaneRearrangementController } from "./layout-store-rearrangement";
-import { WorkspacePaneOpeningController } from "./layout-store-pane-opening";
-import { restoredWorkspaceScene } from "./layout-store-restoration";
-import { WorkspaceSizingController } from "./layout-store-sizing";
-import { emptyFramePaneRequest } from "./layout-store-helpers";
-import { defaultWorkspaceCameraModes } from "../types";
+} from "./layout-store-animation.js";
+import type { ResolvedCameraMotion } from "../presentation/motion-curve.js";
+import { PaneRearrangementController } from "./layout-store-rearrangement.js";
+import { WorkspacePaneOpeningController } from "./layout-store-pane-opening.js";
+import { restoredWorkspaceScene } from "./layout-store-restoration.js";
+import { WorkspaceSizingController } from "./layout-store-sizing.js";
+import { emptyFramePaneRequest } from "./layout-store-helpers.js";
+import { defaultWorkspaceCameraModes } from "../types.js";
 import type {
   WorkspaceLayoutSnapshot,
   WorkspaceLayoutStoreOptions,
   WorkspacePaneRearrangementSource,
-} from "./layout-store-types";
-import { WorkspaceOverviewCamera } from "../layout/overview-camera";
+} from "./layout-store-types.js";
+import { WorkspaceOverviewCamera } from "../layout/overview-camera.js";
 import {
   nextWorkspaceGridCursor,
   normalizeWorkspaceGridCursor,
@@ -34,7 +34,7 @@ import {
   workspaceGridCursorForPane,
   workspacePaneCursorRunwayBounds,
   type WorkspaceCursorRunwayBounds,
-} from "../workspace/workspace-grid-cursor";
+} from "../workspace/workspace-grid-cursor.js";
 import type {
   ColumnFocusEdge,
   ColumnId,
@@ -53,13 +53,13 @@ import type {
   WorkspaceFocusAnchor,
   WorkspaceGridCursor,
   WorkspaceScene,
-} from "../types";
-import type { OnirigiriLayout } from "../workspace/workspace-scene";
+} from "../types.js";
+import type { OnirigiriLayout } from "../workspace/workspace-scene.js";
 
 export type {
   WorkspaceLayoutSnapshot,
   WorkspacePaneRearrangementSource,
-} from "./layout-store-types";
+} from "./layout-store-types.js";
 
 type LayoutStoreListener = (snapshot: WorkspaceLayoutSnapshot) => void;
 const defaultViewportHeight = 900;

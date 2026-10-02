@@ -1,7 +1,7 @@
 import type {
   OnirigiriMinimapCorner,
   OnirigiriMinimapPlacement,
-} from "../workspace/onirigiri-workspace-types";
+} from "../workspace/onirigiri-workspace-types.js";
 
 export const defaultMinimapPlacement: OnirigiriMinimapPlacement = {
   corner: "bottom-right",

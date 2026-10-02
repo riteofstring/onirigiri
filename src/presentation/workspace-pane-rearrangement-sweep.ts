@@ -1,9 +1,9 @@
-import { worldPaneRenderer } from "./workspace-sweep-geometry";
-import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
+import { worldPaneRenderer } from "./workspace-sweep-geometry.js";
+import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
 import type {
   WorkspaceLayoutSnapshot,
   WorkspacePaneRearrangementSource,
-} from "../state/layout-store";
+} from "../state/layout-store.js";
 import type {
   LayoutEngine,
   PaneId,
@@ -12,13 +12,13 @@ import type {
   Rect,
   WorkspaceScene,
   WorkspaceWorldFrame,
-} from "../types";
-import { workspaceGridCursorForPane } from "../workspace/workspace-grid-cursor";
+} from "../types.js";
+import { workspaceGridCursorForPane } from "../workspace/workspace-grid-cursor.js";
 import {
   workspaceGeometryOrigin,
   workspaceWorldRenderFrame,
   type WorkspaceRenderItemsInput,
-} from "./workspace-render-items";
+} from "./workspace-render-items.js";
 
 export function workspacePaneRearrangementSweep(
   input: WorkspaceRenderItemsInput & { engine: WorkspaceLikeLayoutEngine },

@@ -1,7 +1,7 @@
 import {
   PaneContentCapabilities,
   paneVideoSurfaces,
-} from "../panes/pane-content-capabilities";
+} from "../panes/pane-content-capabilities.js";
 
 interface PanePictureContentCallbacks {
   canPresent: () => boolean;

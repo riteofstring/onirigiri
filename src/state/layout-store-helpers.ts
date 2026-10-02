@@ -1,16 +1,16 @@
-import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
+import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
 import {
   minimumPaneHeightPx,
   distributePaneHeights,
-} from "../panes/pane-resize-geometry";
-import type { WorkspacePaneLimitState } from "./layout-store-types";
+} from "../panes/pane-resize-geometry.js";
+import type { WorkspacePaneLimitState } from "./layout-store-types.js";
 import type {
   OpenPaneRequest,
   PaneId,
   PaneLimitPolicy,
   WorkspaceColumn,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 export function clampPan(value: number, max: number): number {
   return Math.max(0, Math.min(value, max));

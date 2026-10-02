@@ -1,13 +1,13 @@
 import {
   validatePaneDefaults,
   validatePaneDefaultsConfiguration,
-} from "../layout/pane-defaults";
-import { denselyReindexPlanes } from "../layout/layout-planes";
+} from "../layout/pane-defaults.js";
+import { denselyReindexPlanes } from "../layout/layout-planes.js";
 import {
   assertWorkspaceGridCursor,
   layoutOriginCursor,
   normalizeWorkspaceGridCursor,
-} from "./workspace-grid-cursor";
+} from "./workspace-grid-cursor.js";
 import type {
   ColumnId,
   ColumnWidthSpec,
@@ -24,8 +24,8 @@ import type {
   WorkspaceGridCursor,
   WorkspacePane,
   WorkspaceScene,
-} from "../types";
-import { defaultWorkspaceGridAxes } from "../types";
+} from "../types.js";
+import { defaultWorkspaceGridAxes } from "../types.js";
 
 const onirigiriLayoutSchemaVersion = 4;
 

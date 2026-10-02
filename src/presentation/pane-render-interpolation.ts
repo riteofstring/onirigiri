@@ -2,7 +2,7 @@ import type {
   PaneId,
   PaneRenderItem,
   WorkspacePresentationMode,
-} from "../types";
+} from "../types.js";
 
 interface PaneRenderInterpolationInput {
   includeSecondaryOnlyItems?: boolean;

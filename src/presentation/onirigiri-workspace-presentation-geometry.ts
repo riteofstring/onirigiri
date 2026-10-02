@@ -1,16 +1,16 @@
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
 import type {
   PaneId,
   PaneRenderItem,
   WorkspacePane,
   WorkspaceScene,
   WorkspaceWorldFrame,
-} from "../types";
-import type { WorkspacePresentationBoundaryFrame } from "./workspace-frame-scheduler";
+} from "../types.js";
+import type { WorkspacePresentationBoundaryFrame } from "./workspace-frame-scheduler.js";
 import type {
   WorkspaceRenderItemsInput,
   WorkspaceWorldFrameRenderer,
-} from "./workspace-render-items";
+} from "./workspace-render-items.js";
 
 export function compactPanePeekIsEnabled(
   compactLayout: boolean,

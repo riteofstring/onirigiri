@@ -5,10 +5,10 @@ import {
   type SetStateAction,
 } from "react";
 
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
-import type { OnirigiriRuntime } from "./onirigiri-workspace-runtime";
-import type { Rect } from "../types";
-import type { WorkspaceFrameScheduler } from "../presentation/workspace-frame-scheduler";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
+import type { OnirigiriRuntime } from "./onirigiri-workspace-runtime.js";
+import type { Rect } from "../types.js";
+import type { WorkspaceFrameScheduler } from "../presentation/workspace-frame-scheduler.js";
 
 interface OnirigiriStageViewportOptions {
   compactBreakpoint: number;

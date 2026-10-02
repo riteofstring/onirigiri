@@ -1,9 +1,9 @@
-import type { WorkspaceScene } from "../types";
+import type { WorkspaceScene } from "../types.js";
 import {
   createWorkspaceScene,
   type OnirigiriLayout,
   type WorkspaceSceneResult,
-} from "../workspace/workspace-scene";
+} from "../workspace/workspace-scene.js";
 
 export function restoredWorkspaceScene(
   scene: WorkspaceScene,

@@ -1,5 +1,5 @@
-import { validatePaneDefaults } from "./pane-defaults";
-import type { OpenPaneRequest, PaneDefaults, WorkspacePane } from "../types";
+import { validatePaneDefaults } from "./pane-defaults.js";
+import type { OpenPaneRequest, PaneDefaults, WorkspacePane } from "../types.js";
 
 interface WorkspacePaneSurface {
   defaults?: PaneDefaults;

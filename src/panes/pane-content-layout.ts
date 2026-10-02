@@ -1,6 +1,9 @@
 import { createContext } from "react";
 import type { CSSProperties } from "react";
-import type { PaneContentDefaults, PaneDefaultsConfiguration } from "../types";
+import type {
+  PaneContentDefaults,
+  PaneDefaultsConfiguration,
+} from "../types.js";
 
 export const PaneDefaultsContext = createContext<PaneDefaultsConfiguration>({});
 

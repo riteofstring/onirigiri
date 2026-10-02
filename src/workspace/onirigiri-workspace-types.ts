@@ -2,24 +2,24 @@ import type {
   PanePresentation,
   PanePresentationResolver,
   PanePresentationState,
-} from "../presentation/pane-presentation-policy";
+} from "../presentation/pane-presentation-policy.js";
 import type {
   OnirigiriCaptureStatus,
   OnirigiriPanePictureResolver,
-} from "../pictures/pane-picture-types";
+} from "../pictures/pane-picture-types.js";
 import type { ReactNode } from "react";
 
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
-import type { WorkspaceLayoutChangeKind } from "../state/layout-store-types";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
+import type { WorkspaceLayoutChangeKind } from "../state/layout-store-types.js";
 import type {
   OnirigiriChromeComponents,
   OnirigiriSlotClassNames,
   OnirigiriSlotStyles,
-} from "../styles/onirigiri-styling";
+} from "../styles/onirigiri-styling.js";
 import type {
   OnirigiriThemeTokens,
   OnirigiriWorkspaceStyle,
-} from "../styles/onirigiri-theme";
+} from "../styles/onirigiri-theme.js";
 import type {
   OnirigiriCameraMotion,
   OnirigiriFocusHighlightOptions,
@@ -42,15 +42,15 @@ import type {
   WorkspacePane,
   WorkspacePresentationMode,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 import type {
   OnirigiriLayout,
   OnirigiriPaneDefinition,
-} from "./workspace-scene";
+} from "./workspace-scene.js";
 import type {
   OnirigiriShortcutBindings,
   OnirigiriShortcutScope,
-} from "../input/workspace-shortcuts";
+} from "../input/workspace-shortcuts.js";
 
 export interface OnirigiriPaneRenderState {
   content?: PaneContentDefaults;

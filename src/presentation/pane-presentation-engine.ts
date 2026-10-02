@@ -1,6 +1,6 @@
-import type { PaneId, PaneRenderItem, PaneWorldBox, Rect } from "../types";
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
-import type { WorkspacePresentedPaneGeometry } from "./workspace-motion-presentation";
+import type { PaneId, PaneRenderItem, PaneWorldBox, Rect } from "../types.js";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
+import type { WorkspacePresentedPaneGeometry } from "./workspace-motion-presentation.js";
 import {
   displayedPaneBox,
   hasFiniteTransformCoordinates,
@@ -13,7 +13,7 @@ import {
   storedPaneTransform,
   type PaneRearrangement,
   type PresentedPaneGeometry,
-} from "./pane-presentation-geometry";
+} from "./pane-presentation-geometry.js";
 
 const paneRearrangementDurationMs = 160;
 

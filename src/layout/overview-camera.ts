@@ -1,16 +1,16 @@
-import type { WorkspaceLikeLayoutEngine } from "./layout-engine";
+import type { WorkspaceLikeLayoutEngine } from "./layout-engine.js";
 import {
   OVERVIEW_MAX_ZOOM_SCALE,
   OVERVIEW_MIN_ZOOM,
-} from "./layout-engine-helpers";
-import { clampPan, clampRange } from "../state/layout-store-helpers";
+} from "./layout-engine-helpers.js";
+import { clampPan, clampRange } from "../state/layout-store-helpers.js";
 import type {
   PaneId,
   Rect,
   WorkspaceCameraMode,
   WorkspaceGridCursor,
   WorkspacePresentationMode,
-} from "../types";
+} from "../types.js";
 
 const overviewBaselineZoom = 1.8;
 const fixedOverviewMaximumScale = 0.68;

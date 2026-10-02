@@ -1,7 +1,7 @@
-import { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
-import { workspaceScrollRowIsSettled } from "../state/layout-store-animation";
-import { interpolatePaneRenderItems } from "./pane-render-interpolation";
+import { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
+import { workspaceScrollRowIsSettled } from "../state/layout-store-animation.js";
+import { interpolatePaneRenderItems } from "./pane-render-interpolation.js";
 import type {
   LayoutEngine,
   LayoutFrameInput,
@@ -13,14 +13,14 @@ import type {
   WorkspaceGridOrigin,
   WorkspaceWorldFrame,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 import {
   canonicalWorldPaneItems,
   completePaneShells,
   worldPaneRenderer,
   paneWorldBoxIntersectsRect,
   unionRects,
-} from "./workspace-sweep-geometry";
+} from "./workspace-sweep-geometry.js";
 
 export interface WorkspaceRenderItemsInput {
   compactLayout: boolean;

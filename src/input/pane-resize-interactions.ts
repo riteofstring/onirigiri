@@ -1,9 +1,9 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 
-import type { WorkspaceLayoutStore } from "../state/layout-store";
-import { paneCellSizingForPane } from "../layout/pane-cell-sizing";
-import { minimumPaneHeightPx } from "../panes/pane-resize-geometry";
-import type { PaneId, PaneRenderItem, WorkspaceScene } from "../types";
+import type { WorkspaceLayoutStore } from "../state/layout-store.js";
+import { paneCellSizingForPane } from "../layout/pane-cell-sizing.js";
+import { minimumPaneHeightPx } from "../panes/pane-resize-geometry.js";
+import type { PaneId, PaneRenderItem, WorkspaceScene } from "../types.js";
 
 export type ResizeAxis = "column" | "row" | "split";
 

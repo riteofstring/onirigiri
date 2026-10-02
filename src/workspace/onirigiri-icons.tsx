@@ -1,7 +1,7 @@
 import {
   resolveOnirigiriSlotProps,
   useOnirigiriStyling,
-} from "../styles/onirigiri-styling";
+} from "../styles/onirigiri-styling.js";
 
 export type OnirigiriIconName =
   | "arrow-down"

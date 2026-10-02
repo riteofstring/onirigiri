@@ -4,40 +4,43 @@ import {
   type PanePresentationState,
   type PanePresentationPhase,
   type ResolvedPanePresentation,
-} from "../presentation/pane-presentation-policy";
+} from "../presentation/pane-presentation-policy.js";
 import {
   createPaneCanvasDevice,
   PaneCanvasSurface,
-} from "./pane-picture-canvas";
+} from "./pane-picture-canvas.js";
 import {
   resolveConfiguration,
   acquisitionChanged,
   samePictureSurface,
   type Configuration,
   type ResolvedConfiguration,
-} from "./pane-picture-configuration";
+} from "./pane-picture-configuration.js";
 import {
   PaneContentPreloader,
   adjacentPreloadDistance,
-} from "../panes/pane-content-preloader";
-import { PanePictureActivity } from "./pane-picture-activity";
+} from "../panes/pane-content-preloader.js";
+import { PanePictureActivity } from "./pane-picture-activity.js";
 import {
   PanePictureActivation,
   orderPaneActivation,
-} from "./pane-picture-activation";
-import type { PaneContentReadiness } from "../panes/pane-content-readiness";
-import type { WorkspacePresentationBoundaryFrame } from "../presentation/workspace-frame-scheduler";
-import { paneWorldBoxIntersectsRect } from "../presentation/workspace-sweep-geometry";
+} from "./pane-picture-activation.js";
+import type { PaneContentReadiness } from "../panes/pane-content-readiness.js";
+import type { WorkspacePresentationBoundaryFrame } from "../presentation/workspace-frame-scheduler.js";
+import { paneWorldBoxIntersectsRect } from "../presentation/workspace-sweep-geometry.js";
 import type {
   OnirigiriCaptureStatus,
   OnirigiriPaneCaptureReceipt,
   OnirigiriPanePicture,
   OnirigiriPanePictureResolver,
-} from "./pane-picture-types";
-import { pngDimensions, validatePictureDecode } from "./pane-picture-raster";
-import type { PaneId, PaneRenderItem, WorkspacePane } from "../types";
-import { PanePictureCache, type CachedPanePicture } from "./pane-picture-cache";
-import { preparePanePictureTexture } from "./pane-picture-texture";
+} from "./pane-picture-types.js";
+import { pngDimensions, validatePictureDecode } from "./pane-picture-raster.js";
+import type { PaneId, PaneRenderItem, WorkspacePane } from "../types.js";
+import {
+  PanePictureCache,
+  type CachedPanePicture,
+} from "./pane-picture-cache.js";
+import { preparePanePictureTexture } from "./pane-picture-texture.js";
 
 interface ContentHost {
   content: HTMLElement;

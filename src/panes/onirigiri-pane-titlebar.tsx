@@ -2,14 +2,14 @@ import { memo, type MouseEvent } from "react";
 import {
   OnirigiriIcon,
   type OnirigiriIconName,
-} from "../workspace/onirigiri-icons";
+} from "../workspace/onirigiri-icons.js";
 import {
   resolveOnirigiriSlotProps,
   useOnirigiriStyling,
   type OnirigiriPaneActionDescriptor,
-} from "../styles/onirigiri-styling";
-import type { WorkspaceLayoutStore } from "../state/layout-store";
-import type { PaneId, WorkspacePane } from "../types";
+} from "../styles/onirigiri-styling.js";
+import type { WorkspaceLayoutStore } from "../state/layout-store.js";
+import type { PaneId, WorkspacePane } from "../types.js";
 
 export interface OnirigiriPaneTitlebarProps {
   pane: WorkspacePane;

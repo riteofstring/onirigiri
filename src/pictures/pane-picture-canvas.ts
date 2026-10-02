@@ -1,14 +1,14 @@
 import {
   paneCanvasRasterSize,
   readPaneCanvasTexture,
-} from "./pane-picture-canvas-readback";
-import { PanePictureResize } from "./pane-picture-resize";
-import { PanePictureContent } from "./pane-picture-content";
+} from "./pane-picture-canvas-readback.js";
+import { PanePictureResize } from "./pane-picture-resize.js";
+import { PanePictureContent } from "./pane-picture-content.js";
 import {
   documentLiveCopyBudget,
   type LiveCopyBudget,
-} from "./pane-live-copy-budget";
-import type { PaneLiveRenderer } from "../presentation/pane-presentation-policy";
+} from "./pane-live-copy-budget.js";
+import type { PaneLiveRenderer } from "../presentation/pane-presentation-policy.js";
 
 declare const GPUTextureUsage: {
   readonly COPY_SRC: number;

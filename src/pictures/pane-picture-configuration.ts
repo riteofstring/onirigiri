@@ -2,12 +2,12 @@ import type {
   PanePresentation,
   PanePresentationResolver,
   PanePresentationState,
-} from "../presentation/pane-presentation-policy";
+} from "../presentation/pane-presentation-policy.js";
 import type {
   OnirigiriCaptureStatus,
   OnirigiriPanePictureResolver,
-} from "./pane-picture-types";
-import type { PaneId, PaneRenderItem, WorkspacePane } from "../types";
+} from "./pane-picture-types.js";
+import type { PaneId, PaneRenderItem, WorkspacePane } from "../types.js";
 
 export interface Configuration {
   panes: ReadonlyMap<PaneId, WorkspacePane>;

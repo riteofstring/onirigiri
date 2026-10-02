@@ -1,8 +1,8 @@
-import { resolvePaneDefaults } from "../layout/pane-defaults";
+import { resolvePaneDefaults } from "../layout/pane-defaults.js";
 import {
   PaneDefaultsContext,
   paneContentFrameStyle,
-} from "./pane-content-layout";
+} from "./pane-content-layout.js";
 import {
   memo,
   useContext,
@@ -12,27 +12,28 @@ import {
   useMemo,
   useState,
   useSyncExternalStore,
+  version as reactVersion,
   type CSSProperties,
 } from "react";
-import { OnirigiriIcon } from "../workspace/onirigiri-icons";
+import { OnirigiriIcon } from "../workspace/onirigiri-icons.js";
 import {
   PaneContentReadiness,
   PaneReadinessContext,
-} from "./pane-content-readiness";
-import type { PanePictures } from "../pictures/pane-pictures";
+} from "./pane-content-readiness.js";
+import type { PanePictures } from "../pictures/pane-pictures.js";
 import {
   resolveOnirigiriSlotProps,
   useOnirigiriStyling,
-} from "../styles/onirigiri-styling";
+} from "../styles/onirigiri-styling.js";
 import type {
   OnirigiriPaneRenderer,
   OnirigiriWorkspaceProps,
-} from "../workspace/onirigiri-workspace-types";
+} from "../workspace/onirigiri-workspace-types.js";
 import type {
   PaneRuntimeState,
   WorkspacePane,
   WorkspacePresentationMode,
-} from "../types";
+} from "../types.js";
 
 interface OnirigiriPaneContentProps {
   focused: boolean;
@@ -128,7 +129,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
             className={liveSlot.className}
             data-onirigiri-slot="pane-live-content"
             data-onirigiri-content-fit={contentFit}
-            inert={!interactive}
+            {...inertAttribute(!interactive)}
             ref={contentRef}
             style={liveSlot.style}
           >
@@ -291,7 +292,7 @@ function PaneCoverPlaceholder(
       className={slot.className}
       data-onirigiri-slot="pane-placeholder"
       data-onirigiri-placeholder-interactive={String(interactive)}
-      inert={!!renderPanePlaceholder && !interactive && !error}
+      {...inertAttribute(!!renderPanePlaceholder && !interactive && !error)}
       style={slot.style}
     >
       {panePlaceholderContent(props)}
@@ -496,4 +497,12 @@ function PanePicture({
       }}
     />
   );
+}
+
+const booleanInert = !reactVersion.startsWith("18.");
+
+function inertAttribute(inert: boolean): { inert?: boolean } {
+  return booleanInert
+    ? { inert }
+    : ({ inert: inert ? "" : undefined } as unknown as { inert?: boolean });
 }

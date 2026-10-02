@@ -1,4 +1,4 @@
-import type { PaneRenderItem, PaneWorldBox } from "../types";
+import type { PaneRenderItem, PaneWorldBox } from "../types.js";
 
 interface PaneBox {
   height: number;

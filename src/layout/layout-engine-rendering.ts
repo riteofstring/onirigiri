@@ -1,4 +1,4 @@
-import { columnSlotIndex } from "./column-slots";
+import { columnSlotIndex } from "./column-slots.js";
 import {
   applyOverviewZoom,
   clamp,
@@ -14,7 +14,7 @@ import {
   scrollOffsetForGridRow,
   type ColumnGeometry,
   type OverviewCardSizeConstraints,
-} from "./layout-engine-helpers";
+} from "./layout-engine-helpers.js";
 import type {
   LayoutFrameInput,
   PaneId,
@@ -23,7 +23,7 @@ import type {
   WorkspaceColumn,
   WorkspacePane,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 interface RenderFrameContext {
   availableHeight: number;

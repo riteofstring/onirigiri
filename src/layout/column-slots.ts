@@ -1,4 +1,4 @@
-import type { WorkspaceColumn } from "../types";
+import type { WorkspaceColumn } from "../types.js";
 
 export function columnSlotIndex(column: WorkspaceColumn): number {
   return normalizedSlotIndex(column.slotIndex, column.index);

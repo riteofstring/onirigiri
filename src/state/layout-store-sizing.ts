@@ -1,6 +1,6 @@
-import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
-import { resizePaneRowAcrossPlane } from "./layout-store-helpers";
-import { applyPaneSizeTargets } from "../layout/pane-sizing";
+import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
+import { resizePaneRowAcrossPlane } from "./layout-store-helpers.js";
+import { applyPaneSizeTargets } from "../layout/pane-sizing.js";
 import type {
   ColumnId,
   ColumnWidthSpec,
@@ -9,7 +9,7 @@ import type {
   PaneSizingMode,
   Rect,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 interface WorkspaceSizingHooks {
   engine: WorkspaceLikeLayoutEngine;

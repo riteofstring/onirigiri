@@ -1,3 +1,3 @@
 import "./styles.css";
 
-export * from "./index";
+export * from "./index.js";

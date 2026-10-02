@@ -1,21 +1,21 @@
 import { createStore } from "zustand/vanilla";
 
-import type { PaneRearrangementController } from "./layout-store-rearrangement";
+import type { PaneRearrangementController } from "./layout-store-rearrangement.js";
 import type {
   WorkspaceLayoutSnapshot,
   WorkspaceLayoutStoreOptions,
-} from "./layout-store-types";
-import type { WorkspaceOverviewCamera } from "../layout/overview-camera";
-import { defaultWorkspaceCameraModes } from "../types";
+} from "./layout-store-types.js";
+import type { WorkspaceOverviewCamera } from "../layout/overview-camera.js";
+import { defaultWorkspaceCameraModes } from "../types.js";
 import type {
   WorkspaceScene,
   WorkspaceGridCursor,
   WorkspaceCameraModes,
-} from "../types";
+} from "../types.js";
 import {
   normalizeWorkspaceGridCursor,
   paneIdAtWorkspaceGridCursor,
-} from "../workspace/workspace-grid-cursor";
+} from "../workspace/workspace-grid-cursor.js";
 
 export function createWorkspaceState(
   scene: WorkspaceScene,

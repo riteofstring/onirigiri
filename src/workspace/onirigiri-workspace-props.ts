@@ -1,8 +1,8 @@
-import type { OnirigiriWorkspaceProps } from "./onirigiri-workspace-types";
+import type { OnirigiriWorkspaceProps } from "./onirigiri-workspace-types.js";
 import {
   defaultWorkspaceCameraModes,
   defaultWorkspaceGridAxes,
-} from "../types";
+} from "../types.js";
 
 type DefaultedOnirigiriWorkspaceProp =
   | "allowResizedPanesToOverflowViewport"

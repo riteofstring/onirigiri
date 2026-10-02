@@ -9,7 +9,7 @@ import type {
   WorkspaceGridCursor,
   WorkspacePresentationMode,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 export type WorkspaceLayoutChangeKind = "initial" | "restore" | "user";
 

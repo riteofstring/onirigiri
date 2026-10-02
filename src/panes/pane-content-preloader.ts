@@ -1,5 +1,5 @@
-import type { PaneContentReadiness } from "./pane-content-readiness";
-import type { PaneRenderItem } from "../types";
+import type { PaneContentReadiness } from "./pane-content-readiness.js";
+import type { PaneRenderItem } from "../types.js";
 
 interface PanePreloadCandidate {
   item: PaneRenderItem;

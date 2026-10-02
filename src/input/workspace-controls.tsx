@@ -3,27 +3,27 @@ import { createPortal } from "react-dom";
 import {
   OnirigiriIcon,
   type OnirigiriIconName,
-} from "../workspace/onirigiri-icons";
+} from "../workspace/onirigiri-icons.js";
 import {
   resolveOnirigiriSlotProps,
   useOnirigiriStyling,
   type OnirigiriWorkspaceControlDescriptor,
-} from "../styles/onirigiri-styling";
+} from "../styles/onirigiri-styling.js";
 import {
   onirigiriStylingContract,
   type OnirigiriThemeTokens,
-} from "../styles/onirigiri-theme";
+} from "../styles/onirigiri-theme.js";
 import type {
   FocusDirection,
   WorkspaceDirectionControlMode,
   WorkspacePresentationMode,
-} from "../types";
+} from "../types.js";
 import {
   formatOnirigiriShortcut,
   normalizeOnirigiriShortcutBindings,
   type OnirigiriShortcutAction,
   type OnirigiriShortcutDescriptor,
-} from "./workspace-shortcuts";
+} from "./workspace-shortcuts.js";
 
 type NormalizedOnirigiriShortcut = ReturnType<
   typeof normalizeOnirigiriShortcutBindings

@@ -1,17 +1,17 @@
 import type {
   WorkspaceLayoutSnapshot,
   WorkspaceLayoutStore,
-} from "../state/layout-store";
-import type { PaneId, Rect } from "../types";
+} from "../state/layout-store.js";
+import type { PaneId, Rect } from "../types.js";
 import {
   dispatchShortcutAction,
   escapePresentationState,
   type OnirigiriShortcutKeyboardEvent,
-} from "./workspace-shortcut-runtime";
+} from "./workspace-shortcut-runtime.js";
 import type {
   OnirigiriShortcutAction,
   OnirigiriShortcutScope,
-} from "./workspace-shortcuts";
+} from "./workspace-shortcuts.js";
 
 export function workspaceShortcutKeyDownHandler(
   shortcutScope: OnirigiriShortcutScope,

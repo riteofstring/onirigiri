@@ -12,15 +12,15 @@ import {
   resizedMinimapPlacement,
   resolveMinimapPlacement,
   sameMinimapPlacement,
-} from "../input/workspace-minimap-placement";
-import type { WorkspaceMinimapPresentation } from "../presentation/workspace-minimap-presentation";
-import type { WorkspaceLayoutStore } from "../state/layout-store";
+} from "../input/workspace-minimap-placement.js";
+import type { WorkspaceMinimapPresentation } from "../presentation/workspace-minimap-presentation.js";
+import type { WorkspaceLayoutStore } from "../state/layout-store.js";
 import {
   resolveOnirigiriSlotProps,
   useOnirigiriStyling,
-} from "../styles/onirigiri-styling";
-import type { Rect } from "../types";
-import type { OnirigiriMinimapPlacement } from "./onirigiri-workspace-types";
+} from "../styles/onirigiri-styling.js";
+import type { Rect } from "../types.js";
+import type { OnirigiriMinimapPlacement } from "./onirigiri-workspace-types.js";
 
 interface MinimapGesture {
   kind: "press" | "move" | "resize";

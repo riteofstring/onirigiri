@@ -8,12 +8,12 @@ import {
   type ReactNode,
 } from "react";
 
-import type { OnirigiriStyleSlot } from "./onirigiri-theme";
+import type { OnirigiriStyleSlot } from "./onirigiri-theme.js";
 import type {
   OnirigiriShortcutAction,
   OnirigiriShortcutDescriptor,
-} from "../input/workspace-shortcuts";
-import type { WorkspacePane } from "../types";
+} from "../input/workspace-shortcuts.js";
+import type { WorkspacePane } from "../types.js";
 
 export type OnirigiriSlotClassNames = Partial<
   Record<OnirigiriStyleSlot, string>

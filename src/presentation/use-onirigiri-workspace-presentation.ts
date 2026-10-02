@@ -1,14 +1,14 @@
 import { useLayoutEffect, type Dispatch, type SetStateAction } from "react";
 
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
-import type { OnirigiriRuntime } from "../workspace/onirigiri-workspace-runtime";
-import type { PanePictures } from "../pictures/pane-pictures";
-import type { Rect } from "../types";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
+import type { OnirigiriRuntime } from "../workspace/onirigiri-workspace-runtime.js";
+import type { PanePictures } from "../pictures/pane-pictures.js";
+import type { Rect } from "../types.js";
 import {
   WorkspaceFrameScheduler,
   type WorkspaceFrameMotionOptions,
   type WorkspacePresentationBoundaryFrame,
-} from "./workspace-frame-scheduler";
+} from "./workspace-frame-scheduler.js";
 
 interface OnirigiriWorkspacePresentationOptions {
   boundaryFrameRef: {

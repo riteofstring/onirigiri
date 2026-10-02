@@ -1,6 +1,6 @@
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
-import type { WorkspaceCameraMode } from "../types";
-import { workspaceGridCursorsEqual } from "../workspace/workspace-grid-cursor";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
+import type { WorkspaceCameraMode } from "../types.js";
+import { workspaceGridCursorsEqual } from "../workspace/workspace-grid-cursor.js";
 
 export function overviewCameraCanRetarget(
   previous: WorkspaceLayoutSnapshot,

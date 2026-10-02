@@ -1,4 +1,4 @@
-import { columnSlotIndex } from "./column-slots";
+import { columnSlotIndex } from "./column-slots.js";
 import type {
   PaneDefaults,
   PaneContentDefaults,
@@ -8,7 +8,7 @@ import type {
   PaneSizingConfiguration,
   WorkspaceColumn,
   WorkspacePane,
-} from "../types";
+} from "../types.js";
 
 export function resolvePaneDefaults(
   pane: WorkspacePane | null,

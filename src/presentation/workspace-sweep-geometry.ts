@@ -5,8 +5,8 @@ import type {
   PaneWorldBox,
   Rect,
   WorkspaceScene,
-} from "../types";
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store-types";
+} from "../types.js";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store-types.js";
 
 export function canonicalWorldPaneItems(
   items: readonly PaneRenderItem[],

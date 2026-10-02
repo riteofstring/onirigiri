@@ -3,7 +3,7 @@ import type {
   PaneId,
   WorkspaceColumn,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 export function paneCellSizingForPane(
   scene: WorkspaceScene,

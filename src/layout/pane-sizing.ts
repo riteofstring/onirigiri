@@ -1,14 +1,14 @@
-import { columnSlotIndex } from "./column-slots";
-import type { WorkspaceLikeLayoutEngine } from "./layout-engine";
-import { minimumColumnWidth } from "./layout-engine-helpers";
-import { minimumPaneHeightPx } from "../panes/pane-resize-geometry";
+import { columnSlotIndex } from "./column-slots.js";
+import type { WorkspaceLikeLayoutEngine } from "./layout-engine.js";
+import { minimumColumnWidth } from "./layout-engine-helpers.js";
+import { minimumPaneHeightPx } from "../panes/pane-resize-geometry.js";
 import type {
   PaneId,
   PaneSizeTarget,
   PaneSizingMode,
   Rect,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 interface PaneSizingTargetsInput {
   currentSizes: readonly PaneSizeTarget[];

@@ -1,5 +1,5 @@
-import { columnSlotIndex } from "./column-slots";
-import { WorkspaceLayoutEngineBase } from "./layout-engine-base";
+import { columnSlotIndex } from "./column-slots.js";
+import { WorkspaceLayoutEngineBase } from "./layout-engine-base.js";
 import {
   clamp,
   gridColumnRangeAt,
@@ -13,26 +13,26 @@ import {
   type PaneLocation,
   scrollOffsetForGridColumn,
   scrollOffsetForGridRow,
-} from "./layout-engine-helpers";
+} from "./layout-engine-helpers.js";
 import {
   normalizedPaneWeight,
   paneSurfaceForRequest,
-} from "./layout-engine-normalization";
+} from "./layout-engine-normalization.js";
 import {
   emptyPaneMoveCell,
   finiteFrameValue,
   isOrdinaryOccupiedCell,
   placementToDirection,
-} from "./layout-engine-rearrangement-helpers";
+} from "./layout-engine-rearrangement-helpers.js";
 import {
   overviewLayoutGeometry,
   renderNormalLayoutFrame,
-} from "./layout-engine-rendering";
+} from "./layout-engine-rendering.js";
 import {
   nextWorkspaceGridCursor,
   normalizeWorkspaceGridCursor,
   workspaceGridCursorForPane,
-} from "../workspace/workspace-grid-cursor";
+} from "../workspace/workspace-grid-cursor.js";
 import type {
   ColumnId,
   LayoutEngine,
@@ -55,7 +55,7 @@ import type {
   WorkspaceFocusAnchor,
   WorkspacePane,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 interface PaneSplitInsertion {
   sourceCell: WorkspaceCell;

@@ -1,4 +1,4 @@
-import type { WorkspacePane } from "../types";
+import type { WorkspacePane } from "../types.js";
 
 export type PaneLiveRenderer = "dom" | "canvas";
 export type PanePresentationKind =

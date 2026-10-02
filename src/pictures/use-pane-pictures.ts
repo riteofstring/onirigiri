@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState } from "react";
-import type { OnirigiriRuntime } from "../workspace/onirigiri-workspace-runtime";
-import { PanePictures } from "./pane-pictures";
-import { workspaceSnapshotIsMoving } from "../presentation/workspace-frame-scheduler";
+import type { OnirigiriRuntime } from "../workspace/onirigiri-workspace-runtime.js";
+import { PanePictures } from "./pane-pictures.js";
+import { workspaceSnapshotIsMoving } from "../presentation/workspace-frame-scheduler.js";
 
 export function usePanePictures(
   runtime: OnirigiriRuntime,

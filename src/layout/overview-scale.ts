@@ -1,4 +1,4 @@
-import type { Rect } from "../types";
+import type { Rect } from "../types.js";
 
 export const OVERVIEW_MAX_ZOOM_SCALE = 0.5;
 export const OVERVIEW_MIN_ZOOM = 0.2;

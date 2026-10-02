@@ -4,7 +4,7 @@ import {
   motionCurveIsExponential,
   MotionTimeline,
   type ResolvedCameraMotion,
-} from "../presentation/motion-curve";
+} from "../presentation/motion-curve.js";
 
 interface WorkspaceCameraAnimationInput {
   deltaMs: number;

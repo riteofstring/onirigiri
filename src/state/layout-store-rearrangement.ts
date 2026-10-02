@@ -1,10 +1,10 @@
-import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
+import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
 import type {
   ColumnId,
   PaneId,
   PaneMoveDirection,
   PaneRearrangementSelection,
-} from "../types";
+} from "../types.js";
 
 interface PaneRearrangementHooks {
   capturePaneRearrangementSource: () => void;

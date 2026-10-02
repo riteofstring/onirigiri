@@ -1,4 +1,4 @@
-import type { PaneId, PaneRenderItem } from "../types";
+import type { PaneId, PaneRenderItem } from "../types.js";
 
 export class PanePictureActivation {
   private readonly active = new Set<PaneId>();

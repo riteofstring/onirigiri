@@ -1,4 +1,4 @@
-import type { WorkspaceColumn } from "../types";
+import type { WorkspaceColumn } from "../types.js";
 
 interface PlaneInsertionResult {
   columns: WorkspaceColumn[];

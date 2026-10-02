@@ -1,12 +1,12 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
-import type { WorkspaceLayoutStore } from "../state/layout-store";
-import type { PaneId, Rect } from "../types";
-import { workspaceGridCursorAnnouncement } from "../workspace/workspace-grid-cursor";
+import type { WorkspaceLayoutStore } from "../state/layout-store.js";
+import type { PaneId, Rect } from "../types.js";
+import { workspaceGridCursorAnnouncement } from "../workspace/workspace-grid-cursor.js";
 import type {
   OnirigiriShortcutAction,
   OnirigiriShortcutScope,
-} from "./workspace-shortcuts";
+} from "./workspace-shortcuts.js";
 
 export type OnirigiriShortcutKeyboardEvent =
   ReactKeyboardEvent<HTMLDivElement> | globalThis.KeyboardEvent;

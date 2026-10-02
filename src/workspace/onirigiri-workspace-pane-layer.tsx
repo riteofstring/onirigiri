@@ -1,13 +1,13 @@
-import type { WorkspaceLayoutStore } from "../state/layout-store";
+import type { WorkspaceLayoutStore } from "../state/layout-store.js";
 import {
   OnirigiriPaneView,
   type OnirigiriPaneViewProps,
-} from "../panes/onirigiri-pane-view";
-import type { PanePresentationEngine } from "../presentation/pane-presentation-engine";
-import type { PanePictures } from "../pictures/pane-pictures";
-import type { PaneResizeStart } from "../input/pane-resize-interactions";
-import type { OnirigiriWorkspaceProps } from "./onirigiri-workspace-types";
-import type { PaneId, PaneRenderItem, WorkspacePane } from "../types";
+} from "../panes/onirigiri-pane-view.js";
+import type { PanePresentationEngine } from "../presentation/pane-presentation-engine.js";
+import type { PanePictures } from "../pictures/pane-pictures.js";
+import type { PaneResizeStart } from "../input/pane-resize-interactions.js";
+import type { OnirigiriWorkspaceProps } from "./onirigiri-workspace-types.js";
+import type { PaneId, PaneRenderItem, WorkspacePane } from "../types.js";
 
 interface OnirigiriWorkspacePaneLayerProps {
   adjacentPaneIdByPaneId: ReadonlyMap<PaneId, PaneId>;

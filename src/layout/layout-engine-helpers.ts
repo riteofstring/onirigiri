@@ -2,7 +2,7 @@ import {
   constrainPaneDimension,
   preferredPaneHeight,
   resolvePaneDefaults,
-} from "./pane-defaults";
+} from "./pane-defaults.js";
 import type {
   ColumnWidthSpec,
   LayoutFrameInput,
@@ -14,7 +14,7 @@ import type {
   WorkspaceColumn,
   WorkspacePane,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 interface PaneGridSizing {
   configuration: PaneSizingConfiguration;
@@ -78,7 +78,7 @@ export {
   OVERVIEW_MIN_ZOOM,
   overviewScale,
   type OverviewCardSizeConstraints,
-} from "./overview-scale";
+} from "./overview-scale.js";
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));

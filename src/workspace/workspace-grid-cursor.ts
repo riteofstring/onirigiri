@@ -1,10 +1,10 @@
-import { columnSlotIndex } from "../layout/column-slots";
+import { columnSlotIndex } from "../layout/column-slots.js";
 import type {
   FocusDirection,
   PaneId,
   WorkspaceGridCursor,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 const horizontalDirections = new Set<FocusDirection>(["left", "right"]);
 

@@ -1,5 +1,5 @@
-import type { WorkspaceLayoutStore } from "../state/layout-store";
-import type { PaneId, Rect, WorkspacePresentationMode } from "../types";
+import type { WorkspaceLayoutStore } from "../state/layout-store.js";
+import type { PaneId, Rect, WorkspacePresentationMode } from "../types.js";
 
 interface PaneFocusTarget {
   paneId: PaneId;

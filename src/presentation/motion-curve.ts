@@ -3,7 +3,7 @@ import type {
   OnirigiriEasing,
   OnirigiriFocusHighlightMotion,
   OnirigiriMotionCurve,
-} from "../types";
+} from "../types.js";
 
 export interface ResolvedCameraMotion {
   navigation: OnirigiriMotionCurve;

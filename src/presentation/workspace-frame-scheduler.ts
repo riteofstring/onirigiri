@@ -1,19 +1,19 @@
 import {
   overviewCameraCanRetarget,
   sameOverviewCameraFrame,
-} from "./workspace-overview-camera-state";
-import { AnimationClock, type AnimationFrameHost } from "./animation-clock";
-import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
-import { workspaceScrollRowIsSettled } from "../state/layout-store-animation";
+} from "./workspace-overview-camera-state.js";
+import { AnimationClock, type AnimationFrameHost } from "./animation-clock.js";
+import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
+import { workspaceScrollRowIsSettled } from "../state/layout-store-animation.js";
 import type {
   WorkspaceLayoutSnapshot,
   WorkspaceLayoutStore,
   WorkspacePaneRearrangementSource,
-} from "../state/layout-store";
+} from "../state/layout-store.js";
 import type {
   PanePresentationWriteCounts,
   PanePresentationEngine,
-} from "./pane-presentation-engine";
+} from "./pane-presentation-engine.js";
 import type {
   OnirigiriFocusHighlightMotion,
   OnirigiriMotionCurve,
@@ -22,28 +22,28 @@ import type {
   ReservedCellRenderItem,
   WorkspaceCameraMode,
   WorkspaceWorldFrame,
-} from "../types";
-import { workspaceGridCursorsEqual } from "../workspace/workspace-grid-cursor";
-import type { WorkspaceGridCursorPresentation } from "../workspace/workspace-grid-cursor-presentation";
-import type { WorkspaceWorldPresentation } from "./workspace-world-presentation";
-import type { WorkspaceMinimapPresentation } from "./workspace-minimap-presentation";
+} from "../types.js";
+import { workspaceGridCursorsEqual } from "../workspace/workspace-grid-cursor.js";
+import type { WorkspaceGridCursorPresentation } from "../workspace/workspace-grid-cursor-presentation.js";
+import type { WorkspaceWorldPresentation } from "./workspace-world-presentation.js";
+import type { WorkspaceMinimapPresentation } from "./workspace-minimap-presentation.js";
 import {
   defaultCameraMotion,
   defaultFocusHighlightMotion,
   type ResolvedCameraMotion,
-} from "./motion-curve";
+} from "./motion-curve.js";
 import {
   workspaceMotionSceneItems,
   WorkspaceMotionSceneInventory,
-} from "./workspace-motion-scene-inventory";
-import { workspacePaneRearrangementSweep } from "./workspace-pane-rearrangement-sweep";
+} from "./workspace-motion-scene-inventory.js";
+import { workspacePaneRearrangementSweep } from "./workspace-pane-rearrangement-sweep.js";
 import {
   workspaceGridCursorRenderItem,
   workspaceRenderItems,
   workspaceReservedCellRenderItems,
   WorkspaceRenderItemRenderer,
   WorkspaceWorldFrameRenderer,
-} from "./workspace-render-items";
+} from "./workspace-render-items.js";
 
 type WorkspaceFrameBoundary = "request" | "settle";
 

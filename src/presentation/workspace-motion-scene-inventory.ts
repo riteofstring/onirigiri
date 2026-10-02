@@ -1,4 +1,4 @@
-import { worldPaneRenderer } from "./workspace-sweep-geometry";
+import { worldPaneRenderer } from "./workspace-sweep-geometry.js";
 import type {
   LayoutEngine,
   PaneId,
@@ -6,13 +6,13 @@ import type {
   PaneWorldBox,
   WorkspacePane,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 import {
   workspaceMotionSceneIsCacheable,
   workspaceMotionSceneKey,
   workspaceGeometryOrigin,
   type WorkspaceRenderItemsInput,
-} from "./workspace-render-items";
+} from "./workspace-render-items.js";
 
 interface WorkspaceMotionSceneCache {
   engine: LayoutEngine;

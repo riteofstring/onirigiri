@@ -1,5 +1,5 @@
-import { PaneDefaultsContext } from "../panes/pane-content-layout";
-import { usePanePictures } from "../pictures/use-pane-pictures";
+import { PaneDefaultsContext } from "../panes/pane-content-layout.js";
+import { usePanePictures } from "../pictures/use-pane-pictures.js";
 import {
   forwardRef,
   useCallback,
@@ -12,46 +12,46 @@ import {
   type CSSProperties,
 } from "react";
 
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
 import {
   ReservedSplitCell,
   reservedSplitCellKey,
-} from "../panes/onirigiri-reserved-split";
+} from "../panes/onirigiri-reserved-split.js";
 import {
   OnirigiriStylingProvider,
   type OnirigiriStylingOptions,
-} from "../styles/onirigiri-styling";
-import { onirigiriStylingContract } from "../styles/onirigiri-theme";
-import { resolveOnirigiriWorkspaceSlots } from "./onirigiri-workspace-slots";
-import { OnirigiriWorkspacePaneLayer } from "./onirigiri-workspace-pane-layer";
-import { OnirigiriWorkspaceMinimap } from "./onirigiri-workspace-minimap";
+} from "../styles/onirigiri-styling.js";
+import { onirigiriStylingContract } from "../styles/onirigiri-theme.js";
+import { resolveOnirigiriWorkspaceSlots } from "./onirigiri-workspace-slots.js";
+import { OnirigiriWorkspacePaneLayer } from "./onirigiri-workspace-pane-layer.js";
+import { OnirigiriWorkspaceMinimap } from "./onirigiri-workspace-minimap.js";
 import {
   compactPanePeekIsEnabled,
   matchingBoundaryFrame,
   paneRowHeights,
   selectedPaneGroupColumnId,
-} from "../presentation/onirigiri-workspace-presentation-geometry";
+} from "../presentation/onirigiri-workspace-presentation-geometry.js";
 import {
   PaneViewportLifecycle,
   retainedPaneShells,
-} from "../panes/pane-viewport-lifecycle";
+} from "../panes/pane-viewport-lifecycle.js";
 import type {
   OnirigiriWorkspaceHandle,
   OnirigiriWorkspaceProps,
-} from "./onirigiri-workspace-types";
-import { useOnirigiriRuntime } from "./onirigiri-workspace-runtime";
-import { useOnirigiriWorkspacePresentation } from "../presentation/use-onirigiri-workspace-presentation";
-import { useOnirigiriStageViewport } from "./use-onirigiri-stage-viewport";
-import { resolveOnirigiriWorkspaceProps } from "./onirigiri-workspace-props";
+} from "./onirigiri-workspace-types.js";
+import { useOnirigiriRuntime } from "./onirigiri-workspace-runtime.js";
+import { useOnirigiriWorkspacePresentation } from "../presentation/use-onirigiri-workspace-presentation.js";
+import { useOnirigiriStageViewport } from "./use-onirigiri-stage-viewport.js";
+import { resolveOnirigiriWorkspaceProps } from "./onirigiri-workspace-props.js";
 import {
   focusOverviewPaneFromClick,
   focusPaneFromPointer,
-} from "../input/pane-focus-interactions";
+} from "../input/pane-focus-interactions.js";
 import {
   beginPaneResize,
   type PaneResizeStart,
-} from "../input/pane-resize-interactions";
-import { paneSizingTargets } from "../layout/pane-sizing";
+} from "../input/pane-resize-interactions.js";
+import { paneSizingTargets } from "../layout/pane-sizing.js";
 import type {
   ColumnFocusEdge,
   FocusDirection,
@@ -62,41 +62,41 @@ import type {
   PaneSizeTarget,
   PaneSizingMode,
   Rect,
-} from "../types";
-import { useWorkspaceWorldFrames } from "../presentation/use-workspace-world-frames";
+} from "../types.js";
+import { useWorkspaceWorldFrames } from "../presentation/use-workspace-world-frames.js";
 import {
   focusDirections,
   WorkspaceControlsPlacement,
-} from "../input/workspace-controls";
+} from "../input/workspace-controls.js";
 import {
   workspaceReservedCellRenderItems,
   WorkspaceRenderItemRenderer,
   WorkspaceWorldFrameRenderer,
-} from "../presentation/workspace-render-items";
-import { workspacePaneRearrangementSweep } from "../presentation/workspace-pane-rearrangement-sweep";
-import { serializeWorkspaceLayout } from "./workspace-scene";
-import { workspaceGridCursorAnnouncement } from "./workspace-grid-cursor";
+} from "../presentation/workspace-render-items.js";
+import { workspacePaneRearrangementSweep } from "../presentation/workspace-pane-rearrangement-sweep.js";
+import { serializeWorkspaceLayout } from "./workspace-scene.js";
+import { workspaceGridCursorAnnouncement } from "./workspace-grid-cursor.js";
 import {
   matchOnirigiriShortcutAction,
   normalizeOnirigiriShortcutBindings,
-} from "../input/workspace-shortcuts";
+} from "../input/workspace-shortcuts.js";
 import {
   dispatchWorkspaceShortcut,
   handleWorkspaceEscapeShortcut,
   workspaceShortcutKeyDownHandler,
-} from "../input/workspace-shortcut-react";
+} from "../input/workspace-shortcut-react.js";
 import {
   workspaceSnapshotIsMoving,
   type WorkspaceFrameMotionOptions,
   type WorkspaceFrameScheduler,
   type WorkspacePresentationBoundaryFrame,
-} from "../presentation/workspace-frame-scheduler";
+} from "../presentation/workspace-frame-scheduler.js";
 import {
   defaultCameraMotion,
   defaultFocusHighlightMotion,
   resolveCameraMotion,
   validMotionCurve,
-} from "../presentation/motion-curve";
+} from "../presentation/motion-curve.js";
 import {
   activateApplicationShortcutWorkspaceIfEnabled,
   eventTargetIsInsideAnotherWorkspace,
@@ -105,7 +105,7 @@ import {
   shortcutEventIsIgnored,
   workspaceChromeFocusedPaneId,
   type OnirigiriShortcutKeyboardEvent,
-} from "../input/workspace-shortcut-runtime";
+} from "../input/workspace-shortcut-runtime.js";
 
 const defaultViewport: Rect = { height: 1, width: 1, x: 0, y: 0 };
 

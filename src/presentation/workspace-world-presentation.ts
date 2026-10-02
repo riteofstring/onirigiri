@@ -1,6 +1,10 @@
-import type { OnirigiriMotionCurve, Rect, WorkspaceWorldFrame } from "../types";
-import { defaultCameraMotion, MotionTimeline } from "./motion-curve";
-import { unionRects } from "./workspace-sweep-geometry";
+import type {
+  OnirigiriMotionCurve,
+  Rect,
+  WorkspaceWorldFrame,
+} from "../types.js";
+import { defaultCameraMotion, MotionTimeline } from "./motion-curve.js";
+import { unionRects } from "./workspace-sweep-geometry.js";
 
 const worldGridOverscanRatio = 0.25;
 

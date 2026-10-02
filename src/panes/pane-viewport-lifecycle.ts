@@ -1,11 +1,11 @@
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
 import type {
   PaneId,
   PaneRenderItem,
   Rect,
   WorkspacePane,
   WorkspaceWorldFrame,
-} from "../types";
+} from "../types.js";
 
 interface RetainedPaneEntry {
   area: number;

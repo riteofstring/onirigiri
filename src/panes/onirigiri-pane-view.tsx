@@ -7,31 +7,31 @@ import {
   type KeyboardEvent,
 } from "react";
 
-import type { WorkspaceLayoutStore } from "../state/layout-store";
+import type { WorkspaceLayoutStore } from "../state/layout-store.js";
 import {
   OnirigiriPaneTitlebar,
   type OnirigiriPaneTitlebarProps,
-} from "./onirigiri-pane-titlebar";
-import { OnirigiriPaneContent } from "./onirigiri-pane-content";
-import type { PanePresentationEngine } from "../presentation/pane-presentation-engine";
+} from "./onirigiri-pane-titlebar.js";
+import { OnirigiriPaneContent } from "./onirigiri-pane-content.js";
+import type { PanePresentationEngine } from "../presentation/pane-presentation-engine.js";
 import {
   resolveOnirigiriSlotProps,
   useOnirigiriStyling,
-} from "../styles/onirigiri-styling";
-import type { OnirigiriWorkspaceProps } from "../workspace/onirigiri-workspace-types";
-import type { PanePictures } from "../pictures/pane-pictures";
-import { minimumPaneHeightPx } from "./pane-resize-geometry";
-import { paneCellSizingForPane } from "../layout/pane-cell-sizing";
+} from "../styles/onirigiri-styling.js";
+import type { OnirigiriWorkspaceProps } from "../workspace/onirigiri-workspace-types.js";
+import type { PanePictures } from "../pictures/pane-pictures.js";
+import { minimumPaneHeightPx } from "./pane-resize-geometry.js";
+import { paneCellSizingForPane } from "../layout/pane-cell-sizing.js";
 import type {
   PaneResizeStart,
   ResizeAxis,
-} from "../input/pane-resize-interactions";
+} from "../input/pane-resize-interactions.js";
 import type {
   PaneId,
   PaneRenderItem,
   WorkspacePane,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 export interface OnirigiriPaneViewProps extends Omit<
   OnirigiriPaneTitlebarProps,

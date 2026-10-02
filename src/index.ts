@@ -2,7 +2,7 @@ export {
   defineOnirigiriChromeComponents,
   defineOnirigiriClassNames,
   defineOnirigiriStyles,
-} from "./styles/onirigiri-styling";
+} from "./styles/onirigiri-styling.js";
 export type {
   OnirigiriChromeButtonProps,
   OnirigiriChromeComponents,
@@ -14,7 +14,7 @@ export type {
   OnirigiriWorkspaceControlButtonProps,
   OnirigiriWorkspaceControlDescriptor,
   OnirigiriWorkspaceControlId,
-} from "./styles/onirigiri-styling";
+} from "./styles/onirigiri-styling.js";
 export {
   defineOnirigiriTheme,
   onirigiriStyleIdentityAttributes,
@@ -23,7 +23,7 @@ export {
   onirigiriStylingContract,
   onirigiriThemeTokenGroups,
   onirigiriThemeTokenNames,
-} from "./styles/onirigiri-theme";
+} from "./styles/onirigiri-theme.js";
 export type {
   OnirigiriStyleIdentityAttribute,
   OnirigiriStyleSlot,
@@ -32,7 +32,7 @@ export type {
   OnirigiriThemeTokenName,
   OnirigiriThemeTokens,
   OnirigiriWorkspaceStyle,
-} from "./styles/onirigiri-theme";
+} from "./styles/onirigiri-theme.js";
 export type {
   OnirigiriLayoutChangeKind,
   OnirigiriLayoutChangeMetadata,
@@ -42,34 +42,37 @@ export type {
   OnirigiriPaneRenderer,
   OnirigiriWorkspaceHandle,
   OnirigiriWorkspaceProps,
-} from "./workspace/onirigiri-workspace-types";
-export { OnirigiriWorkspace } from "./workspace/OnirigiriWorkspace";
+} from "./workspace/onirigiri-workspace-types.js";
+export { OnirigiriWorkspace } from "./workspace/OnirigiriWorkspace.js";
 
-export { WorkspaceLikeLayoutEngine as OnirigiriLayoutEngine } from "./layout/layout-engine";
-export { WorkspaceLayoutStore as OnirigiriLayoutStore } from "./state/layout-store";
+export { WorkspaceLikeLayoutEngine as OnirigiriLayoutEngine } from "./layout/layout-engine.js";
+export { WorkspaceLayoutStore as OnirigiriLayoutStore } from "./state/layout-store.js";
 export {
   assertOnirigiriLayout,
   createWorkspaceScene,
   serializeWorkspaceLayout,
-} from "./workspace/workspace-scene";
+} from "./workspace/workspace-scene.js";
 export {
   defaultOnirigiriShortcuts,
   formatOnirigiriShortcut,
   getOnirigiriShortcutBindings,
-} from "./input/workspace-shortcuts";
-export { defaultWorkspaceCameraModes, defaultWorkspaceGridAxes } from "./types";
+} from "./input/workspace-shortcuts.js";
+export {
+  defaultWorkspaceCameraModes,
+  defaultWorkspaceGridAxes,
+} from "./types.js";
 export {
   defaultCameraMotion as defaultOnirigiriCameraMotion,
   onirigiriEaseOutQuad,
-} from "./presentation/motion-curve";
+} from "./presentation/motion-curve.js";
 
-export type { WorkspaceLayoutSnapshot } from "./state/layout-store";
-export type * from "./types";
+export type { WorkspaceLayoutSnapshot } from "./state/layout-store.js";
+export type * from "./types.js";
 export type {
   OnirigiriLayout,
   OnirigiriPaneDefinition,
   WorkspaceSceneOptions,
-} from "./workspace/workspace-scene";
+} from "./workspace/workspace-scene.js";
 export type {
   OnirigiriShortcutAction,
   OnirigiriShortcutBinding,
@@ -78,15 +81,15 @@ export type {
   OnirigiriShortcutFormatOptions,
   OnirigiriShortcutPlatform,
   OnirigiriShortcutScope,
-} from "./input/workspace-shortcuts";
+} from "./input/workspace-shortcuts.js";
 
-export { useOnirigiriPaneContentReady } from "./panes/pane-content-readiness";
+export { useOnirigiriPaneContentReady } from "./panes/pane-content-readiness.js";
 export type {
   OnirigiriCaptureStatus,
   OnirigiriPaneCaptureReceipt,
   OnirigiriPanePicture,
   OnirigiriPanePictureResolver,
-} from "./pictures/pane-picture-types";
+} from "./pictures/pane-picture-types.js";
 
 export type {
   PaneLiveRenderer,
@@ -96,4 +99,4 @@ export type {
   PanePresentationContext,
   PanePresentationResolver,
   PanePresentationState,
-} from "./presentation/pane-presentation-policy";
+} from "./presentation/pane-presentation-policy.js";

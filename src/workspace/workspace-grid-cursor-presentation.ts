@@ -1,11 +1,11 @@
 import {
   defaultCameraMotion,
   MotionTimeline,
-} from "../presentation/motion-curve";
+} from "../presentation/motion-curve.js";
 import type {
   OnirigiriMotionCurve,
   WorkspaceGridCursorRenderItem,
-} from "../types";
+} from "../types.js";
 
 interface CursorBox {
   height: number;

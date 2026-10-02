@@ -1,6 +1,6 @@
-import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
-import { workspacePaneLimitState } from "./layout-store-helpers";
-import type { WorkspacePaneLimitState } from "./layout-store-types";
+import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
+import { workspacePaneLimitState } from "./layout-store-helpers.js";
+import type { WorkspacePaneLimitState } from "./layout-store-types.js";
 import type {
   ColumnId,
   OpenPaneRequest,
@@ -9,7 +9,7 @@ import type {
   PaneLimitPolicy,
   SurfaceKind,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 interface PaneOpeningHooks {
   commitPane: (paneId: PaneId) => void;

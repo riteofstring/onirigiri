@@ -1,4 +1,4 @@
-import type { ReservedCellRenderItem } from "../types";
+import type { ReservedCellRenderItem } from "../types.js";
 
 export function ReservedSplitCell({ item }: { item: ReservedCellRenderItem }) {
   return (

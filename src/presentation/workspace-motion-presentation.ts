@@ -1,4 +1,4 @@
-import type { PaneId, WorkspacePresentationMode } from "../types";
+import type { PaneId, WorkspacePresentationMode } from "../types.js";
 
 export interface WorkspacePresentedPaneGeometry {
   contentOffsetTop: number;

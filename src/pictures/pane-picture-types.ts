@@ -1,4 +1,4 @@
-import type { PaneId, WorkspacePane } from "../types";
+import type { PaneId, WorkspacePane } from "../types.js";
 
 export interface OnirigiriPanePicture {
   image: Blob;

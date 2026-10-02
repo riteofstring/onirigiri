@@ -1,14 +1,14 @@
 import type {
   OnirigiriPaneCaptureReceipt,
   OnirigiriPanePicture,
-} from "./pane-picture-types";
-import type { PanePictureTexture } from "./pane-picture-texture";
+} from "./pane-picture-types.js";
+import type { PanePictureTexture } from "./pane-picture-texture.js";
 import {
   orderPaneActivation,
   paneActivationDistance,
-} from "./pane-picture-activation";
-import type { ResolvedConfiguration } from "./pane-picture-configuration";
-import type { PaneId, PaneRenderItem } from "../types";
+} from "./pane-picture-activation.js";
+import type { ResolvedConfiguration } from "./pane-picture-configuration.js";
+import type { PaneId, PaneRenderItem } from "../types.js";
 
 interface PictureSize {
   width: number;

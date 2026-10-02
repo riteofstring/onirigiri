@@ -1,13 +1,13 @@
 import { useRef } from "react";
 
-import { WorkspaceLikeLayoutEngine } from "../layout/layout-engine";
-import { WorkspaceLayoutStore } from "../state/layout-store";
-import type { OnirigiriWorkspaceProps } from "./onirigiri-workspace-types";
-import { PanePresentationEngine } from "../presentation/pane-presentation-engine";
-import { createWorkspaceScene } from "./workspace-scene";
-import { WorkspaceGridCursorPresentation } from "./workspace-grid-cursor-presentation";
-import { WorkspaceWorldPresentation } from "../presentation/workspace-world-presentation";
-import { WorkspaceMinimapPresentation } from "../presentation/workspace-minimap-presentation";
+import { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
+import { WorkspaceLayoutStore } from "../state/layout-store.js";
+import type { OnirigiriWorkspaceProps } from "./onirigiri-workspace-types.js";
+import { PanePresentationEngine } from "../presentation/pane-presentation-engine.js";
+import { createWorkspaceScene } from "./workspace-scene.js";
+import { WorkspaceGridCursorPresentation } from "./workspace-grid-cursor-presentation.js";
+import { WorkspaceWorldPresentation } from "../presentation/workspace-world-presentation.js";
+import { WorkspaceMinimapPresentation } from "../presentation/workspace-minimap-presentation.js";
 
 export interface OnirigiriRuntime {
   cursorPresentation: WorkspaceGridCursorPresentation;

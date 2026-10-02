@@ -1,6 +1,6 @@
-import { distributePaneHeights } from "../panes/pane-resize-geometry";
-import type { PaneLocation } from "./layout-engine-helpers";
-import type { PaneId, WorkspaceCell } from "../types";
+import { distributePaneHeights } from "../panes/pane-resize-geometry.js";
+import type { PaneLocation } from "./layout-engine-helpers.js";
+import type { PaneId, WorkspaceCell } from "../types.js";
 
 export function isOrdinaryOccupiedCell(
   cell: WorkspaceCell | undefined,

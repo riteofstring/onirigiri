@@ -4,7 +4,7 @@ import {
   resolvePaneDefaults,
   preferredColumnWidth,
   validatePaneDefaultsConfiguration,
-} from "./pane-defaults";
+} from "./pane-defaults.js";
 import {
   columnSlotIndex,
   compareColumnsByPlaneAndSlot,
@@ -14,7 +14,7 @@ import {
   shiftPlaneSlotsAtOrAfter,
   slotIndexForDenseInsertion,
   slotWidthsForColumns,
-} from "./column-slots";
+} from "./column-slots.js";
 import {
   clamp,
   type ColumnGeometry,
@@ -31,26 +31,26 @@ import {
   normalizedColumnWidthSpec,
   type PaneLocation,
   pushColumnItems,
-} from "./layout-engine-helpers";
+} from "./layout-engine-helpers.js";
 import {
   normalizedPaneHeightPx,
   normalizedPaneWeight,
-} from "./layout-engine-normalization";
+} from "./layout-engine-normalization.js";
 import {
   locationsFormAdjacentSplit,
   resizedSplitSizing,
-} from "./layout-engine-rearrangement-helpers";
+} from "./layout-engine-rearrangement-helpers.js";
 import {
   type OverviewLayoutContext,
   type OverviewLayoutMetrics,
   overviewLayoutMetrics,
   renderOverviewLayoutFrame,
-} from "./layout-engine-rendering";
+} from "./layout-engine-rendering.js";
 import {
   insertPlaneAt,
   planeIndexesForColumns,
   removePlaneAt,
-} from "./layout-planes";
+} from "./layout-planes.js";
 import type {
   ColumnId,
   ColumnWidthSpec,
@@ -67,7 +67,7 @@ import type {
   WorkspacePane,
   WorkspaceGridOrigin,
   WorkspaceScene,
-} from "../types";
+} from "../types.js";
 
 interface WorkspaceLayoutEngineOptions {
   allowResizedPanesToOverflowViewport?: boolean;
