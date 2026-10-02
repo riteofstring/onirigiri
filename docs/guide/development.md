@@ -88,6 +88,6 @@ locked quality, architecture, test, dependency, vulnerability, license, and rele
 Set the new `version` in `package.json`, commit, and push an annotated
 `vMAJOR.MINOR.PATCH` tag that matches it. `.github/workflows/release.yml` runs in
 the `npm` GitHub environment, verifies the tag, typechecks, runs the unit tests,
-builds, and publishes `@riteofstring/onirigiri` with npm provenance through npm
-trusted publishing. Browser suites need a real GPU and run before tagging, not in
+builds, and publishes `@riteofstring/onirigiri` through npm trusted publishing,
+which adds provenance while the repository is public. Browser suites need a real GPU and run before tagging, not in
 that workflow.

@@ -84,5 +84,5 @@ jobs:
       - name: Build package
         run: pnpm build
 
-      - name: Publish with provenance
-        run: npm publish --provenance --access public
+      - name: Publish through trusted publishing
+        run: npm publish --access public
