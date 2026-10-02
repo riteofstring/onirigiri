@@ -1,0 +1,11 @@
+saveExact: true
+strictPeerDependencies: true
+
+minimumReleaseAge: 43200
+minimumReleaseAgeStrict: true
+minimumReleaseAgeIgnoreMissingTime: false
+trustPolicy: no-downgrade
+trustLockfile: false
+blockExoticSubdeps: true
+
+onlyBuiltDependencies: []

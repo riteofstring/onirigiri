@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@riteofstring/onirigiri": ["../src/index.ts"]
+    },
+    "types": ["node"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../src/style-modules.d.ts"],
+  "exclude": ["browser"]
+}

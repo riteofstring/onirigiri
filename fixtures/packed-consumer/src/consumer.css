@@ -1,0 +1,51 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.consumer-shell {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  padding: 1rem;
+}
+
+.consumer-shell h1 {
+  font:
+    600 1rem/1.4 system-ui,
+    sans-serif;
+  margin: 0 0 0.75rem;
+}
+
+.consumer-workspace {
+  min-height: 0;
+}
+
+.consumer-shell {
+  background: #f3eddf;
+  color: #362747;
+  font:
+    16px Georgia,
+    serif;
+}
+.consumer-shell > header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 12px;
+}
+.consumer-pane {
+  --onirigiri-pane: #fffaf0;
+  --onirigiri-text: #362747;
+  --onirigiri-muted: #685e72;
+  --onirigiri-border: #ad9cb9;
+}
+.consumer-document {
+  padding: 24px;
+}
+.consumer-button {
+  border-radius: 999px;
+}

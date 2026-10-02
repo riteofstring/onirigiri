@@ -1,0 +1,33 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.capture-preview {
+  background: #080c10;
+  color: #d7e4eb;
+  display: flex;
+  flex-direction: column;
+  font:
+    13px system-ui,
+    sans-serif;
+  height: 100%;
+}
+
+.capture-preview > header {
+  align-items: center;
+  border-bottom: 1px solid #26333c;
+  display: flex;
+  flex-shrink: 0;
+  gap: 16px;
+  justify-content: space-between;
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.capture-preview__workspace {
+  flex: 1;
+  min-height: 0;
+}

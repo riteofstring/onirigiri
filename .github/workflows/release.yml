@@ -1,0 +1,88 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish ${{ github.ref_name }}
+    runs-on: ubuntu-24.04
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+
+      - name: Verify annotated tag matches package version
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "Release tags must use strict vMAJOR.MINOR.PATCH SemVer." >&2
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin "+refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          if [[ "$(git cat-file -t "refs/tags/${RELEASE_TAG}")" != tag ]]; then
+            echo "${RELEASE_TAG} is not an annotated tag." >&2
+            exit 1
+          fi
+          package_version="$(node -p 'require("./package.json").version')"
+          if [[ "${RELEASE_TAG}" != "v${package_version}" ]]; then
+            echo "${RELEASE_TAG} does not match package.json version ${package_version}." >&2
+            exit 1
+          fi
+
+      - name: Set up the pinned Node toolchain
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify the pinned package managers
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable pnpm
+          test "$(pnpm --version)" = "10.23.0"
+          npm install --global npm@11.6.2 --ignore-scripts
+          test "$(npm --version)" = "11.6.2"
+
+      - name: Require an unpublished version
+        shell: bash
+        run: |
+          set -euo pipefail
+          spec="$(node -p 'const p = require("./package.json"); `${p.name}@${p.version}`')"
+          if npm view "${spec}" version >/dev/null 2>&1; then
+            echo "${spec} is already published; npm versions are immutable." >&2
+            exit 1
+          fi
+
+      - name: Install frozen dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Publish with provenance
+        run: npm publish --provenance --access public

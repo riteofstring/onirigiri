@@ -1,0 +1,42 @@
+name: Dependency security
+
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  supply-chain:
+    name: Weekly online supply-chain scan
+    runs-on: [self-hosted, linux, x64, onirigiri-code-polishy]
+    steps:
+      - name: Check out requested commit
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          git -c "http.extraheader=AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+            fetch --depth=1 origin "${GITHUB_SHA}"
+          git switch --detach FETCH_HEAD
+
+      - name: Verify the provisioned locked toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          code-polishy version
+          test "$(node --version)" = "v25.2.1"
+          test "$(pnpm --version)" = "10.23.0"
+
+      - name: Install frozen dependencies without lifecycle scripts
+        shell: bash
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Run online dependency security scan
+        shell: bash
+        run: code-polishy supply-chain

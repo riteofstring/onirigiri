@@ -1,0 +1,666 @@
+{
+  "version": 4,
+  "project": {
+    "kind": "library",
+    "capabilities": ["frontend", "ui"]
+  },
+  "scope": {
+    "exclude": [],
+    "generated": [],
+    "entryPoints": [
+      "src/index.ts",
+      "src/onirigiri.ts",
+      "bench/src/main.tsx",
+      "bench/vite.config.ts",
+      "fixtures/packed-consumer/src/main.tsx",
+      "scripts/*.mjs"
+    ],
+    "development": [
+      "bench/**",
+      "fixtures/**",
+      "scripts/**",
+      "tests/**",
+      "vite.config.ts"
+    ]
+  },
+  "quality": {
+    "allowComments": false
+  },
+  "verification": {
+    "behaviorReview": {
+      "defaultRequiredAt": "on-request",
+      "features": [
+        {
+          "name": "motion-texture-continuity",
+          "paths": [
+            "src/workspace/OnirigiriWorkspace.tsx",
+            "src/panes/onirigiri-pane-content.tsx",
+            "src/panes/onirigiri-pane-view.tsx",
+            "src/workspace/onirigiri-workspace-pane-layer.tsx",
+            "src/presentation/onirigiri-workspace-presentation-geometry.ts",
+            "src/panes/pane-viewport-lifecycle.ts",
+            "src/styles/styles-core.css",
+            "src/presentation/use-workspace-world-frames.ts",
+            "src/presentation/use-onirigiri-workspace-presentation.ts",
+            "src/presentation/workspace-render-items.ts",
+            "src/workspace/onirigiri-workspace-types.ts",
+            "src/presentation/workspace-motion-presentation.ts",
+            "scripts/test-native-content.mjs",
+            "bench/**",
+            "tests/browser/**",
+            "tests/native-content-motion.test.tsx",
+            "tests/pane-presentation-native-content.test.ts",
+            "tests/pane-viewport-lifecycle.test.ts",
+            "tests/pane-presentation-engine-test-support.ts",
+            "docs/design/native-content-motion.md",
+            "src/pictures/pane-picture*.ts",
+            "src/panes/pane-content-readiness.tsx",
+            "src/panes/pane-content-capabilities.ts",
+            "src/presentation/pane-presentation-policy.ts",
+            "src/pictures/use-pane-pictures.ts",
+            "tests/pane-pictures.test.ts",
+            "tests/browser/retained-capture.*",
+            "scripts/preview-retained-capture.mjs",
+            "tests/engine-pane-pictures.test.tsx",
+            "src/panes/pane-content-preloader.ts",
+            "tests/performance/**",
+            "docs/design/performance-budget.md",
+            "tests/browser/pane-native-cadence.pw.ts",
+            "tests/browser/pane-video-presentation.pw.ts",
+            "scripts/measure-workspace-cpu.mjs",
+            "scripts/test-workspace-cpu.mjs",
+            "tests/browser/capabilities.cpu.pw.ts",
+            "tests/browser/cpu.playwright.config.ts",
+            "src/presentation/workspace-world-presentation.ts",
+            "tests/overview-motion-registration.test.ts"
+          ],
+          "suites": [
+            "pane-picture-contract",
+            "native-content-contract",
+            "native-content-browser",
+            "chrome-picture-preview",
+            "engine-picture-continuity",
+            "pane-defaults-contract",
+            "performance-budget-contract",
+            "pane-video-browser",
+            "pane-presentation-policy-browser",
+            "pane-native-cadence-browser",
+            "workspace-performance",
+            "cpu-diagnostics-contract",
+            "cpu-capability-browser",
+            "workspace-navigation-browser",
+            "onirigiri-unit"
+          ],
+          "requiredAt": "checkpoint",
+          "description": "Automatic presentation keeps DOM, graphics and video native, presenting playing video through Canvas 2D surfaces. Developers choose DOM, canvas, full or preview textures, and placeholders by pane, group, workspace and phase. liveContent retains applications and keeps visible content animated through motion and overview. Presentation preserves pixels and state and meets 60 Hz cadence and 120 Hz CPU budgets during navigation, resizing and background capture."
+        }
+      ]
+    }
+  },
+  "portability": {},
+  "documentation": {
+    "design": [
+      {
+        "path": "docs/design/source-organization.md",
+        "sourcePaths": ["src/index.ts", "src/styles.css"]
+      },
+      {
+        "path": "docs/design/html-canvas-examples.md",
+        "sourcePaths": [
+          "tests/browser/retained-capture.tsx",
+          "tests/browser/retained-capture.css",
+          "tests/browser/retained-capture.html",
+          "tests/browser/cooperative-fixture-frame.tsx",
+          "scripts/preview-retained-capture.mjs",
+          "scripts/test-retained-chrome-capture.mjs",
+          "scripts/test-picture-interactions.mjs",
+          "scripts/playground-server.mjs",
+          "tests/browser/playground-checkout.ts"
+        ]
+      },
+      {
+        "path": "docs/design/native-content-motion.md",
+        "sourcePaths": [
+          "src/workspace/OnirigiriWorkspace.tsx",
+          "src/panes/onirigiri-pane-content.tsx",
+          "src/panes/onirigiri-pane-view.tsx",
+          "src/workspace/onirigiri-workspace-pane-layer.tsx",
+          "src/presentation/onirigiri-workspace-presentation-geometry.ts",
+          "src/panes/pane-viewport-lifecycle.ts",
+          "src/styles/styles-core.css",
+          "src/presentation/use-workspace-world-frames.ts",
+          "src/presentation/use-onirigiri-workspace-presentation.ts",
+          "src/presentation/workspace-render-items.ts",
+          "src/presentation/workspace-sweep-geometry.ts",
+          "src/pictures/pane-picture-types.ts",
+          "src/pictures/pane-pictures.ts",
+          "src/pictures/pane-picture-raster.ts",
+          "src/pictures/pane-picture-cache.ts",
+          "src/pictures/pane-picture-texture.ts",
+          "tests/browser/picture-pixels.ts",
+          "src/pictures/pane-picture-canvas.ts",
+          "src/pictures/pane-picture-canvas-readback.ts",
+          "src/pictures/pane-picture-activation.ts",
+          "src/pictures/pane-picture-content.ts",
+          "src/pictures/pane-picture-resize.ts",
+          "src/panes/pane-content-readiness.tsx",
+          "src/pictures/use-pane-pictures.ts",
+          "src/panes/onirigiri-pane-titlebar.tsx",
+          "tests/browser/pane-canvas.pw.ts",
+          "tests/browser/fullscreen-content.pw.ts",
+          "src/pictures/pane-picture-activity.ts",
+          "src/presentation/pane-presentation-engine.ts",
+          "src/panes/pane-content-preloader.ts",
+          "src/pictures/pane-picture-configuration.ts",
+          "src/panes/pane-content-capabilities.ts",
+          "src/presentation/pane-presentation-policy.ts",
+          "src/types.ts",
+          "src/workspace/onirigiri-workspace-types.ts",
+          "tests/browser/native-content-scene.tsx",
+          "tests/browser/pane-video-presentation.pw.ts",
+          "src/presentation/workspace-world-presentation.ts",
+          "tests/overview-motion-registration.test.ts",
+          "tests/browser/overview-motion.cpu.pw.ts"
+        ]
+      },
+      {
+        "path": "docs/design/workspace-state.md",
+        "sourcePaths": [
+          "src/layout/layout-engine-base.ts",
+          "src/layout/layout-engine-helpers.ts",
+          "src/layout/layout-engine-rendering.ts",
+          "src/layout/layout-engine.ts",
+          "src/state/layout-store-animation.ts",
+          "src/state/layout-store.ts",
+          "src/state/layout-store-state.ts",
+          "src/state/layout-store-restoration.ts",
+          "src/state/layout-store-types.ts",
+          "src/workspace/onirigiri-workspace-props.ts",
+          "src/workspace/onirigiri-workspace-runtime.ts",
+          "src/workspace/onirigiri-workspace-minimap.tsx",
+          "src/presentation/motion-curve.ts",
+          "src/presentation/workspace-minimap-presentation.ts",
+          "src/input/workspace-minimap-placement.ts",
+          "src/presentation/workspace-motion-scene-inventory.ts",
+          "src/presentation/workspace-pane-rearrangement-sweep.ts",
+          "src/workspace/workspace-grid-cursor.ts",
+          "src/workspace/workspace-scene.ts",
+          "src/presentation/workspace-frame-scheduler.ts"
+        ]
+      },
+      {
+        "path": "docs/design/pane-defaults.md",
+        "sourcePaths": [
+          "src/layout/pane-defaults.ts",
+          "src/panes/pane-content-layout.ts",
+          "tests/pane-defaults.test.tsx",
+          "tests/browser/viewport-fill.cpu.pw.ts"
+        ]
+      },
+      {
+        "path": "docs/design/performance-budget.md",
+        "sourcePaths": [
+          "bench/src/performance-fixture.tsx",
+          "bench/src/performance-scenarios.ts",
+          "bench/src/performance-types.ts",
+          "bench/src/performance-sampler.ts",
+          "bench/src/performance-frame-work.ts",
+          "tests/performance/frame-budget.ts",
+          "tests/performance/frame-budget.test.ts",
+          "tests/browser/performance.playwright.config.ts",
+          "tests/browser/workspace-performance.performance.ts",
+          "bench/src/video-fixture.tsx",
+          "tests/browser/multi-video.performance.ts",
+          "tests/browser/pane-native-cadence.pw.ts",
+          "scripts/measure-workspace-cpu.mjs",
+          "scripts/test-workspace-cpu.mjs",
+          "tests/performance/browser-environment.ts",
+          "tests/performance/workspace-cpu-workloads.ts",
+          "tests/browser/capabilities.cpu.pw.ts",
+          "tests/browser/cpu.playwright.config.ts"
+        ]
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "onirigiri",
+      "paths": [
+        "src/**",
+        "bench/**",
+        "fixtures/packed-consumer/**",
+        "scripts/**",
+        "tests/**",
+        ".github/workflows/**",
+        "package.json",
+        "pnpm-workspace.yaml",
+        "tsconfig*.json",
+        "vite.config.ts",
+        ".node-version"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "package-boundary",
+      "provides": ["package-contract"],
+      "argv": ["node", "scripts/check-package-boundary.mjs"],
+      "modules": ["onirigiri"],
+      "runOn": ["check", "gate"],
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "library-build",
+      "provides": ["build"],
+      "argv": ["pnpm", "build"],
+      "modules": ["onirigiri"],
+      "runOn": ["build"],
+      "timeoutSeconds": 900
+    }
+  ],
+  "tests": {
+    "requiredKinds": ["browser", "contract"],
+    "requiredSupplementalKinds": ["performance"],
+    "suites": [
+      {
+        "name": "pane-defaults-contract",
+        "kind": "contract",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "pane-defaults"],
+        "paths": [
+          "src/**",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs",
+          "tests/pane-defaults.test.tsx",
+          "tests/onirigiri-workspace-test-support.ts"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "pane-picture-contract",
+        "kind": "contract",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "cache"],
+        "paths": [
+          "src/**",
+          "tests/pane-pictures.test.ts",
+          "tests/engine-pane-pictures.test.tsx",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "engine-picture-continuity",
+        "kind": "contract",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "pictures"],
+        "paths": [
+          "src/**",
+          "tests/engine-pane-pictures.test.tsx",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "chrome-picture-preview",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-retained-chrome-capture.mjs"],
+        "paths": [
+          "src/**",
+          "tests/browser/retained-capture.*",
+          "tests/browser/cooperative-fixture-frame.tsx",
+          "tests/browser/native-content-frame.html",
+          "tests/browser/native-content-work.ts",
+          "scripts/preview-retained-capture.mjs",
+          "scripts/test-retained-chrome-capture.mjs",
+          "scripts/test-picture-interactions.mjs",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "pane-presentation-policy-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "presentation"],
+        "paths": [
+          "src/**",
+          "tests/browser/native-content-scene.tsx",
+          "tests/browser/pane-canvas.pw.ts",
+          "tests/browser/playwright.config.ts",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts",
+          "scripts/playground-server.mjs",
+          "tests/browser/playground-checkout.ts",
+          "tests/browser/cooperative-fixture-frame.tsx"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "pane-native-cadence-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "cadence"],
+        "paths": [
+          "src/**",
+          "tests/browser/native-content-scene.tsx",
+          "tests/browser/pane-canvas.pw.ts",
+          "tests/browser/playwright.config.ts",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts",
+          "scripts/playground-server.mjs",
+          "tests/browser/playground-checkout.ts",
+          "tests/browser/cooperative-fixture-frame.tsx"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "native-content-contract",
+        "kind": "contract",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "contract"],
+        "paths": [
+          "src/**",
+          "tests/native-content-motion.test.tsx",
+          "tests/pane-presentation-native-content.test.ts",
+          "tests/pane-presentation-engine-test-support.ts",
+          "tests/onirigiri-workspace-test-support.ts",
+          "tests/overview-motion-registration.test.ts",
+          "tests/workspace-frame-scheduler-test-support.ts",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs",
+          "tests/browser/cooperative-fixture-frame.tsx"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "native-content-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "browser"],
+        "paths": [
+          "src/**",
+          "tests/browser/native-content.pw.ts",
+          "tests/browser/pane-canvas.pw.ts",
+          "tests/browser/fullscreen-content.pw.ts",
+          "tests/browser/native-content-scene.tsx",
+          "tests/browser/playwright.config.ts",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts",
+          "scripts/playground-server.mjs",
+          "tests/browser/playground-checkout.ts",
+          "tests/browser/cooperative-fixture-frame.tsx"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "pane-video-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "video"],
+        "paths": [
+          "src/pictures/pane-picture*.ts",
+          "src/styles/styles-core.css",
+          "tests/browser/pane-canvas.pw.ts",
+          "tests/browser/playwright.config.ts",
+          "bench/public/video-30fps.webm",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts",
+          "scripts/playground-server.mjs",
+          "tests/browser/playground-checkout.ts"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "onirigiri-unit",
+        "kind": "unit",
+        "scope": "module",
+        "cost": "quick",
+        "modules": ["onirigiri"],
+        "argv": ["node", "scripts/test-native-content.mjs", "unit"],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300,
+        "paths": ["tests/**"]
+      },
+      {
+        "name": "packed-consumer-contract",
+        "kind": "contract",
+        "scope": "repository",
+        "cost": "standard",
+        "argv": ["pnpm", "consumer:check"],
+        "paths": [
+          "src/**",
+          "fixtures/packed-consumer/**",
+          "package.json",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "vite.config.ts",
+          "tsconfig.build.json"
+        ],
+        "runOn": ["recommended", "full"],
+        "timeoutSeconds": 900
+      },
+      {
+        "name": "workspace-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "expensive",
+        "argv": ["pnpm", "test:browser"],
+        "runOn": ["full"],
+        "timeoutSeconds": 900
+      },
+      {
+        "name": "workspace-performance",
+        "kind": "performance",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": [
+          "pnpm",
+          "test:performance",
+          "--grep",
+          "at desktop",
+          "--output",
+          "tmp/performance-desktop-results"
+        ],
+        "paths": [
+          "src/**",
+          "bench/**",
+          "tests/performance/**",
+          "tests/browser/performance.playwright.config.ts",
+          "tests/browser/workspace-performance.performance.ts",
+          "package.json",
+          ".code-polishy.json",
+          "tests/browser/multi-video.performance.ts",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "performance-budget-contract",
+        "kind": "contract",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": [
+          "pnpm",
+          "exec",
+          "vitest",
+          "run",
+          "tests/performance/frame-budget.test.ts"
+        ],
+        "paths": ["tests/performance/**", "bench/**", ".code-polishy.json"],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "workspace-performance-matrix",
+        "kind": "performance",
+        "scope": "repository",
+        "cost": "expensive",
+        "argv": ["pnpm", "test:performance", "--grep-invert", "at desktop"],
+        "paths": [
+          "src/**",
+          "bench/**",
+          "tests/performance/**",
+          "tests/browser/performance.playwright.config.ts",
+          "tests/browser/workspace-performance.performance.ts",
+          "package.json",
+          ".code-polishy.json",
+          "tests/browser/multi-video.performance.ts",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts"
+        ],
+        "runOn": ["full"],
+        "timeoutSeconds": 900
+      },
+      {
+        "name": "workspace-performance-stress",
+        "kind": "performance",
+        "scope": "repository",
+        "cost": "expensive",
+        "argv": ["pnpm", "test:performance", "--grep", "overview-500"],
+        "paths": [
+          "src/**",
+          "bench/**",
+          "tests/performance/**",
+          "tests/browser/performance.playwright.config.ts",
+          "tests/browser/workspace-performance.performance.ts",
+          "package.json",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts"
+        ],
+        "runOn": ["supplemental"],
+        "timeoutSeconds": 900
+      },
+      {
+        "name": "cpu-diagnostics-contract",
+        "kind": "contract",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "--test", "scripts/test-workspace-cpu.mjs"],
+        "paths": [
+          "scripts/measure-workspace-cpu.mjs",
+          "scripts/test-workspace-cpu.mjs",
+          "tests/performance/workspace-cpu-workloads.ts",
+          ".node-version"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 180
+      },
+      {
+        "name": "cpu-capability-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "cpu"],
+        "paths": [
+          "src/**",
+          "tests/performance/browser-environment.ts",
+          "tests/browser/capabilities.cpu.pw.ts",
+          "tests/browser/overview-motion.cpu.pw.ts",
+          "tests/browser/viewport-fill.cpu.pw.ts",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs",
+          "tests/browser/two-dimensional-dev-server.ts",
+          "tests/browser/pane-defaults.html",
+          "tests/browser/pane-defaults.tsx",
+          "tests/browser/cpu.playwright.config.ts",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/playground-checkout.ts"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "workspace-navigation-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "navigation"],
+        "paths": [
+          "scripts/test-native-content.mjs",
+          "scripts/install-linux-chrome.mjs",
+          "scripts/lib/process.mjs",
+          "src/**",
+          "tests/browser/one-dimensional-*",
+          "tests/browser/two-dimensional-*",
+          "tests/browser/navigation-trajectory.ts",
+          "tests/browser/playwright.config.ts",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts",
+          "scripts/playground-server.mjs",
+          "tests/browser/playground-checkout.ts"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      }
+    ],
+    "paths": ["tests/**"],
+    "ownership": [
+      {
+        "paths": ["tests/**"],
+        "module": "onirigiri",
+        "focusedSuite": "onirigiri-unit"
+      }
+    ]
+  },
+  "supplyChain": {
+    "minimumReleaseAgeDays": 30,
+    "preferredNewDependencyAgeDays": 90,
+    "auditLevel": "low",
+    "allowedDependencyProtocols": ["workspace:", "file:"],
+    "allowedLicenses": [
+      "0BSD",
+      "Apache-2.0",
+      "BSD-2-Clause",
+      "BSD-3-Clause",
+      "BlueOak-1.0.0",
+      "CC0-1.0",
+      "ISC",
+      "MIT",
+      "MIT-0",
+      "MPL-2.0",
+      "Python-2.0"
+    ]
+  }
+}

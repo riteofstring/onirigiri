@@ -1,0 +1,75 @@
+{
+  "name": "@riteofstring/onirigiri",
+  "version": "0.1.0",
+  "description": "A reusable React window system with tiled panes, overview navigation, resizing, and keyboard layout commands.",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist",
+    "docs/guide",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./dist/onirigiri.js",
+  "module": "./dist/onirigiri.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/onirigiri.js"
+    },
+    "./styles.css": "./dist/onirigiri.css",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json && node scripts/check-package-boundary.mjs --built",
+    "build:performance": "vite build --config bench/vite.config.ts",
+    "consumer:check": "node scripts/verify-packed-consumer.mjs",
+    "test": "vitest run",
+    "test:browser": "playwright test --config tests/browser/playwright.config.ts",
+    "test:performance": "playwright test --config tests/browser/performance.playwright.config.ts",
+    "typecheck": "tsc --noEmit && tsc -p tests/tsconfig.json --noEmit && tsc -p tests/browser/tsconfig.json --noEmit && tsc -p bench/tsconfig.json --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riteofstring/onirigiri.git"
+  },
+  "homepage": "https://github.com/riteofstring/onirigiri#readme",
+  "bugs": {
+    "url": "https://github.com/riteofstring/onirigiri/issues"
+  },
+  "keywords": [
+    "layout",
+    "onirigiri",
+    "panes",
+    "react",
+    "tiling",
+    "window-manager"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0 <20",
+    "react-dom": ">=18.2.0 <20"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "25.9.1",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "jsdom": "29.1.1",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "typescript": "6.0.3",
+    "vite": "8.1.4",
+    "vitest": "4.1.11"
+  },
+  "packageManager": "pnpm@10.23.0",
+  "dependencies": {
+    "zustand": "5.0.14"
+  }
+}
