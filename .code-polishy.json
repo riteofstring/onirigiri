@@ -15,9 +15,13 @@
       "fixtures/packed-consumer/src/main.tsx",
       "scripts/*.mjs",
       "playground/one-dimensional/src/main.tsx",
+      "playground/one-dimensional/src/fixture.tsx",
       "playground/two-dimensional/src/main.tsx",
+      "playground/two-dimensional/src/fixture.tsx",
+      "playground/vitest.config.ts",
       "playground/*/vite.config.ts",
-      "playground/scripts/*.mjs"
+      "playground/scripts/*.mjs",
+      "playground/scripts/surface-lab-server.d.mts"
     ],
     "development": [
       "bench/**",
@@ -107,7 +111,18 @@
     "design": [
       {
         "path": "docs/design/source-organization.md",
-        "sourcePaths": ["src/index.ts", "src/styles.css"]
+        "sourcePaths": [
+          "src/index.ts",
+          "src/styles.css",
+          "playground/library-source.ts",
+          "playground/scripts/preview-playground.mjs",
+          "playground/one-dimensional/vite.config.ts",
+          "playground/two-dimensional/vite.config.ts",
+          "playground/one-dimensional/src/fixture.tsx",
+          "playground/two-dimensional/src/fixture.tsx",
+          "playground/vitest.config.ts",
+          "playground/scripts/surface-lab-server.d.mts"
+        ]
       },
       {
         "path": "docs/design/html-canvas-examples.md",
@@ -244,7 +259,8 @@
     },
     {
       "name": "playground",
-      "paths": ["playground/**"]
+      "paths": ["playground/**"],
+      "dependsOn": ["onirigiri"]
     }
   ],
   "checks": [

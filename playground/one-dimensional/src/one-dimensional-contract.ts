@@ -14,8 +14,6 @@ export const oneDimensionalPaneOrder = [
   "system",
 ] as const;
 
-export type OneDimensionalPaneId = (typeof oneDimensionalPaneOrder)[number];
-
 export interface OneDimensionalConsumerRender {
   paneId: string;
   state: OnirigiriPaneRenderState;
