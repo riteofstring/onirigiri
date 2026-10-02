@@ -1,10 +1,12 @@
 # Quality and supply-chain tooling
 
-Onirigiri is governed by the exact locally installed Code Policy release named in
-`.code-policy.lock.json`. The release owns formatting, linting, TypeScript analysis, dead-code and
-complexity checks, architecture enforcement, pnpm lock validation, dependency licensing, and
-vulnerability scanning. `.code-polishy.json` contains only Onirigiri-specific architecture, build, test,
-package-contract, and supply-chain facts.
+Onirigiri is governed by the exact [Code Polishy](https://github.com/riteofstring/code-polishy)
+release named in `.code-polishy.lock.json`. Run it through `./code-polishyw` (PowerShell:
+`.\code-polishyw.ps1`); `./code-polishyw setup` installs the locked release after verifying its
+digest. The release owns formatting, linting, TypeScript analysis, dead-code and complexity checks,
+architecture enforcement, pnpm lock validation, dependency licensing, and vulnerability scanning.
+`.code-polishy.json` contains only Onirigiri-specific architecture, build, test, package-contract,
+and supply-chain facts.
 
 Install target dependencies without lifecycle scripts before running policy checks:
 
@@ -14,22 +16,22 @@ pnpm install --frozen-lockfile --ignore-scripts
 
 ## Commands
 
-| Command                                            | Purpose                                                                                                                       |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `code-policy doctor --strict`                      | Validate the lock, configuration, ownership, tool coverage, managed guidance, and installed dependency metadata.              |
-| `code-policy check --git-changes`                  | Run deterministic quality and architecture checks for current changes.                                                        |
-| `code-policy check --all`                          | Run deterministic quality and architecture checks over the repository.                                                        |
-| `code-policy format --git-changes`                 | Apply the locked formatter to current changes.                                                                                |
-| `code-policy test --changed`                       | Run the focused suites selected for current changes.                                                                          |
-| `code-policy test-levels --base origin/main`       | Show the recommended and full ordinary pre-merge choices without running them.                                                |
-| `code-policy supply-chain --offline`               | Validate pinned dependencies, lock consistency, lifecycle policy, sources, installed licenses, and offline advisory evidence. |
-| `code-policy supply-chain`                         | Add online native audit, OSV, and release-age checks.                                                                         |
-| `code-policy dependency-review --base origin/main` | Review an intentional manifest or lockfile change before installation.                                                        |
-| `code-policy gate`                                 | Run the complete ordinary gate after broader execution is authorized.                                                         |
-| `pnpm consumer:check`                              | Pack Onirigiri, install it into an unrelated temporary React app, and build against public exports only.                      |
-| `pnpm test`                                        | Run unit and component behavior.                                                                                              |
-| `pnpm test:browser`                                | Run real interaction workflows in the installed Google Chrome channel.                                                        |
-| `pnpm build`                                       | Build the library package and check the built package boundary.                                                               |
+| Command                                                | Purpose                                                                                                                       |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `./code-polishyw doctor --strict`                      | Validate the lock, configuration, ownership, tool coverage, managed guidance, and installed dependency metadata.              |
+| `./code-polishyw check --git-changes`                  | Run deterministic quality and architecture checks for current changes.                                                        |
+| `./code-polishyw check --all`                          | Run deterministic quality and architecture checks over the repository.                                                        |
+| `./code-polishyw format --git-changes`                 | Apply the locked formatter to current changes.                                                                                |
+| `./code-polishyw test --changed`                       | Run the focused suites selected for current changes.                                                                          |
+| `./code-polishyw test-levels --base origin/main`       | Show the recommended and full ordinary pre-merge choices without running them.                                                |
+| `./code-polishyw supply-chain --offline`               | Validate pinned dependencies, lock consistency, lifecycle policy, sources, installed licenses, and offline advisory evidence. |
+| `./code-polishyw supply-chain`                         | Add online native audit, OSV, and release-age checks.                                                                         |
+| `./code-polishyw dependency-review --base origin/main` | Review an intentional manifest or lockfile change before installation.                                                        |
+| `./code-polishyw gate`                                 | Run the complete ordinary gate after broader execution is authorized.                                                         |
+| `pnpm consumer:check`                                  | Pack Onirigiri, install it into an unrelated temporary React app, and build against public exports only.                      |
+| `pnpm test`                                            | Run unit and component behavior.                                                                                              |
+| `pnpm test:browser`                                    | Run real interaction workflows in the installed Google Chrome channel.                                                        |
+| `pnpm build`                                           | Build the library package and check the built package boundary.                                                               |
 
 ## Project-specific evidence
 

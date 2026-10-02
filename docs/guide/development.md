@@ -96,5 +96,10 @@ Set the new `version` in `package.json`, commit, and push an annotated
 `vMAJOR.MINOR.PATCH` tag that matches it. `.github/workflows/release.yml` runs in
 the `npm` GitHub environment, verifies the tag, typechecks, runs the unit tests,
 builds, and publishes `@riteofstring/onirigiri` through npm trusted publishing,
-which adds provenance while the repository is public. Browser suites need a real GPU and run before tagging, not in
-that workflow.
+which adds provenance while the repository is public. Browser suites need a real
+GPU and run before tagging, not in that workflow.
+
+npm trusted publishing can only be configured for a package that already exists.
+Publish the first version by hand (`pnpm build`, then `npm publish --access public`),
+then add the `riteofstring/onirigiri` repository, `release.yml` workflow and `npm`
+environment as the package's trusted publisher on npmjs.com.

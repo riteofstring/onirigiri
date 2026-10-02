@@ -243,8 +243,8 @@ application protocols. The `pane-picture` and `pane-placeholder` styling slots,
 `data-onirigiri-content-ready` and `data-onirigiri-picture-ready` attributes are public;
 no example CSS is needed for picture visibility.
 
-See [pane content and picture ownership](docs/design/native-content-motion.md)
-and the [HTML-in-Canvas examples](docs/design/html-canvas-examples.md).
+See [pane content and picture ownership](../design/native-content-motion.md)
+and the [HTML-in-Canvas examples](../design/html-canvas-examples.md).
 
 Hosts with their own render loops should use the same state to stop expensive work such as WebGL,
 canvas, terminal, video, chart, or stream updates:
