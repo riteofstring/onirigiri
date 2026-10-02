@@ -42,8 +42,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command:
-        "node scripts/playground-server.mjs dev:1d --host 127.0.0.1 --port 4173 --open=false",
+      command: "pnpm dev:1d --host 127.0.0.1 --port 4173 --open=false",
       cwd: repositoryRoot,
       gracefulShutdown: { signal: "SIGTERM", timeout: 1_000 },
       reuseExistingServer: false,
@@ -51,8 +50,7 @@ export default defineConfig({
       url: "http://127.0.0.1:4173",
     },
     {
-      command:
-        "node scripts/playground-server.mjs dev:2d --host 127.0.0.1 --port 4174 --open=false",
+      command: "pnpm dev:2d --host 127.0.0.1 --port 4174 --open=false",
       cwd: repositoryRoot,
       gracefulShutdown: { signal: "SIGTERM", timeout: 1_000 },
       reuseExistingServer: false,

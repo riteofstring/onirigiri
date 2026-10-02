@@ -5,8 +5,9 @@ Repository layout, the demo playground and repository commands.
 ## Demo playground
 
 The interactive one- and two-dimensional demo playground lives in
-[`playground/`](https://github.com/riteofstring/onirigiri/tree/main/playground), a private package with its own lockfile. Its lab panes
-come from [browser-surface-lab](https://github.com/riteofstring/browser-surface-lab),
+[`playground/`](https://github.com/riteofstring/onirigiri/tree/main/playground)
+and shares this repository's dependencies. Its lab panes come from
+[browser-surface-lab](https://github.com/riteofstring/browser-surface-lab),
 placed beside this checkout:
 
 ```text
@@ -14,21 +15,15 @@ onirigiri/
 browser-surface-lab/
 ```
 
-```sh
-pnpm --dir playground install --frozen-lockfile --ignore-scripts
-```
+The playground resolves `@riteofstring/onirigiri` to `src/`, so `pnpm dev:1d`
+and `pnpm dev:2d` show library changes without a package build. `pnpm test`
+includes the playground's Vitest project, and `pnpm build:playground` builds
+both apps. See its README for the remaining playground commands.
 
-The playground resolves `@riteofstring/onirigiri` to this checkout's `src/`, so
-`pnpm --dir playground dev:2d` shows local library changes without a package
-build. See its README for the playground's own commands and tests.
-
-Library unit tests, the package build and the performance harness need only the
-root install. The browser suites under `tests/browser/` that use
-`playwright.config.ts`, and the CPU checks that open the 2D playground, drive
-the library through the playground and require its installed dependencies.
-Without them they stop with a message naming the missing directory.
-These tests reach the playground only through its development servers and
-fixture pages (`/fixture.html`), never through source imports.
+The browser suites under `tests/browser/` that use `playwright.config.ts`, and
+the CPU checks that open the 2D playground, drive the library through the
+playground's development servers and fixture pages (`/fixture.html`), never
+through source imports.
 
 ## Retained-capture preview
 

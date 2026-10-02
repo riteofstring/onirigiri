@@ -26,11 +26,16 @@
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json && node scripts/check-package-boundary.mjs --built",
     "build:performance": "vite build --config bench/vite.config.ts",
+    "build:playground": "vite build --config playground/one-dimensional/vite.config.ts && vite build --config playground/two-dimensional/vite.config.ts",
     "consumer:check": "node scripts/verify-packed-consumer.mjs",
-    "test": "vitest run",
+    "dev:1d": "vite --config playground/one-dimensional/vite.config.ts",
+    "dev:2d": "vite --config playground/two-dimensional/vite.config.ts",
+    "preview:chrome": "node playground/scripts/preview-playground.mjs",
+    "test": "vitest run && node --test playground/scripts/test-surface-lab-server.mjs",
     "test:browser": "playwright test --config tests/browser/playwright.config.ts",
+    "test:content": "node playground/scripts/test-playground-content.mjs",
     "test:performance": "playwright test --config tests/browser/performance.playwright.config.ts",
-    "typecheck": "tsc --noEmit && tsc -p tests/tsconfig.json --noEmit && tsc -p tests/browser/tsconfig.json --noEmit && tsc -p bench/tsconfig.json --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tests/tsconfig.json --noEmit && tsc -p tests/browser/tsconfig.json --noEmit && tsc -p bench/tsconfig.json --noEmit && tsc -p playground/tsconfig.json --noEmit"
   },
   "repository": {
     "type": "git",

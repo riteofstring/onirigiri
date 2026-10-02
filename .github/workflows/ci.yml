@@ -52,14 +52,5 @@ jobs:
       - name: Build package
         run: pnpm build
 
-      - name: Install frozen playground dependencies without lifecycle scripts
-        run: pnpm --dir playground install --frozen-lockfile --ignore-scripts
-
-      - name: Playground typecheck
-        run: pnpm --dir playground typecheck
-
-      - name: Playground unit tests
-        run: pnpm --dir playground test
-
       - name: Build playground
-        run: pnpm --dir playground build
+        run: pnpm build:playground

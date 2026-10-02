@@ -6,23 +6,22 @@ stylesheet exactly as a downstream React application would.
 
 ## Setup
 
-Run these from `playground/` after installing the library at the repository
-root; lab panes need a `browser-surface-lab` checkout beside `onirigiri/`:
+The playground shares the repository's root install. Lab panes need a
+`browser-surface-lab` checkout beside `onirigiri/`:
 
 ```text
 onirigiri/              https://github.com/riteofstring/onirigiri
-  playground/           this package
+  playground/           this directory
 browser-surface-lab/    https://github.com/riteofstring/browser-surface-lab
 ```
 
 ```sh
-pnpm --dir .. install --frozen-lockfile --ignore-scripts
 pnpm install --frozen-lockfile --ignore-scripts
 ```
 
 `library-source.ts` (used by both Vite configs and Vitest) and the `paths` in
 `tsconfig.json` resolve `@riteofstring/onirigiri` to `../src`, so library edits
-show up without a package build. React is deduplicated to this package's copy.
+show up without a package build.
 
 Lab panes come from the `browser-surface-lab` checkout, which the
 development and preview servers build and serve under `/surface-lab/`. Without
@@ -30,6 +29,8 @@ it, lab panes receive an explicit 503 response and the other demos work
 normally.
 
 ## Run
+
+Run commands from the repository root.
 
 ```sh
 pnpm dev:1d   # http://127.0.0.1:5173, 10 panes on one row
@@ -58,16 +59,18 @@ pnpm preview:chrome two-dimensional
 ## Commands
 
 ```sh
-pnpm typecheck      # apps, shared UI, tests and the Onirigiri source they use
-pnpm test           # Vitest suites and the lab-hosting contract
-pnpm build          # production builds of both apps
-pnpm test:browser   # Playwright: arcade and production overview cadence
-pnpm test:content   # Playwright: content menus, spawn sizes, themes
+pnpm typecheck          # includes the apps, shared UI and playground tests
+pnpm test               # includes the playground Vitest project and lab-hosting contract
+pnpm build:playground   # production builds of both apps
+pnpm test:browser       # includes the arcade and production overview cadence checks
+pnpm test:content       # content menus, spawn sizes, themes
 ```
 
 Browser checks run in headless Chrome (on Linux, the pinned headless shell from
 `scripts/install-linux-chrome.mjs`) and require a hardware WebGPU adapter. The
-production overview check also requires the `browser-surface-lab` checkout.
+production overview check also requires the `browser-surface-lab` checkout. The
+arcade and overview cadence checks live in `tests/browser/` with the library's
+other browser suites.
 
 See [`docs/playground-content.md`](docs/playground-content.md) for the design of
 the content catalog, theming, arcade and lab hosting.

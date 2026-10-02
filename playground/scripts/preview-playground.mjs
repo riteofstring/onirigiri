@@ -3,11 +3,11 @@ import { createServer } from "vite";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { librarySource } from "../library-source.ts";
-import { chromeLaunchOptions } from "../tests/browser/chrome-launch.ts";
-import { requireHardwareWebGpu } from "../tests/browser/hardware-webgpu.ts";
+import { chromeLaunchOptions } from "../../tests/browser/chrome-launch.ts";
+import { requireHardwareWebGpu } from "../../tests/browser/hardware-webgpu.ts";
 import { surfaceLabServer } from "./surface-lab-server.mjs";
 
-const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+const playgroundRoot = fileURLToPath(new URL("../", import.meta.url));
 const examples = ["one-dimensional", "two-dimensional"];
 
 export async function launchPlaygroundPreview(options) {
@@ -34,7 +34,7 @@ export async function launchPlaygroundPreview(options) {
         "react/jsx-dev-runtime",
       ],
     },
-    root: repositoryRoot,
+    root: playgroundRoot,
     resolve: librarySource.resolve,
     server: {
       ...librarySource.server,

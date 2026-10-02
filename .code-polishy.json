@@ -118,9 +118,7 @@
           "tests/browser/cooperative-fixture-frame.tsx",
           "scripts/preview-retained-capture.mjs",
           "scripts/test-retained-chrome-capture.mjs",
-          "scripts/test-picture-interactions.mjs",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts"
+          "scripts/test-picture-interactions.mjs"
         ]
       },
       {
@@ -269,7 +267,7 @@
     {
       "name": "playground-build",
       "provides": ["build"],
-      "argv": ["pnpm", "--dir", "playground", "build"],
+      "argv": ["pnpm", "build:playground"],
       "modules": ["playground"],
       "runOn": ["build"],
       "timeoutSeconds": 900
@@ -363,8 +361,6 @@
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
           "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts",
           "tests/browser/cooperative-fixture-frame.tsx"
         ],
         "runOn": ["focused", "recommended", "full"],
@@ -386,8 +382,6 @@
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
           "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts",
           "tests/browser/cooperative-fixture-frame.tsx"
         ],
         "runOn": ["focused", "recommended", "full"],
@@ -432,8 +426,6 @@
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
           "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts",
           "tests/browser/cooperative-fixture-frame.tsx"
         ],
         "runOn": ["focused", "recommended", "full"],
@@ -455,9 +447,7 @@
           "scripts/lib/process.mjs",
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
-          "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts"
+          "tests/browser/hardware-webgpu.setup.ts"
         ],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 120
@@ -621,8 +611,7 @@
           "tests/browser/pane-defaults.tsx",
           "tests/browser/cpu.playwright.config.ts",
           "tests/browser/chrome-launch.ts",
-          "tests/browser/hardware-webgpu.ts",
-          "tests/browser/playground-checkout.ts"
+          "tests/browser/hardware-webgpu.ts"
         ],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 120
@@ -644,9 +633,7 @@
           "tests/browser/playwright.config.ts",
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
-          "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts"
+          "tests/browser/hardware-webgpu.setup.ts"
         ],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 300
@@ -657,7 +644,7 @@
         "scope": "module",
         "cost": "quick",
         "modules": ["playground"],
-        "argv": ["pnpm", "--dir", "playground", "test"],
+        "argv": ["pnpm", "exec", "vitest", "run", "--project", "playground"],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 300,
         "paths": ["playground/**"]

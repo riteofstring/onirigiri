@@ -8,7 +8,7 @@ import { preview } from "vite";
 const fixtureRoot = fileURLToPath(
   new URL("../../../browser-surface-lab", import.meta.url),
 );
-const temporaryRoot = fileURLToPath(new URL("../tmp/", import.meta.url));
+const temporaryRoot = fileURLToPath(new URL("../../tmp/", import.meta.url));
 const worker = fileURLToPath(import.meta.url);
 
 async function buildFixtures(root, outDir) {

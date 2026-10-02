@@ -3,7 +3,7 @@ import { build, preview } from "vite";
 import { cp, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
-import { browserGraphicsCapabilities } from "./browser-environment";
+import { browserGraphicsCapabilities } from "../performance/browser-environment";
 import {
   expectPlaygroundCadence,
   playgroundCadence,
@@ -23,7 +23,10 @@ test("native live panes sustain cadence in the production playground and overvie
   const temporaryRoot = join(repositoryRoot, "tmp");
   await mkdir(temporaryRoot, { recursive: true });
   const outDir = await mkdtemp(join(temporaryRoot, "overview-guard-"));
-  const configFile = join(repositoryRoot, "two-dimensional/vite.config.ts");
+  const configFile = join(
+    repositoryRoot,
+    "playground/two-dimensional/vite.config.ts",
+  );
   await build({ configFile, build: { outDir }, logLevel: "error" });
   const server = await preview({
     configFile,

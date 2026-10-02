@@ -377,8 +377,7 @@ the workspace if it is invalid.
 The interactive 1D and 2D demo playground lives in [`playground/`](playground),
 and its lab panes come from
 [browser-surface-lab](https://github.com/riteofstring/browser-surface-lab).
-Browser tests that drive the library through the playground require its
-dependencies to be installed; see [Development](docs/guide/development.md).
+Run `pnpm dev:1d` or `pnpm dev:2d`; see [Development](docs/guide/development.md).
 
 ## Known issues
 

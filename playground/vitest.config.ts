@@ -6,6 +6,7 @@ export default defineConfig({
   resolve: librarySource.resolve,
   test: {
     environment: "jsdom",
+    name: "playground",
     include: ["tests/**/*.test.{ts,tsx}"],
   },
 });

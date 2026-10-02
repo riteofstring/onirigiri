@@ -2,15 +2,17 @@ import assert from "node:assert/strict";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect } from "@playwright/test";
 import { launchPlaygroundPreview } from "./preview-playground.mjs";
 
+const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
 const output = await mkdtemp(join(tmpdir(), "onirigiri-playground-content-"));
 for (const example of ["one-dimensional", "two-dimensional"]) {
   const preview = await launchPlaygroundPreview({
     example,
     fixtureOrigin: "http://127.0.0.1:5197",
-    fixturePath: "/tests/browser/native-content-frame.html",
+    fixturePath: `/@fs${repositoryRoot}tests/browser/native-content-frame.html`,
     protocol: "onirigiri-native-test/v1",
   });
   const { page } = preview;
