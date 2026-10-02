@@ -6,14 +6,6 @@ export const oneDimensionalWorkspaceLabel =
 export const oneDimensionalWorkspaceRegionLabel =
   "Interactive one-dimensional Onirigiri playground";
 
-export const oneDimensionalPaneOrder = [
-  "signals",
-  "tasks",
-  "notes",
-  "atlas",
-  "system",
-] as const;
-
 export interface OneDimensionalConsumerRender {
   paneId: string;
   state: OnirigiriPaneRenderState;
