@@ -83,6 +83,13 @@ display-cadence floor and 120Hz CPU-work budget.
 See [`docs/quality-and-supply-chain-tooling.md`](../quality-and-supply-chain-tooling.md) for the
 locked quality, architecture, test, dependency, vulnerability, license, and release-age gates.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` typechecks, runs the unit tests and builds the package
+on Linux and Windows for every push to `main` and every pull request. Hosted
+runners have no hardware WebGPU, so browser suites and `pnpm consumer:check` run
+on real GPUs before release.
+
 ## Releasing
 
 Set the new `version` in `package.json`, commit, and push an annotated
