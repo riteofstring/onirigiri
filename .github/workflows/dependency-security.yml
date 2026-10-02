@@ -11,32 +11,32 @@ permissions:
 jobs:
   supply-chain:
     name: Weekly online supply-chain scan
-    runs-on: [self-hosted, linux, x64, onirigiri-code-polishy]
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
     steps:
-      - name: Check out requested commit
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          git init .
-          git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
-          git -c "http.extraheader=AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
-            fetch --depth=1 origin "${GITHUB_SHA}"
-          git switch --detach FETCH_HEAD
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
 
-      - name: Verify the provisioned locked toolchain
-        shell: bash
+      - name: Set up the pinned Node toolchain
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+
+      - name: Install the pinned package manager
         run: |
           set -euo pipefail
-          code-polishy version
-          test "$(node --version)" = "v25.2.1"
+          npm install --global --ignore-scripts pnpm@10.23.0
           test "$(pnpm --version)" = "10.23.0"
 
+      - name: Install the locked Code Polishy release
+        run: ./code-polishyw setup
+
       - name: Install frozen dependencies without lifecycle scripts
-        shell: bash
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run online dependency security scan
-        shell: bash
-        run: code-polishy supply-chain
+        run: ./code-polishyw supply-chain

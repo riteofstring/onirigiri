@@ -44,6 +44,6 @@ empty lifecycle-build allowlist. Allowed dependency licenses, exact temporary re
 assessments, and any future reviewed exceptions live in `.code-polishy.json` as the single policy
 authority.
 
-The scheduled dependency-security workflow expects a self-hosted Linux runner labeled
-`onirigiri-code-polishy`. That runner must already provide the release required by the lock plus Node
-25.2.1 and pnpm 10.23.0; CI does not download or choose a policy release.
+The scheduled dependency-security workflow runs on a GitHub-hosted Linux runner. It installs Node
+25.2.1 and pnpm 10.23.0, then `./code-polishyw setup` installs the exact Code Polishy release named by
+`.code-polishy.lock.json` and verifies its digest before the online scan.
