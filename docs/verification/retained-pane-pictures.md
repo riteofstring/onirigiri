@@ -27,9 +27,7 @@ HiDPI scaling. Ordinary capture cases also exercise fractional DPR and DPR two.
 
 ## Example workloads
 
-The demo playground in the sibling
-[onirigiri-playground](https://github.com/riteofstring/onirigiri-playground)
-checkout hosts the Browser Surface Lab fixtures on its own origin without
+The demo playground in `playground/` hosts the Browser Surface Lab fixtures on its own origin without
 modifying their workload source; see its README to launch an example. The
 library's retained-capture harness opens with:
 

@@ -1,35 +1,32 @@
 # Development
 
-Repository layout, sibling checkouts and repository commands.
+Repository layout, the demo playground and repository commands.
 
-## Sibling checkouts
+## Demo playground
 
-The interactive one- and two-dimensional demo playground lives in the separate
-[onirigiri-playground](https://github.com/riteofstring/onirigiri-playground)
-repository. Its lab panes come from
-[browser-surface-lab](https://github.com/riteofstring/browser-surface-lab).
-Place both checkouts beside this one:
+The interactive one- and two-dimensional demo playground lives in
+[`playground/`](https://github.com/riteofstring/onirigiri/tree/main/playground), a private package with its own lockfile. Its lab panes
+come from [browser-surface-lab](https://github.com/riteofstring/browser-surface-lab),
+placed beside this checkout:
 
 ```text
 onirigiri/
-onirigiri-playground/
 browser-surface-lab/
 ```
 
 ```sh
-git clone https://github.com/riteofstring/onirigiri-playground.git ../onirigiri-playground
-pnpm --dir ../onirigiri-playground install --frozen-lockfile --ignore-scripts
+pnpm --dir playground install --frozen-lockfile --ignore-scripts
 ```
 
 The playground resolves `@riteofstring/onirigiri` to this checkout's `src/`, so
-`pnpm --dir ../onirigiri-playground dev:2d` shows local library changes without
-a package build. See its README for the playground's own commands and tests.
+`pnpm --dir playground dev:2d` shows local library changes without a package
+build. See its README for the playground's own commands and tests.
 
-Library unit tests, the package build and the performance harness need only
-this repository. The browser suites under `tests/browser/` that use
+Library unit tests, the package build and the performance harness need only the
+root install. The browser suites under `tests/browser/` that use
 `playwright.config.ts`, and the CPU checks that open the 2D playground, drive
-the library through the playground and require the installed sibling checkout.
-Without it they stop with a message naming the missing directory.
+the library through the playground and require its installed dependencies.
+Without them they stop with a message naming the missing directory.
 These tests reach the playground only through its development servers and
 fixture pages (`/fixture.html`), never through source imports.
 

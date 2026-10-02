@@ -14,12 +14,11 @@ Document lifecycle observation belongs to the adapter, not a privileged browser
 script.
 
 The interactive one- and two-dimensional demos, their Browser Surface Lab
-workloads and the lab fixture hosting live in the separate
-[onirigiri-playground](https://github.com/riteofstring/onirigiri-playground)
-repository. Library browser tests that drive those demos start the sibling
-checkout's development servers through `scripts/playground-server.mjs`, and
-the 2D CPU checks load its Vite configuration in process. Both stop with an
-explicit message when the sibling checkout is missing or not installed. The
+workloads and the lab fixture hosting live in `playground/`. Library browser
+tests that drive those demos start its development servers through
+`scripts/playground-server.mjs`, and the 2D CPU checks load its Vite
+configuration in process. Both stop with an explicit message when the
+playground's dependencies are not installed. The
 playground resolves the library to this checkout's source, so these tests
 exercise the current library rather than a published build.
 
