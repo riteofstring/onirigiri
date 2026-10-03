@@ -91,7 +91,7 @@ if (!Object.hasOwn(commands, mode) || process.argv.length !== 3) {
   );
 }
 runPnpm(["install", "--offline", "--frozen-lockfile", "--ignore-scripts"]);
-if ((mode === "navigation" || mode === "cpu") && process.platform === "linux") {
+if (commands[mode][1] === "playwright" && process.platform === "linux") {
   run(process.execPath, ["scripts/install-linux-chrome.mjs"]);
 }
 const result = runPnpm(commands[mode], { allowFailure: true });
