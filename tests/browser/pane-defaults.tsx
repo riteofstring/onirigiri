@@ -20,6 +20,7 @@ const panes = [
   { paneId: "frame", surfaceKind: "frame", title: "Responsive frame" },
   { paneId: "video", surfaceKind: "video", title: "Native video" },
 ];
+const linkPanes = new URLSearchParams(window.location.search).has("link");
 const renderPane: OnirigiriPaneRenderer = (pane) =>
   pane.surfaceKind === "video" ? <Video /> : <Frame />;
 
@@ -30,6 +31,7 @@ function configure(defaults: PaneDefaults) {
       ref={handle}
       initialPanes={panes}
       paneDefaults={defaults}
+      paneLink={linkPanes}
       renderPane={renderPane}
     />,
   );
