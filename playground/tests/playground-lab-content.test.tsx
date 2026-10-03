@@ -38,6 +38,7 @@ test.each([
       const panes = createPlaygroundPanes(model, 5, [
         "lab:three-reactor",
         "lab:three-tidal",
+        "lab:hover",
       ]);
       await act(async () => root.render(<Playground initialPanes={panes} />));
       const frame = requiredElement<HTMLIFrameElement>(
@@ -57,6 +58,12 @@ test.each([
         "three-tidal",
       );
       expect(second.title).toBe("Tidal lattice");
+      const game = requiredElement<HTMLIFrameElement>(
+        container,
+        '[data-onirigiri-pane-id="pane-3"] iframe',
+      );
+      expect(new URL(game.src).searchParams.get("fixture")).toBe("hover");
+      expect(game.title).toBe("Hover!");
       const workspace = requiredElement<HTMLElement>(
         container,
         '[data-onirigiri-slot="workspace"]',

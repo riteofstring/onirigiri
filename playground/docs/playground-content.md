@@ -113,8 +113,9 @@ Game chrome and Canvas 2D palettes consume the host content theme, including its
 font families, semantic type sizes, colors and explicit overrides. Theme changes
 repaint at the current game state without starting a new game.
 
-Chromatic reactor and Tidal lattice belong to the sibling Browser Surface Lab.
-The shared catalog selects its `three-reactor` and `three-tidal` fixtures through
+Chromatic reactor, Tidal lattice and the Hover! game belong to the sibling
+Browser Surface Lab. The shared catalog selects its `three-reactor`,
+`three-tidal` and `hover` fixtures through
 the same themed cooperative iframe boundary as other lab content. Onirigiri has no
 Three.js dependency, scene implementation, graphics pool or scene controls.
 The lab owns geometry, shaders, camera sizing, context recovery and frame counters.
