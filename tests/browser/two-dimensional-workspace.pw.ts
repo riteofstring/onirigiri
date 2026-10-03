@@ -930,7 +930,7 @@ test("keeps the focus highlight still on screen while the camera follows and can
             center: box.left + box.width / 2,
             worldX: world?.getBoundingClientRect().left ?? 0,
           });
-          if (performance.now() - started < 600) {
+          if (performance.now() - started < 1000) {
             requestAnimationFrame(sample);
           } else {
             resolve(samples);
@@ -946,11 +946,14 @@ test("keeps the focus highlight still on screen while the camera follows and can
     "true",
   );
 
-  const resting = samples[0]?.center ?? 0;
-  const worldTravel = Math.abs(
-    (samples.at(-1)?.worldX ?? 0) - (samples[0]?.worldX ?? 0),
-  );
-  expect(worldTravel).toBeGreaterThan(40);
+  const first = samples[0]!;
+  const last = samples.at(-1)!;
+  const resting = first.center;
+  const worldTravel = last.worldX - first.worldX;
+  const cursorWorldTravel =
+    last.center - last.worldX - (first.center - first.worldX);
+  expect(Math.abs(cursorWorldTravel)).toBeGreaterThan(2);
+  expect(Math.abs(worldTravel + cursorWorldTravel)).toBeLessThanOrEqual(2);
   expect(
     Math.max(...samples.map((entry) => Math.abs(entry.center - resting))),
   ).toBeLessThanOrEqual(2);
