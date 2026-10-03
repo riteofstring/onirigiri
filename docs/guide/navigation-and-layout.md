@@ -53,6 +53,34 @@ follow camera. Without the highlight, the workspace status region still announce
 Style it through the `grid-cursor` slot and the focus tokens described in
 [styling](styling.md).
 
+## Pane links
+
+Set `paneLink` to keep the focused pane in the page URL. A visitor who opens
+`https://example.com/tour?pane=hover` starts on the pane whose `paneId` is `hover`, in whatever
+plane, column or split it occupies, with the camera already there instead of flying in from the
+initial pane. The link overrides the initial layout's cursor; Home stays the initial pane. Values
+that are empty, longer than 256 characters, contain control characters or name no pane are ignored.
+
+```tsx
+<OnirigiriWorkspace paneLink {...workspaceProps} />
+<OnirigiriWorkspace paneLink={{ param: "window", history: "push" }} {...workspaceProps} />
+```
+
+As focus changes—by keyboard, pointer, minimap or the handle's `focusPane`—Onirigiri rewrites only
+its parameter with `history.replaceState`, keeping the path, every other query parameter, the hash
+and the history state. Focusing an empty cell removes the parameter. `history: "push"` records each
+change as a new entry instead, and back and forward navigation focuses the pane named in the URL.
+The workspace never reads `window` while rendering, so server rendering is unaffected.
+
+`onirigiriPaneHref(paneId, { base, param })` builds a link for "copy link to pane" controls. It
+starts from `base` or the current page and returns a relative `?pane=…` query when neither exists:
+
+```tsx
+import { onirigiriPaneHref } from "@riteofstring/onirigiri";
+
+await navigator.clipboard.writeText(onirigiriPaneHref("hover"));
+```
+
 ## Minimap
 
 Set `showMinimap` to add a small map of the workspace. It is off by default. The minimap draws every

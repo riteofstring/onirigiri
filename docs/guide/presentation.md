@@ -306,4 +306,5 @@ column—including columns split into multiple panes—keeps the same outer heig
 stacked panes adjust only that internal split. Width and height resize targets run flush along the
 pane's right and bottom edges rather than floating inside its content. Focus a handle and use the
 appropriate arrow keys to resize in 16px steps (Shift uses 64px steps); Enter or Space resets that
-dimension.
+dimension. [`resizeEdges`](pane-defaults.md#resize-handles) adds left and top handles or removes
+any of them.

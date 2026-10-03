@@ -161,6 +161,50 @@ See [Imperative handle](#imperative-handle) for every method.
 Workspace defaults are overridden by type defaults, then by a pane's own
 `defaults`. Details: [Pane defaults](docs/guide/pane-defaults.md).
 
+### Choose resize handles
+
+Panes get right and bottom resize handles by default. `resizeEdges` picks any
+combination of `"left"`, `"right"`, `"top"` and `"bottom"` for the workspace, a
+content type or a single pane:
+
+```tsx
+import { defaultPaneResizeEdges } from "@riteofstring/onirigiri";
+
+<OnirigiriWorkspace
+  paneDefaults={{ resizeEdges: [...defaultPaneResizeEdges, "left", "top"] }}
+  initialPanes={[
+    { paneId: "home", surfaceKind: "page", title: "Home" },
+    {
+      paneId: "hover",
+      surfaceKind: "game",
+      title: "Hover!",
+      defaults: { resizeEdges: ["right"] },
+    },
+  ]}
+  {...props}
+/>;
+```
+
+Dragging a left or top edge keeps the opposite edge still. Details:
+[Pane defaults](docs/guide/pane-defaults.md#resize-handles).
+
+### Link to a pane
+
+`paneLink` keeps the focused pane in the URL, so `https://example.com/?pane=hover`
+opens the workspace on the pane whose `paneId` is `hover`, wherever it sits:
+
+```tsx
+import { onirigiriPaneHref } from "@riteofstring/onirigiri";
+
+<OnirigiriWorkspace paneLink initialPanes={panes} renderPane={renderPane} />;
+
+const href = onirigiriPaneHref("hover"); // current URL with ?pane=hover
+```
+
+Pass `{ param: "window", history: "push" }` to rename the parameter or record
+each focus change as a history entry. Details:
+[Navigation and layout](docs/guide/navigation-and-layout.md#pane-links).
+
 ### Theme it
 
 ```tsx
@@ -283,7 +327,7 @@ Only `renderPane` is required.
 | `initialLayout`                       | `null`                  | A saved layout; takes precedence over `initialPanes`    |
 | `onLayoutChange`                      | —                       | Receives every committed layout with change metadata    |
 | `onPaneClose`                         | —                       | Return `false` (or a promise of it) to keep a pane open |
-| `paneDefaults`                        | —                       | Preferred size and content fit for every pane           |
+| `paneDefaults`                        | —                       | Size, content fit and resize edges for every pane       |
 | `paneTypeDefaults`                    | —                       | Defaults keyed by `surfaceKind`                         |
 | `paneLimits`                          | —                       | Maximum number of panes per `surfaceKind`               |
 | `allowResizedPanesToOverflowViewport` | `false`                 | Let resized panes grow wider than the viewport          |
@@ -302,6 +346,7 @@ Only `renderPane` is required.
 | `minimapPlacement`, `onMinimapPlacementChange`     | bottom-right | Minimap corner and size, and a callback to persist changes       |
 | `minimapAdjustable`                                | `true`       | Let people move the minimap between corners and resize it        |
 | `cursorRunway`                                     | —            | Limit empty-cell navigation to N cells around the panes          |
+| `paneLink`                                         | —            | Keep the focused pane in the URL query; `true` or options        |
 | `directionControlMode`                             | `"focus"`    | What the on-screen arrows do: focus, move a pane or move a group |
 | `onPresentationModeChange`                         | —            | Called when entering or leaving overview                         |
 | `onPaneRearrangementSelectionChange`               | —            | Called when pane or group rearrangement selection changes        |
@@ -366,7 +411,7 @@ the workspace if it is invalid.
 
 ## Guides
 
-- [Pane defaults](docs/guide/pane-defaults.md): sizes, limits and content fit.
+- [Pane defaults](docs/guide/pane-defaults.md): sizes, limits, content fit and resize handles.
 - [Styling](docs/guide/styling.md): tokens, slots, design-system components and accessibility.
 - [Navigation, layout and keyboard](docs/guide/navigation-and-layout.md).
 - [Presentation](docs/guide/presentation.md): runtime states, live content, presentation policies and retained pictures.

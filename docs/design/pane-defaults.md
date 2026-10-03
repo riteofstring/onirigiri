@@ -41,6 +41,14 @@ an additional screenful. Ordinary, overview and grid-focus geometry use the same
 resolution. Configuration updates flow through the existing layout engine and
 Zustand store without remounting consumer content.
 
+`resizeEdges` lists which pane edges expose resize handles. It is not a sizing
+preference, but it shares the workspace, type and pane precedence because hosts
+choose handles along the same lines as sizes. Arrays replace rather than merge,
+so a pane can remove an inherited edge, and an empty list removes all handles.
+An absent value keeps the right and bottom handles. Validation rejects anything
+other than an array of the four edge names. The handle set is read while
+rendering the pane, so changing it updates handles without touching layout.
+
 `content.fit` controls presentation inside the pane independently of pane sizing:
 `contain` centers the full content with empty space as needed, `cover` centers and
 crops it to fill the pane, and `fill` stretches it. An optional
@@ -72,3 +80,5 @@ Headless engine split resizing accepts the current viewport so preferred heights
 and type bounds can be resolved; the layout store supplies it automatically.
 Browser checks cover 1D row height, real media and iframe fitting, changed fit
 without lost content state, and both resize directions.
+`pane-edges.cpu.pw.ts` in `cpu-capability-browser` drags left and top handles on
+the fixture and checks the opposite edge stays on screen.

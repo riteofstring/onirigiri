@@ -188,7 +188,10 @@
           "src/presentation/workspace-pane-rearrangement-sweep.ts",
           "src/workspace/workspace-grid-cursor.ts",
           "src/workspace/workspace-scene.ts",
-          "src/presentation/workspace-frame-scheduler.ts"
+          "src/presentation/workspace-frame-scheduler.ts",
+          "src/workspace/onirigiri-pane-link.ts",
+          "src/state/layout-store-sizing.ts",
+          "src/input/pane-resize-interactions.ts"
         ]
       },
       {
@@ -197,7 +200,8 @@
           "src/layout/pane-defaults.ts",
           "src/panes/pane-content-layout.ts",
           "tests/pane-defaults.test.tsx",
-          "tests/browser/viewport-fill.cpu.pw.ts"
+          "tests/browser/viewport-fill.cpu.pw.ts",
+          "tests/browser/pane-edges.cpu.pw.ts"
         ]
       },
       {
@@ -604,6 +608,7 @@
           "tests/browser/capabilities.cpu.pw.ts",
           "tests/browser/overview-motion.cpu.pw.ts",
           "tests/browser/viewport-fill.cpu.pw.ts",
+          "tests/browser/pane-edges.cpu.pw.ts",
           "scripts/test-native-content.mjs",
           "scripts/lib/process.mjs",
           "tests/browser/two-dimensional-dev-server.ts",

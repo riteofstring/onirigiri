@@ -72,7 +72,8 @@ const workspaceTheme = defineOnirigiriTheme({
 Every structural element also has a stable `data-onirigiri-slot` hook. The exported `onirigiriStyleSlots`
 catalog lists the supported values, including `workspace`, `stage`, `toolbar`, `control`, `pane`,
 `grid-cursor`, `pane-titlebar`, `pane-content`, `pane-action`, `minimap`, `minimap-resize`, and both
-resize handles:
+resize handles. `pane-resize-column` covers the left and right handles and `pane-resize-row` the
+top and bottom handles; `data-resize-edge` (`left`, `right`, `top` or `bottom`) tells them apart:
 
 ```css
 .product-workspace [data-onirigiri-slot="pane-titlebar"] {
@@ -81,6 +82,11 @@ resize handles:
 
 .product-workspace [data-onirigiri-slot="grid-cursor"][data-cell-kind="empty"] {
   border-color: currentColor;
+}
+
+.product-workspace
+  [data-onirigiri-slot="pane-resize-column"][data-resize-edge="left"] {
+  --onirigiri-resize-hit-size: 12px;
 }
 ```
 
@@ -131,7 +137,8 @@ markup. Workspace, pane, column, and content-type identity are exposed through
 
 `onirigiriStylingContract` exposes the contract version, cascade layer, token groups, slots, state
 attributes, and identity attributes as a machine-readable object. The root also carries
-`data-onirigiri-styling-version="8"`. Version 8 removed the bundled tooltips together with the
+`data-onirigiri-styling-version="9"`. Version 9 added `data-resize-edge` to resize handles.
+Version 8 removed the bundled tooltips together with the
 `tooltip` and `tooltip-key` slots and every `--onirigiri-tooltip*` and `--onirigiri-z-tooltip` token. Exported tokens, slots, and state/identity hooks are public API;
 renaming or removing one requires a major release. Internal `.onirigiri-*` classes remain implementation
 details even though Onirigiri preserves them when adding host classes.

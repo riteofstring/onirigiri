@@ -256,8 +256,10 @@ pixels; a larger pane exposes space beyond them. Both the canvas and retained
 image box follow this rule. Source layout stays fixed during the drag. Release
 restores responsive layout and native presentation, without stretching the old
 image while the new layout paints. Both axes use the same lifecycle.
-Resize handles capture the pointer for the gesture so crossing embedded content
-or leaving the viewport does not interrupt movement or release.
+Resize handles on every edge capture the pointer for the gesture so crossing
+embedded content or leaving the viewport does not interrupt movement or release.
+Left and top handles share this lifecycle; the retained texture stays anchored
+at the pane's top-left while that corner follows the pointer.
 
 ## Picture ownership and capture
 

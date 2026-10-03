@@ -89,6 +89,32 @@ that pane's identity when it moves. If it closes, Home falls back to the first
 surviving pane. Returning Home bypasses the cursor runway and exits overview
 through the existing focus transition without changing layout or pane content.
 
+Pane links treat the page URL as an optional external view of focus, not as
+layout state. Pane identities are the link vocabulary because they are the only
+coordinates that survive moves, splits, plane changes and restoration; layout
+documents reject duplicate identities and every focus command resolves a pane by
+identity. Before the first viewport measurement, a valid linked identity
+replaces the initial cursor and snaps the camera, so the first painted frame is
+already there and no camera flight or reduced-motion branch is involved. Home
+remains the pane at the initial cursor. A single store subscription mirrors
+focused-pane changes from every command source into one query parameter, and the
+URL is written only when it differs, so history traversal that focuses a pane
+does not write again. Other parameters keep their original encoding, and the
+existing history state is retained. Browser access lives in effects, which keeps
+server rendering free of window access.
+
+Pane resize handles operate on one edge. Right and bottom handles keep the
+established anchor: the pane's leading edge stays fixed because the camera is
+anchored to the focused cell's start. Left and top handles reuse the same
+column-width and plane-height commands and then shift the current and target
+camera anchor offsets by the measured change of the opposite edge. Measuring the
+resolved cell geometry before and after the command makes width and height
+limits move the camera only by the distance the edge really moved. The
+compensation is applied before the command is published, so frame and React
+presentation never observe the uncompensated layout. A top handle between two
+stacked panes is the same split control as the bottom handle above it. When a
+gesture ends, the focused pane is re-anchored like every other resize.
+
 Normal camera coordinates remain logical rows and columns, with local pixel
 anchors for centering and compact alignment. Geometry is projected relative to
 the active camera and to a bounded floating world origin, so adjacent cells stay

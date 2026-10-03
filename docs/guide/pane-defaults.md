@@ -1,6 +1,6 @@
 # Pane defaults
 
-Preferred sizes, limits and content fitting by workspace, content type and pane.
+Preferred sizes, limits, content fitting and resize handles by workspace, content type and pane.
 
 ## Defaults by content type
 
@@ -49,3 +49,37 @@ responsive iframe, canvas or application content. Direct video and image element
 their intrinsic ratio through native object-fit. Nested applications own their internal media
 layout and receive these options through `state.content`; Onirigiri does not inspect cross-origin
 media metadata.
+
+## Resize handles
+
+`resizeEdges` chooses which pane edges have resize handles. It accepts any combination of
+`"left"`, `"right"`, `"top"` and `"bottom"` and follows the same workspace, type and pane
+precedence; a pane's own list replaces an inherited one, and an empty list removes every handle.
+Without it, panes keep the right and bottom handles exported as `defaultPaneResizeEdges`:
+
+```tsx
+<OnirigiriWorkspace
+  paneDefaults={{ resizeEdges: ["right"] }}
+  paneTypeDefaults={{ editor: { resizeEdges: ["left", "right", "bottom"] } }}
+  initialPanes={[
+    {
+      paneId: "map",
+      surfaceKind: "map",
+      title: "Map",
+      defaults: { resizeEdges: [] },
+    },
+  ]}
+  {...workspaceProps}
+/>
+```
+
+Left and right handles resize the column width. While a left edge is dragged, the pane's right
+edge stays where it is on screen. Top and bottom handles resize height: between two stacked panes
+both handles move the split they share, and at the top of a column the top handle resizes the
+row like the bottom handle does while keeping the column's bottom edge still. Width and height
+limits apply to every edge. When the gesture ends, the camera settles on the focused pane as it
+does after any resize.
+
+Every handle has an accessible name, arrow-key resizing in 16px steps (64px with Shift) and
+Enter, Space or a double click to reset. Arrow keys move the edge in their own direction. Handles
+are hidden in compact layouts, overview and maximized panes.
