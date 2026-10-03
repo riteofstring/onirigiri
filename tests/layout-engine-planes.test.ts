@@ -579,7 +579,7 @@ describe("2D layout engine plane operations", () => {
     sourceColumn.cells = [{ ...sourceCell }, { ...sourceCell }];
 
     expect(() => createWorkspaceScene({ initialLayout: layout })).toThrow(
-      "Onirigiri layout has invalid pane ownership",
+      'Onirigiri layout places pane "moving" twice in column source-column; a pane can appear only once.',
     );
   });
 

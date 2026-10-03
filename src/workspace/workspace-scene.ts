@@ -111,6 +111,7 @@ export function createWorkspaceScene(
     resolved.panes,
   );
   const normalizedPanes = panesOrDefault(sourcePanes);
+  assertUniquePaneIds(normalizedPanes);
   const sourceColumns = sourceColumnsForLayout(resolved, normalizedPanes);
   const scene = sceneFromPanesAndColumns({
     columnGap: resolved.columnGap,
@@ -196,6 +197,19 @@ function sourcePanesForLayout(
     return layout.panes.map(clonePane);
   }
   return paneDefinitionsToPanes(definitions);
+}
+
+function assertUniquePaneIds(panes: readonly WorkspacePane[]): void {
+  const firstIndex = new Map<PaneId, number>();
+  panes.forEach((pane, index) => {
+    const earlier = firstIndex.get(pane.paneId);
+    if (earlier !== undefined) {
+      throw new Error(
+        `Onirigiri: paneId "${pane.paneId}" is used by more than one pane (entries ${earlier} and ${index}); each pane needs its own paneId.`,
+      );
+    }
+    firstIndex.set(pane.paneId, index);
+  });
 }
 
 function panesOrDefault(panes: WorkspacePane[]): WorkspacePane[] {
@@ -545,8 +559,20 @@ function assertLayoutCellOwner(
   if (cell.paneId === null) {
     return;
   }
-  if (!paneById.has(cell.paneId) || ownerByPaneId.has(cell.paneId)) {
-    throw new Error("Onirigiri layout has invalid pane ownership");
+  if (!paneById.has(cell.paneId)) {
+    throw new Error(
+      `Onirigiri layout places pane "${cell.paneId}" in column ${columnId}, but its panes list has no such pane.`,
+    );
+  }
+  const owner = ownerByPaneId.get(cell.paneId);
+  if (owner !== undefined) {
+    const where =
+      owner === columnId
+        ? `twice in column ${columnId}`
+        : `in both column ${owner} and column ${columnId}`;
+    throw new Error(
+      `Onirigiri layout places pane "${cell.paneId}" ${where}; a pane can appear only once.`,
+    );
   }
   ownerByPaneId.set(cell.paneId, columnId);
 }
