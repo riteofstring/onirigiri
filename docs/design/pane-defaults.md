@@ -80,5 +80,5 @@ Headless engine split resizing accepts the current viewport so preferred heights
 and type bounds can be resolved; the layout store supplies it automatically.
 Browser checks cover 1D row height, real media and iframe fitting, changed fit
 without lost content state, and both resize directions.
-`pane-edges.cpu.pw.ts` in `cpu-capability-browser` drags left and top handles on
+`pane-edges.pw.ts` in `pane-edges-browser` drags left and top handles on
 the fixture and checks the opposite edge stays on screen.

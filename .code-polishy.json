@@ -201,7 +201,7 @@
           "src/panes/pane-content-layout.ts",
           "tests/pane-defaults.test.tsx",
           "tests/browser/viewport-fill.cpu.pw.ts",
-          "tests/browser/pane-edges.cpu.pw.ts"
+          "tests/browser/pane-edges.pw.ts"
         ]
       },
       {
@@ -597,6 +597,26 @@
         "timeoutSeconds": 180
       },
       {
+        "name": "pane-edges-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "edges"],
+        "paths": [
+          "src/**",
+          "tests/browser/pane-edges.pw.ts",
+          "tests/browser/edges.playwright.config.ts",
+          "tests/browser/pane-defaults.html",
+          "tests/browser/pane-defaults.tsx",
+          "tests/browser/two-dimensional-dev-server.ts",
+          "tests/browser/chrome-launch.ts",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
+      },
+      {
         "name": "cpu-capability-browser",
         "kind": "browser",
         "scope": "repository",
@@ -608,7 +628,6 @@
           "tests/browser/capabilities.cpu.pw.ts",
           "tests/browser/overview-motion.cpu.pw.ts",
           "tests/browser/viewport-fill.cpu.pw.ts",
-          "tests/browser/pane-edges.cpu.pw.ts",
           "scripts/test-native-content.mjs",
           "scripts/lib/process.mjs",
           "tests/browser/two-dimensional-dev-server.ts",

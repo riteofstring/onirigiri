@@ -72,6 +72,13 @@ const commands = {
     "--config",
     "tests/browser/cpu.playwright.config.ts",
   ],
+  edges: [
+    "exec",
+    "playwright",
+    "test",
+    "--config",
+    "tests/browser/edges.playwright.config.ts",
+  ],
   navigation: [
     "exec",
     "playwright",
@@ -87,7 +94,7 @@ const commands = {
 const mode = process.argv[2];
 if (!Object.hasOwn(commands, mode) || process.argv.length !== 3) {
   throw new Error(
-    "Choose the cache, pictures, contract, browser, video, presentation, cadence, cpu, navigation, pane-defaults, or unit suite.",
+    "Choose the cache, pictures, contract, browser, video, presentation, cadence, cpu, edges, navigation, pane-defaults, or unit suite.",
   );
 }
 runPnpm(["install", "--offline", "--frozen-lockfile", "--ignore-scripts"]);
