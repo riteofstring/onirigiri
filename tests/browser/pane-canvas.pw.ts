@@ -2093,6 +2093,9 @@ for (const dpr of [1, 2]) {
       await textbox.evaluate((element) => {
         (element as HTMLInputElement).value = "";
       });
+      await expect(
+        pane.locator('[data-onirigiri-slot="pane-live-content"]'),
+      ).not.toHaveAttribute("inert");
       const bounds = (await textbox.boundingBox())!;
       await page.mouse.click(
         bounds.x + bounds.width / 2,
