@@ -389,7 +389,9 @@ Run `pnpm dev:1d` or `pnpm dev:2d`; see [Development](docs/guide/development.md)
   hold high refresh rates on discrete GPUs; the default `"auto"` presentation
   avoids it.
 - Occasional single dropped frames remain when navigation starts while
-  applications initialize or pictures are captured.
+  applications initialize or pictures are captured. In branded Chrome, moving
+  pane content that contains form controls schedules a password-manager scan
+  about 100 ms later, which can drop a frame if motion has started.
 - Captured text can differ from native text at glyph edges on Linux.
 
 ## License
