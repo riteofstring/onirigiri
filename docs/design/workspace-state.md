@@ -69,6 +69,13 @@ the cursor and structural coordinates without serializing topology or runway;
 restoration applies the current workspace configuration and rejects inexact
 coordinates.
 
+Structural edits keep that coordinate space. Splits, openings beside a pane
+and group moves target the literal adjacent row or column. When that row or
+column is occupied, the rows or columns from it outward shift one step away from
+the source, so the source pane never moves. Removing a pane drops empty columns
+without renumbering the remaining rows or columns. Only scenes built from pane
+definitions, without a restored layout, start from dense non-negative rows.
+
 Empty cells are sparse geometry. Column and row offsets combine a default stride
 with sorted structural overrides and prefix differences, so lookup work depends
 on structure rather than distance from the origin. Normal camera targets are not

@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 import { WorkspaceLikeLayoutEngine } from "../src/layout/layout-engine";
 import {
   denselyReindexPlanes,
-  insertPlaneAt,
-  removePlaneAt,
+  insertPlaneBeside,
 } from "../src/layout/layout-planes";
 import { WorkspaceLayoutStore } from "../src/state/layout-store";
 import { paneCellSizingForPane } from "../src/layout/pane-cell-sizing";
@@ -17,31 +16,43 @@ import {
 } from "../src/workspace/workspace-scene";
 
 describe("2D layout engine plane operations", () => {
-  it("inserts, removes, and densely reindexes planes without changing slots", () => {
+  it("densely reindexes restored planes without changing slots", () => {
     const columns = [
       testColumn({ columnId: "upper", planeIndex: 2, slotIndex: 4 }),
       testColumn({ columnId: "lower", planeIndex: 8, slotIndex: 1 }),
     ];
 
-    const denseColumns = denselyReindexPlanes(columns);
-    expect(planeAndSlotIndexes(denseColumns)).toEqual([
+    expect(planeAndSlotIndexes(denselyReindexPlanes(columns))).toEqual([
       [0, 4],
       [1, 1],
-    ]);
-
-    const insertion = insertPlaneAt(denseColumns, 1);
-    expect(insertion.planeIndex).toBe(1);
-    expect(planeAndSlotIndexes(insertion.columns)).toEqual([
-      [0, 4],
-      [2, 1],
-    ]);
-
-    expect(planeAndSlotIndexes(removePlaneAt(insertion.columns, 0))).toEqual([
-      [0, 1],
     ]);
     expect(planeAndSlotIndexes(columns)).toEqual([
       [2, 4],
       [8, 1],
+    ]);
+  });
+
+  it("inserts a plane beside its source and shifts only occupied planes away from it", () => {
+    const columns = [
+      testColumn({ columnId: "far-above", planeIndex: -4, slotIndex: 0 }),
+      testColumn({ columnId: "above", planeIndex: -2, slotIndex: 0 }),
+      testColumn({ columnId: "source", planeIndex: -1, slotIndex: 0 }),
+      testColumn({ columnId: "far-below", planeIndex: 3, slotIndex: 0 }),
+    ];
+
+    const below = insertPlaneBeside(columns, -1, 1);
+    expect(below.planeIndex).toBe(0);
+    expect(planeAndSlotIndexes(below.columns)).toEqual(
+      planeAndSlotIndexes(columns),
+    );
+
+    const above = insertPlaneBeside(columns, -1, -1);
+    expect(above.planeIndex).toBe(-2);
+    expect(planeAndSlotIndexes(above.columns)).toEqual([
+      [-5, 0],
+      [-3, 0],
+      [-1, 0],
+      [3, 0],
     ]);
   });
 
@@ -71,23 +82,24 @@ describe("2D layout engine plane operations", () => {
     const createdBelowPaneId = engine.splitPaneToPlane("source", "down");
     const splitScene = engine.toScene();
     expect(splitScene.columns.map((column) => column.planeIndex)).toEqual([
-      0, 1, 2, 3, 4,
+      -1, 0, 1, 2, 3,
     ]);
     expect(splitScene.columns.map((column) => column.slotIndex)).toEqual([
       2, 2, 2, 2, 2,
     ]);
-    expect(engine.paneLocation(createdAbovePaneId)?.planeIndex).toBe(1);
-    expect(engine.paneLocation("source")?.planeIndex).toBe(2);
-    expect(engine.paneLocation(createdBelowPaneId)?.planeIndex).toBe(3);
-    expect(engine.paneLocation("lower")?.planeIndex).toBe(4);
+    expect(engine.paneLocation("upper")?.planeIndex).toBe(-1);
+    expect(engine.paneLocation(createdAbovePaneId)?.planeIndex).toBe(0);
+    expect(engine.paneLocation("source")?.planeIndex).toBe(1);
+    expect(engine.paneLocation(createdBelowPaneId)?.planeIndex).toBe(2);
+    expect(engine.paneLocation("lower")?.planeIndex).toBe(3);
 
     engine.closePane(createdAbovePaneId);
     engine.closePane(createdBelowPaneId);
     expect(engine.toScene().columns.map((column) => column.planeIndex)).toEqual(
-      [0, 1, 2],
+      [-1, 1, 3],
     );
     expect(engine.paneLocation("source")?.planeIndex).toBe(1);
-    expect(engine.paneLocation("lower")?.planeIndex).toBe(2);
+    expect(engine.paneLocation("lower")?.planeIndex).toBe(3);
   });
 
   it("swaps the focused pane with the immediately adjacent occupied cell", () => {
@@ -188,6 +200,90 @@ describe("2D layout engine plane operations", () => {
 
     expect(store.focusedPaneId()).toBe("moving");
     expect(engine.toScene().paneById.get("moving")?.surfaceId).toBe(surfaceId);
+  });
+
+  it("moves a selected group one row below a pane moved to a sparse row", () => {
+    const { engine, store } = storeFor(
+      [
+        paneDefinition({
+          columnId: "anchor-column",
+          paneId: "anchor",
+          planeIndex: 0,
+          slotIndex: 1,
+        }),
+        paneDefinition({
+          columnId: "moving-column",
+          paneId: "moving",
+          planeIndex: 0,
+          slotIndex: 0,
+        }),
+      ],
+      "moving",
+    );
+    for (let step = 0; step < 3; step += 1) {
+      expect(store.moveFocusedPane("down")).toBe(true);
+    }
+    expect(engine.paneLocation("moving")?.planeIndex).toBe(3);
+
+    expect(store.selectFocusedPaneGroup()).toBe(true);
+    expect(store.moveSelectedPaneGroup("down")).toBe(true);
+    expect(engine.paneLocation("moving")?.planeIndex).toBe(4);
+    expect(engine.paneLocation("anchor")?.planeIndex).toBe(0);
+  });
+
+  it("moves a selected group one column left of a negative column", () => {
+    const { engine, store } = storeFor(
+      [
+        paneDefinition({
+          columnId: "moving-column",
+          paneId: "moving",
+          planeIndex: 0,
+          slotIndex: 0,
+        }),
+        paneDefinition({
+          columnId: "anchor-column",
+          paneId: "anchor",
+          planeIndex: 0,
+          slotIndex: 1,
+        }),
+      ],
+      "moving",
+    );
+    expect(store.moveFocusedPane("left")).toBe(true);
+    expect(columnForPane(engine, "moving").slotIndex).toBe(-1);
+
+    expect(store.selectFocusedPaneGroup()).toBe(true);
+    expect(store.moveSelectedPaneGroup("left")).toBe(true);
+    expect(columnForPane(engine, "moving").slotIndex).toBe(-2);
+    expect(columnForPane(engine, "anchor").slotIndex).toBe(1);
+  });
+
+  it("splits a pane on a negative row beside it", () => {
+    const { engine, store } = storeFor(
+      [
+        paneDefinition({
+          columnId: "moving-column",
+          paneId: "moving",
+          planeIndex: 0,
+          slotIndex: 0,
+        }),
+        paneDefinition({
+          columnId: "anchor-column",
+          paneId: "anchor",
+          planeIndex: 0,
+          slotIndex: 1,
+        }),
+      ],
+      "moving",
+    );
+    expect(store.moveFocusedPane("up")).toBe(true);
+    expect(engine.paneLocation("moving")?.planeIndex).toBe(-1);
+
+    const createdPaneId = store.splitPane("moving", "right");
+    expect(engine.paneLocation(createdPaneId)?.planeIndex).toBe(-1);
+    expect(columnForPane(engine, createdPaneId).slotIndex).toBe(1);
+    expect(columnForPane(engine, "moving").slotIndex).toBe(0);
+    expect(engine.paneLocation("anchor")?.planeIndex).toBe(0);
   });
 
   it("uses one normal-mode target when selecting an overview pane", () => {
@@ -851,11 +947,11 @@ describe("2D layout engine plane operations", () => {
     expect(
       layout.columns.map((column) => [column.planeIndex, column.slotIndex]),
     ).toEqual([
-      [0, 0],
+      [-1, 0],
+      [0, 3],
+      [1, 0],
       [1, 3],
-      [2, 0],
       [2, 3],
-      [3, 3],
     ]);
     expect(
       layout.columns

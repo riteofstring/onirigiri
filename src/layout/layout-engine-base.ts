@@ -8,11 +8,9 @@ import {
 import {
   columnSlotIndex,
   compareColumnsByPlaneAndSlot,
+  insertSlotBeside,
   nextSlotIndexForPlane,
   normalizeColumnSlots,
-  planeHasSlot,
-  shiftPlaneSlotsAtOrAfter,
-  slotIndexForDenseInsertion,
   slotWidthsForColumns,
 } from "./column-slots.js";
 import {
@@ -46,11 +44,7 @@ import {
   overviewLayoutMetrics,
   renderOverviewLayoutFrame,
 } from "./layout-engine-rendering.js";
-import {
-  insertPlaneAt,
-  planeIndexesForColumns,
-  removePlaneAt,
-} from "./layout-planes.js";
+import { insertPlaneBeside, planeIndexesForColumns } from "./layout-planes.js";
 import type {
   ColumnId,
   ColumnWidthSpec,
@@ -412,11 +406,11 @@ export abstract class WorkspaceLayoutEngineBase {
     direction: "left" | "right",
     widthSpec: ColumnWidthSpec = this.scene.defaultColumnWidthSpec,
   ): WorkspaceColumn {
-    const planeColumnIndex =
-      source.planeColumnIndex + (direction === "left" ? 0 : 1);
-    return this.insertColumnInPlane(
+    const sourceColumn = this.columns[source.columnIndex];
+    return this.insertColumnBeside(
       source.planeIndex,
-      planeColumnIndex,
+      sourceColumn ? columnSlotIndex(sourceColumn) : source.planeColumnIndex,
+      direction === "left" ? -1 : 1,
       widthSpec,
     );
   }
@@ -429,24 +423,30 @@ export abstract class WorkspaceLayoutEngineBase {
       return this.appendColumn(widthSpec);
     }
     const adjacentColumn = this.requireColumn(adjacentToColumnId);
-    return this.insertColumnInPlane(
+    return this.insertColumnBeside(
       adjacentColumn.planeIndex,
-      this.planeColumnIndex(adjacentColumn) + 1,
+      columnSlotIndex(adjacentColumn),
+      1,
       widthSpec,
     );
   }
 
-  protected insertColumnInPlane(
+  private insertColumnBeside(
     planeIndex: number,
-    planeColumnIndex: number,
-    widthSpec: ColumnWidthSpec = this.scene.defaultColumnWidthSpec,
+    sourceSlotIndex: number,
+    step: -1 | 1,
+    widthSpec: ColumnWidthSpec,
   ): WorkspaceColumn {
+    const insertion = insertSlotBeside(
+      this.columns,
+      planeIndex,
+      sourceSlotIndex,
+      step,
+    );
+    this.columns = insertion.columns;
     return this.insertColumnInPlaneSlot(
       planeIndex,
-      slotIndexForDenseInsertion(
-        this.columnsInPlane(planeIndex),
-        planeColumnIndex,
-      ),
+      insertion.slotIndex,
       widthSpec,
     );
   }
@@ -456,32 +456,18 @@ export abstract class WorkspaceLayoutEngineBase {
     slotIndex: number,
     widthSpec: ColumnWidthSpec = this.scene.defaultColumnWidthSpec,
   ): WorkspaceColumn {
-    const normalizedPlaneIndex = this.normalizedColumnPlaneIndex(planeIndex);
     const normalizedWidthSpec = normalizedColumnWidthSpec(widthSpec);
-    const normalizedSlotIndex = Math.max(0, Math.floor(slotIndex));
-    if (
-      planeHasSlot(
-        this.columnsInPlane(normalizedPlaneIndex),
-        normalizedSlotIndex,
-      )
-    ) {
-      this.columns = shiftPlaneSlotsAtOrAfter(
-        this.columns,
-        normalizedPlaneIndex,
-        normalizedSlotIndex,
-      );
-    }
     const column: WorkspaceColumn = {
       columnId: this.nextColumnId(),
       cells: [],
       idealWidthSpec: { ...normalizedWidthSpec },
       index: this.columns.length,
-      planeIndex: normalizedPlaneIndex,
+      planeIndex: finiteGridCoordinate(planeIndex, "plane"),
       previousProportionWidth:
         normalizedWidthSpec.unit === "proportion"
           ? normalizedWidthSpec.value
           : undefined,
-      slotIndex: normalizedSlotIndex,
+      slotIndex: finiteGridCoordinate(slotIndex, "slot"),
       widthSpec: { ...normalizedWidthSpec },
     };
     this.columns.push(column);
@@ -489,23 +475,14 @@ export abstract class WorkspaceLayoutEngineBase {
     return this.requireColumn(column.columnId);
   }
 
-  protected normalizedColumnPlaneIndex(planeIndex: number): number {
-    if (!Number.isFinite(planeIndex)) {
-      throw new Error(
-        `workspace layout plane index must be finite, got ${String(planeIndex)}`,
-      );
-    }
-    const planeCount = this.planeIndexes().length;
-    return Math.min(planeCount, Math.max(0, Math.floor(planeIndex)));
-  }
-
   protected insertPlaneBeside(
     planeIndex: number,
     direction: "up" | "down",
   ): number {
-    const result = insertPlaneAt(
+    const result = insertPlaneBeside(
       this.columns,
-      planeIndex + (direction === "down" ? 1 : 0),
+      planeIndex,
+      direction === "up" ? -1 : 1,
     );
     this.columns = result.columns;
     return result.planeIndex;
@@ -692,23 +669,6 @@ export abstract class WorkspaceLayoutEngineBase {
   }
 
   protected removeEmptyColumns(): void {
-    const emptyPlaneIndexes = this.planeIndexes()
-      .filter(
-        (planeIndex) =>
-          !this.columns.some(
-            (column) =>
-              column.planeIndex === planeIndex && columnHasStructure(column),
-          ),
-      )
-      .toSorted((left, right) => right - left);
-    for (const planeIndex of emptyPlaneIndexes) {
-      this.columns = removePlaneAt(this.columns, planeIndex);
-    }
-    this.columns = this.columns.filter(columnHasStructure);
-    this.reindexColumns();
-  }
-
-  protected removeEmptyColumnsPreservingGridCoordinates(): void {
     this.columns = this.columns.filter(columnHasStructure);
     this.reindexColumns();
   }
@@ -788,18 +748,6 @@ export abstract class WorkspaceLayoutEngineBase {
         widthSpec: { ...widthSpec },
       };
     });
-  }
-
-  protected adjacentPlaneIndex(
-    planeIndex: number,
-    direction: "up" | "down",
-  ): number | null {
-    const indexes = this.planeIndexes();
-    const currentIndex = indexes.indexOf(planeIndex);
-    if (currentIndex < 0) {
-      return null;
-    }
-    return indexes[currentIndex + (direction === "up" ? -1 : 1)] ?? null;
   }
 
   protected columnsInPlane(planeIndex: number): WorkspaceColumn[] {
@@ -1062,4 +1010,13 @@ const maximumCompactPanePeekPx = 32;
 
 function normalizedCompactPanePeek(value: number): number {
   return Number.isFinite(value) ? clamp(value, 0, maximumCompactPanePeekPx) : 0;
+}
+
+function finiteGridCoordinate(value: number, axis: "plane" | "slot"): number {
+  if (!Number.isFinite(value)) {
+    throw new Error(
+      `workspace layout ${axis} index must be finite, got ${String(value)}`,
+    );
+  }
+  return Math.floor(value);
 }

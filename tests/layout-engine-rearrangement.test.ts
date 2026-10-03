@@ -73,7 +73,7 @@ describe("layout-engine rearrangement cells", () => {
     expect(store.moveSelectedPaneGroup("left")).toBe(true);
 
     const movedGroup = columnForPane(engine, "top");
-    expect(movedGroup.slotIndex).toBe(0);
+    expect(movedGroup.slotIndex).toBe(-1);
     expect(paneIds(movedGroup)).toEqual(["top", "bottom"]);
     expect(store.getSnapshot().selectedGroupColumnId).toBe(movedGroup.columnId);
   });

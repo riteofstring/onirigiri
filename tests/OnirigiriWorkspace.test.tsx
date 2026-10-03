@@ -922,27 +922,27 @@ describe("OnirigiriWorkspace interactions", () => {
     expect(onLayoutChange).toHaveBeenCalledTimes(5);
 
     expect(paneLocation(workspace, splitAboveId)).toEqual({
-      planeIndex: 0,
+      planeIndex: -2,
       slotIndex: 0,
     });
     expect(paneLocation(workspace, aboveId)).toEqual({
-      planeIndex: 1,
+      planeIndex: -1,
       slotIndex: 0,
     });
     expect(paneLocation(workspace, "source")).toEqual({
-      planeIndex: 2,
+      planeIndex: 0,
       slotIndex: 0,
     });
     expect(paneLocation(workspace, rightId)).toEqual({
-      planeIndex: 2,
+      planeIndex: 0,
       slotIndex: 1,
     });
     expect(paneLocation(workspace, belowId)).toEqual({
-      planeIndex: 3,
+      planeIndex: 1,
       slotIndex: 0,
     });
     expect(paneLocation(workspace, splitBelowId)).toEqual({
-      planeIndex: 4,
+      planeIndex: 2,
       slotIndex: 0,
     });
     expect(workspace.getScene().paneById.get(aboveId)).toMatchObject({

@@ -62,52 +62,29 @@ export function nextSlotIndexForPlane(
   return lastSlotIndex + 1;
 }
 
-export function planeHasSlot(
-  planeColumns: readonly WorkspaceColumn[],
-  slotIndex: number,
-): boolean {
-  return planeColumns.some((column) => columnSlotIndex(column) === slotIndex);
-}
-
-export function shiftPlaneSlotsAtOrAfter(
+export function insertSlotBeside(
   columns: readonly WorkspaceColumn[],
   planeIndex: number,
-  slotIndex: number,
-): WorkspaceColumn[] {
-  return columns.map((column) =>
-    column.planeIndex === planeIndex && columnSlotIndex(column) >= slotIndex
-      ? { ...column, slotIndex: columnSlotIndex(column) + 1 }
-      : column,
+  sourceSlotIndex: number,
+  step: -1 | 1,
+): { columns: WorkspaceColumn[]; slotIndex: number } {
+  const slotIndex = sourceSlotIndex + step;
+  const occupied = columns.some(
+    (column) =>
+      column.planeIndex === planeIndex && columnSlotIndex(column) === slotIndex,
   );
-}
-
-export function slotIndexForDenseInsertion(
-  planeColumns: readonly WorkspaceColumn[],
-  planeColumnIndex: number,
-): number {
-  if (planeColumns.length === 0) {
-    return Math.max(0, Math.floor(planeColumnIndex));
+  if (!occupied) {
+    return { columns: [...columns], slotIndex };
   }
-  const clampedPlaneColumnIndex = clamp(
-    planeColumnIndex,
-    0,
-    planeColumns.length,
-  );
-  const beforeColumn = planeColumns[clampedPlaneColumnIndex];
-  const afterColumn = planeColumns[clampedPlaneColumnIndex - 1];
-  if (beforeColumn && afterColumn) {
-    return Math.min(
-      columnSlotIndex(beforeColumn),
-      columnSlotIndex(afterColumn) + 1,
-    );
-  }
-  if (beforeColumn) {
-    return Math.max(0, columnSlotIndex(beforeColumn) - 1);
-  }
-  if (afterColumn) {
-    return columnSlotIndex(afterColumn) + 1;
-  }
-  return 0;
+  return {
+    columns: columns.map((column) =>
+      column.planeIndex === planeIndex &&
+      (columnSlotIndex(column) - slotIndex) * step >= 0
+        ? { ...column, slotIndex: columnSlotIndex(column) + step }
+        : column,
+    ),
+    slotIndex,
+  };
 }
 
 export function slotWidthsForColumns({
@@ -126,8 +103,4 @@ export function slotWidthsForColumns({
     slotWidths.set(slotIndex, Math.max(slotWidths.get(slotIndex) ?? 0, width));
   }
   return slotWidths;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }

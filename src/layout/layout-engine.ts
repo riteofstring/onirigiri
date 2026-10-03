@@ -193,7 +193,7 @@ export class WorkspaceLikeLayoutEngine
     targetCell.reserved = false;
     this.movePaneStateToColumn(paneId, targetColumn.columnId);
     this.normalizeTransientCells(currentSourceColumn);
-    this.removeEmptyColumnsPreservingGridCoordinates();
+    this.removeEmptyColumns();
     return true;
   }
 
@@ -340,37 +340,18 @@ export class WorkspaceLikeLayoutEngine
     direction: PaneMoveDirection,
     sourceColumn: WorkspaceColumn,
   ): WorkspaceColumn {
-    if (isHorizontalDirection(direction)) {
-      const sourceSlotIndex = columnSlotIndex(sourceColumn);
-      if (direction === "left" && sourceSlotIndex === 0) {
-        return this.insertColumnInPlaneSlot(
-          source.planeIndex,
-          0,
-          sourceColumn.widthSpec,
-        );
-      }
-      const targetSlotIndex = sourceSlotIndex + (direction === "left" ? -1 : 1);
-      return (
-        this.columnsInPlane(source.planeIndex).find(
-          (column) => columnSlotIndex(column) === targetSlotIndex,
-        ) ??
-        this.insertColumnInPlaneSlot(
-          source.planeIndex,
-          targetSlotIndex,
-          sourceColumn.widthSpec,
-        )
-      );
-    }
-    const targetPlaneIndex =
-      this.adjacentPlaneIndex(source.planeIndex, direction) ??
-      this.insertPlaneBeside(source.planeIndex, direction);
+    const sourceSlotIndex = columnSlotIndex(sourceColumn);
+    const horizontal = isHorizontalDirection(direction);
+    const step = direction === "left" || direction === "up" ? -1 : 1;
+    const planeIndex = source.planeIndex + (horizontal ? 0 : step);
+    const slotIndex = sourceSlotIndex + (horizontal ? step : 0);
     return (
-      this.columnsInPlane(targetPlaneIndex).find(
-        (column) => columnSlotIndex(column) === columnSlotIndex(sourceColumn),
+      this.columnsInPlane(planeIndex).find(
+        (column) => columnSlotIndex(column) === slotIndex,
       ) ??
       this.insertColumnInPlaneSlot(
-        targetPlaneIndex,
-        columnSlotIndex(sourceColumn),
+        planeIndex,
+        slotIndex,
         sourceColumn.widthSpec,
       )
     );

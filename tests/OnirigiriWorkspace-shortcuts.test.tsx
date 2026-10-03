@@ -580,10 +580,10 @@ describe("OnirigiriWorkspace keyboard shortcuts", () => {
       workspace.getSnapshot().focusedPaneId,
     );
     expect(activePaneId()).toBe(configuredDownId);
-    expect(paneLocation(workspace, defaultUpId).planeIndex).toBe(0);
-    expect(paneLocation(workspace, defaultDownId).planeIndex).toBe(1);
-    expect(paneLocation(workspace, configuredDownId).planeIndex).toBe(2);
-    expect(paneLocation(workspace, "source").planeIndex).toBe(3);
+    expect(paneLocation(workspace, defaultUpId).planeIndex).toBe(-1);
+    expect(paneLocation(workspace, defaultDownId).planeIndex).toBe(0);
+    expect(paneLocation(workspace, configuredDownId).planeIndex).toBe(1);
+    expect(paneLocation(workspace, "source").planeIndex).toBe(2);
 
     await act(async () => root.unmount());
     container.remove();

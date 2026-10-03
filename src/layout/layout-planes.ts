@@ -21,36 +21,28 @@ export function denselyReindexPlanes(
   }));
 }
 
-export function insertPlaneAt(
+export function insertPlaneBeside(
   columns: readonly WorkspaceColumn[],
-  requestedPlaneIndex: number,
+  sourcePlaneIndex: number,
+  step: -1 | 1,
 ): PlaneInsertionResult {
-  const denseColumns = denselyReindexPlanes(columns);
-  const planeIndex = normalizedInsertionIndex(
-    requestedPlaneIndex,
-    planeIndexesForColumns(denseColumns).length,
-  );
+  if (!Number.isFinite(sourcePlaneIndex)) {
+    throw new Error(
+      `workspace layout plane index must be finite, got ${String(sourcePlaneIndex)}`,
+    );
+  }
+  const planeIndex = Math.floor(sourcePlaneIndex) + step;
+  if (!columns.some((column) => column.planeIndex === planeIndex)) {
+    return { columns: [...columns], planeIndex };
+  }
   return {
-    columns: denseColumns.map((column) =>
-      column.planeIndex >= planeIndex
-        ? { ...column, planeIndex: column.planeIndex + 1 }
+    columns: columns.map((column) =>
+      (column.planeIndex - planeIndex) * step >= 0
+        ? { ...column, planeIndex: column.planeIndex + step }
         : column,
     ),
     planeIndex,
   };
-}
-
-export function removePlaneAt(
-  columns: readonly WorkspaceColumn[],
-  planeIndex: number,
-): WorkspaceColumn[] {
-  if (!Number.isFinite(planeIndex)) {
-    return denselyReindexPlanes(columns);
-  }
-  const removedPlaneIndex = Math.floor(planeIndex);
-  return denselyReindexPlanes(
-    columns.filter((column) => column.planeIndex !== removedPlaneIndex),
-  );
 }
 
 export function planeIndexesForColumns(
@@ -59,16 +51,4 @@ export function planeIndexesForColumns(
   return [...new Set(columns.map((column) => column.planeIndex))].toSorted(
     (left, right) => left - right,
   );
-}
-
-function normalizedInsertionIndex(
-  requestedPlaneIndex: number,
-  planeCount: number,
-): number {
-  if (!Number.isFinite(requestedPlaneIndex)) {
-    throw new Error(
-      `workspace layout plane index must be finite, got ${String(requestedPlaneIndex)}`,
-    );
-  }
-  return Math.min(planeCount, Math.max(0, Math.floor(requestedPlaneIndex)));
 }
