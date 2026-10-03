@@ -16,8 +16,8 @@ order and world positions. Zustand owns layout state.
 Camera sweep calculations reuse the current and destination world-frame caches
 while the built-in scene geometry remains unchanged. Layout, viewport and pane
 defaults changes invalidate those caches; custom layout engines keep their
-dynamic geometry behavior. Pane style and content-offset measurements remain
-pending offscreen and resolve before the pane's first visible presentation.
+dynamic geometry behavior. Presentation boundaries write pane geometry without
+reading pane layout, so they never force a synchronous layout of the pane tree.
 
 Each workspace owns one GPU device and each content host owns a capture surface.
 Native presentation displays the original subtree without requiring a successful

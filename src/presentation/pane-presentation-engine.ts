@@ -19,15 +19,12 @@ const paneRearrangementDurationMs = 160;
 
 interface PaneHostBinding {
   host: HTMLElement;
-  lastContentOffsetTop: number;
-  lastCornerRadius: number;
   lastFocused: boolean | null;
   lastFrozen: boolean | null;
   lastHeight: number;
   lastHidden: boolean | null;
   lastInert: boolean | null;
   lastMaximized: boolean | null;
-  lastMeasurementKey: string | null;
   lastMoving: boolean | null;
   lastOpacity: number;
   lastPresentationMode: string | null;
@@ -50,10 +47,7 @@ export interface PanePresentationWriteCounts {
 }
 
 export class PanePresentationEngine {
-  private readonly pendingMeasurements = new Set<PaneHostBinding>();
   private readonly bindings = new Map<PaneId, PaneHostBinding>();
-  private defaultPaneCornerRadius = 0;
-  private defaultPaneContentOffsetTop = 0;
   private readonly itemByPaneId = new Map<PaneId, PaneRenderItem>();
   private readonly pendingPaneRearrangements = new Map<
     PaneId,
@@ -75,10 +69,6 @@ export class PanePresentationEngine {
       this.lastOverviewTransitioning = null;
       this.lastViewportHeight = Number.NaN;
       this.lastViewportWidth = Number.NaN;
-      this.defaultPaneContentOffsetTop = host
-        ? workspaceTitlebarHeight(host)
-        : 0;
-      this.defaultPaneCornerRadius = 0;
     }
     this.workspaceHost = host;
   }
@@ -103,12 +93,10 @@ export class PanePresentationEngine {
         progress: this.paneRearrangementProgress(),
       });
       applyPaneHost(binding, item, counts, { compactLayout });
-      this.queueMeasurement(binding, item, compactLayout);
     }
     return () => {
       const binding = this.bindings.get(paneId);
       if (binding?.host === host) {
-        this.pendingMeasurements.delete(binding);
         this.bindings.delete(paneId);
       }
     };
@@ -137,14 +125,12 @@ export class PanePresentationEngine {
       progress: this.paneRearrangementProgress(),
     });
     applyPaneHost(binding, item, counts, { compactLayout });
-    this.queueMeasurement(binding, item, compactLayout);
     return counts;
   }
 
   presentedPaneGeometries(
     items: readonly PaneRenderItem[],
   ): WorkspacePresentedPaneGeometry[] {
-    this.measurePendingContent();
     return items.map((item) => {
       const binding = this.bindings.get(item.paneId);
       const pending = this.pendingPaneRearrangements.get(item.paneId);
@@ -159,14 +145,6 @@ export class PanePresentationEngine {
           : presentedPaneGeometryWithoutBinding(item);
       return {
         ...geometry,
-        contentOffsetTop: finitePaneMetric(
-          binding?.lastContentOffsetTop,
-          this.defaultContentOffsetTop(),
-        ),
-        cornerRadius: finitePaneMetric(
-          binding?.lastCornerRadius,
-          this.defaultContentCornerRadius(),
-        ),
         opacity: item.opacity,
         paneId: item.paneId,
         preload: item.preload === true,
@@ -203,7 +181,6 @@ export class PanePresentationEngine {
       applyPaneHost(binding, item, counts, presentationContext);
     }
     this.applyWorkspaceState(snapshot, viewport);
-    this.measurePendingContent();
     return counts;
   }
 
@@ -407,82 +384,6 @@ export class PanePresentationEngine {
       );
     }
   }
-
-  private queueMeasurement(
-    binding: PaneHostBinding,
-    item: PaneRenderItem,
-    compactLayout: boolean,
-  ): void {
-    const key = `${item.maximized}:${item.presentationMode}:${compactLayout}`;
-    if (binding.lastMeasurementKey === key) return;
-    binding.lastMeasurementKey = key;
-    this.pendingMeasurements.add(binding);
-  }
-
-  private measurePendingContent(): void {
-    for (const binding of this.pendingMeasurements) {
-      if (!binding.lastVisible) continue;
-      this.measurePaneContent(binding);
-      this.pendingMeasurements.delete(binding);
-    }
-  }
-
-  private measurePaneContent(binding: PaneHostBinding): void {
-    const ownerWindow = binding.host.ownerDocument.defaultView;
-    const cornerRadius = ownerWindow
-      ? pixelLength(
-          ownerWindow.getComputedStyle(binding.host).borderBottomLeftRadius,
-        )
-      : null;
-    if (cornerRadius !== null) {
-      binding.lastCornerRadius = cornerRadius;
-      this.defaultPaneCornerRadius = cornerRadius;
-    }
-    const content = paneContentElement(binding.host);
-    if (!content) {
-      return;
-    }
-    const offsetTop = Math.max(0, content.offsetTop);
-    if (Number.isFinite(offsetTop)) {
-      binding.lastContentOffsetTop = offsetTop;
-      this.defaultPaneContentOffsetTop = offsetTop;
-    }
-  }
-
-  private defaultContentOffsetTop(): number {
-    return this.defaultPaneContentOffsetTop;
-  }
-
-  private defaultContentCornerRadius(): number {
-    return this.defaultPaneCornerRadius;
-  }
-}
-
-function workspaceTitlebarHeight(host: HTMLElement): number {
-  const ownerWindow = host.ownerDocument.defaultView;
-  if (!ownerWindow) {
-    return 0;
-  }
-  const value = Number.parseFloat(
-    ownerWindow
-      .getComputedStyle(host)
-      .getPropertyValue("--onirigiri-titlebar-min-height"),
-  );
-  return Number.isFinite(value) && value >= 0 ? value : 0;
-}
-
-function pixelLength(value: string): number | null {
-  if (!value.trim().endsWith("px")) {
-    return null;
-  }
-  const length = Number.parseFloat(value);
-  return Number.isFinite(length) && length >= 0 ? length : null;
-}
-
-function finitePaneMetric(value: number | undefined, fallback: number): number {
-  return value !== undefined && Number.isFinite(value) && value >= 0
-    ? value
-    : fallback;
 }
 
 function overviewTransitionIsActive(
@@ -495,10 +396,7 @@ function overviewTransitionIsActive(
 function createPaneHostBinding(host: HTMLElement): PaneHostBinding {
   return {
     host,
-    lastContentOffsetTop: Number.NaN,
-    lastCornerRadius: Number.NaN,
     lastFocused: null,
-    lastMeasurementKey: null,
     lastFrozen: null,
     lastHeight: Number.NaN,
     lastHidden: null,
@@ -751,15 +649,6 @@ function writeStoredTransform(binding: PaneHostBinding): number {
   binding.lastTransform = transform;
   binding.host.style.transform = transform;
   return 1;
-}
-
-function paneContentElement(host: HTMLElement): HTMLElement | null {
-  for (const child of host.children) {
-    if (child.classList.contains("onirigiri-pane__content")) {
-      return child as HTMLElement;
-    }
-  }
-  return null;
 }
 
 function writeBox(

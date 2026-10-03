@@ -9,7 +9,7 @@ import {
 } from "./pane-presentation-engine-test-support";
 
 describe("PanePresentationEngine", () => {
-  it("defers offscreen content measurements until the pane becomes visible", () => {
+  it("presents panes without reading content layout", () => {
     const presentation = new PanePresentationEngine();
     const host = document.createElement("section");
     host.style.borderBottomLeftRadius = "18px";
@@ -26,45 +26,34 @@ describe("PanePresentationEngine", () => {
     const hidden = renderItem({ visible: false, runtimeState: "hidden" });
     presentation.registerPaneHost("pane", host, hidden);
     presentation.apply([hidden], snapshot(), false, viewport);
-    expect(reads).toBe(0);
     presentation.apply([renderItem()], snapshot(), false, viewport);
-    expect(
-      presentation.presentedPaneGeometries([renderItem()])[0],
-    ).toMatchObject({
-      contentOffsetTop: 48,
-      cornerRadius: 18,
-    });
-    expect(reads).toBe(1);
+    presentation.updatePaneHostBoundary(
+      "pane",
+      renderItem({ maximized: true }),
+    );
+    presentation.apply(
+      [renderItem({ maximized: true })],
+      snapshot(),
+      false,
+      viewport,
+    );
+    expect(reads).toBe(0);
   });
 
-  it("publishes measured content geometry and interpolates unmounted ingress panes", () => {
+  it("publishes presented geometry and interpolates unmounted ingress panes", () => {
     const presentation = new PanePresentationEngine();
     const host = document.createElement("section");
-    host.style.borderBottomLeftRadius = "12px";
-    const content = document.createElement("div");
-    content.className = "onirigiri-pane__content";
-    Object.defineProperty(content, "offsetTop", {
-      configurable: true,
-      value: 36,
-    });
-    host.append(content);
     presentation.registerPaneHost("pane", host, renderItem());
 
     expect(
       presentation.presentedPaneGeometries([renderItem()])[0],
     ).toMatchObject({
-      contentOffsetTop: 36,
-      cornerRadius: 12,
       height: 300,
       paneId: "pane",
       width: 400,
     });
 
     const ingressPresentation = new PanePresentationEngine();
-    const workspace = document.createElement("div");
-    workspace.style.setProperty("--onirigiri-titlebar-min-height", "36px");
-    document.body.append(workspace);
-    ingressPresentation.bindWorkspace(workspace);
     const destination = renderItem({ x: 200 });
     expect(
       ingressPresentation.retargetPaneRearrangement(
@@ -93,11 +82,6 @@ describe("PanePresentationEngine", () => {
     expect(
       ingressPresentation.presentedPaneGeometries([destination])[0]?.x,
     ).toBe(200);
-    expect(
-      ingressPresentation.presentedPaneGeometries([destination])[0]
-        ?.contentOffsetTop,
-    ).toBe(36);
-    workspace.remove();
   });
 
   it("dirty-writes stable hosts and freezes the original content subtree", () => {

@@ -1,8 +1,6 @@
 import type { PaneId, WorkspacePresentationMode } from "../types.js";
 
 export interface WorkspacePresentedPaneGeometry {
-  contentOffsetTop: number;
-  cornerRadius: number;
   height: number;
   opacity: number;
   paneId: PaneId;
