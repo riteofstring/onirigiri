@@ -31,6 +31,7 @@ export const paneContentTypes = [
   { kind: "lab:mixed", label: "Combined lab surfaces", group: "Lab" },
   { kind: "lab:three-reactor", label: "Chromatic reactor", group: "Lab" },
   { kind: "lab:three-tidal", label: "Tidal lattice", group: "Lab" },
+  { kind: "lab:hover", label: "Hover!", group: "Lab" },
   { kind: "arcade:prism", label: "Prism Break", group: "Arcade" },
   { kind: "arcade:orbit", label: "Orbit Dash", group: "Arcade" },
 ] as const;
