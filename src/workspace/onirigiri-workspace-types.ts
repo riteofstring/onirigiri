@@ -51,6 +51,7 @@ import type {
   OnirigiriShortcutBindings,
   OnirigiriShortcutScope,
 } from "../input/workspace-shortcuts.js";
+import type { OnirigiriPaneLinkOptions } from "./onirigiri-pane-link.js";
 
 export interface OnirigiriPaneRenderState {
   content?: PaneContentDefaults;
@@ -154,6 +155,7 @@ export interface OnirigiriWorkspaceProps extends PaneDefaultsConfiguration {
   overviewCardMaxWidthPx?: number;
   overviewCardMinWidthPx?: number;
   paneLimits?: PaneLimitPolicy;
+  paneLink?: boolean | OnirigiriPaneLinkOptions;
   cameraModes?: WorkspaceCameraModes;
   getPanePicture?: OnirigiriPanePictureResolver;
   panePresentation?: PanePresentation;

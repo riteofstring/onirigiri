@@ -40,6 +40,7 @@ import type {
   OnirigiriWorkspaceProps,
 } from "./onirigiri-workspace-types.js";
 import { useOnirigiriRuntime } from "./onirigiri-workspace-runtime.js";
+import { useOnirigiriPaneLink } from "./onirigiri-pane-link.js";
 import { useOnirigiriWorkspacePresentation } from "../presentation/use-onirigiri-workspace-presentation.js";
 import { useOnirigiriStageViewport } from "./use-onirigiri-stage-viewport.js";
 import { resolveOnirigiriWorkspaceProps } from "./onirigiri-workspace-props.js";
@@ -141,6 +142,7 @@ export const OnirigiriWorkspace = forwardRef<
     overviewCardMaxWidthPx,
     overviewCardMinWidthPx,
     paneLimits,
+    paneLink,
     paneDefaults,
     paneTypeDefaults,
     getPanePicture,
@@ -193,6 +195,7 @@ export const OnirigiriWorkspace = forwardRef<
   useLayoutEffect(() => {
     runtime.store.setCursorRunway(cursorRunway);
   }, [cursorRunway, runtime]);
+  useOnirigiriPaneLink(runtime.store, paneLink);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const pictures = usePanePictures(runtime, workspaceRef);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -857,6 +860,16 @@ export const OnirigiriWorkspace = forwardRef<
     }
     return adjacentPaneIds;
   }, [scene.columns]);
+  const abovePaneIdByPaneId = useMemo(
+    () =>
+      new Map(
+        [...adjacentPaneIdByPaneId].map(([paneId, belowPaneId]) => [
+          belowPaneId,
+          paneId,
+        ]),
+      ),
+    [adjacentPaneIdByPaneId],
+  );
 
   useLayoutEffect(() => {
     const pendingPaneId = pendingChromeFocusPaneIdRef.current;
@@ -874,11 +887,11 @@ export const OnirigiriWorkspace = forwardRef<
   const resizePresentationRef = useRef({ renderItems, scene });
   resizePresentationRef.current = { renderItems, scene };
   const beginResize = useCallback<PaneResizeStart>(
-    (event, item, axis, adjacentItem) => {
+    (event, item, edge, adjacentItem) => {
       const presentation = resizePresentationRef.current;
       beginPaneResize({
         adjacentItem,
-        axis,
+        edge,
         event,
         item,
         renderItems: presentation.renderItems,
@@ -907,6 +920,7 @@ export const OnirigiriWorkspace = forwardRef<
         <ReservedSplitCell item={item} key={reservedSplitCellKey(item)} />
       ))}
       <OnirigiriWorkspacePaneLayer
+        abovePaneIdByPaneId={abovePaneIdByPaneId}
         adjacentPaneIdByPaneId={adjacentPaneIdByPaneId}
         beginResize={beginResize}
         closePane={closePane}

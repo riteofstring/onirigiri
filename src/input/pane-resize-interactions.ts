@@ -3,20 +3,23 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import type { WorkspaceLayoutStore } from "../state/layout-store.js";
 import { paneCellSizingForPane } from "../layout/pane-cell-sizing.js";
 import { minimumPaneHeightPx } from "../panes/pane-resize-geometry.js";
-import type { PaneId, PaneRenderItem, WorkspaceScene } from "../types.js";
-
-export type ResizeAxis = "column" | "row" | "split";
+import type {
+  PaneId,
+  PaneRenderItem,
+  PaneResizeEdge,
+  WorkspaceScene,
+} from "../types.js";
 
 export type PaneResizeStart = (
   event: ReactPointerEvent<HTMLButtonElement>,
   item: PaneRenderItem,
-  axis: ResizeAxis,
+  edge: PaneResizeEdge,
   adjacentItem?: PaneRenderItem,
 ) => void;
 
 interface BeginPaneResizeInput {
   adjacentItem?: PaneRenderItem;
-  axis: ResizeAxis;
+  edge: PaneResizeEdge;
   event: ReactPointerEvent<HTMLButtonElement>;
   item: PaneRenderItem;
   renderItems: readonly PaneRenderItem[];
@@ -26,7 +29,7 @@ interface BeginPaneResizeInput {
 
 export function beginPaneResize({
   adjacentItem,
-  axis,
+  edge,
   event,
   item,
   renderItems,
@@ -46,7 +49,7 @@ export function beginPaneResize({
   store.beginLayoutMutationGroup();
   const move = paneResizeMoveHandler({
     adjacentItem,
-    axis,
+    edge,
     item,
     renderItems,
     scene,
@@ -72,7 +75,7 @@ export function beginPaneResize({
 
 function paneResizeMoveHandler({
   adjacentItem,
-  axis,
+  edge,
   item,
   renderItems,
   scene,
@@ -82,46 +85,62 @@ function paneResizeMoveHandler({
 }: Omit<BeginPaneResizeInput, "event"> & { startX: number; startY: number }): (
   event: PointerEvent,
 ) => void {
-  if (axis === "column") {
-    return columnResizeMoveHandler(item, startX, store);
-  }
-  if (axis === "row") {
-    return rowResizeMoveHandler(item, renderItems, scene, startY, store);
+  if (edge === "left" || edge === "right") {
+    return columnResizeMoveHandler(item, edge, startX, store);
   }
   if (!adjacentItem) {
-    return () => undefined;
+    return rowResizeMoveHandler(
+      item,
+      edge,
+      rowResizeGeometry(item, renderItems, scene),
+      startY,
+      store,
+    );
   }
-  return splitResizeMoveHandler(item, adjacentItem, scene, startY, store);
+  return edge === "bottom"
+    ? splitResizeMoveHandler(item, adjacentItem, scene, startY, store)
+    : splitResizeMoveHandler(adjacentItem, item, scene, startY, store);
 }
 
 function columnResizeMoveHandler(
   item: PaneRenderItem,
+  edge: "left" | "right",
   startX: number,
   store: WorkspaceLayoutStore,
 ): (event: PointerEvent) => void {
+  const direction = edge === "left" ? -1 : 1;
   return (event) => {
-    store.resizePaneColumn(item.paneId, {
-      unit: "px",
-      value: Math.max(180, item.width + (event.clientX - startX) / item.scale),
-    });
+    store.resizePaneColumn(
+      item.paneId,
+      {
+        unit: "px",
+        value: Math.max(
+          180,
+          item.width + (direction * (event.clientX - startX)) / item.scale,
+        ),
+      },
+      edge === "left" ? "end" : "start",
+    );
   };
 }
 
 function rowResizeMoveHandler(
   item: PaneRenderItem,
-  renderItems: readonly PaneRenderItem[],
-  scene: WorkspaceScene,
+  edge: "bottom" | "top",
+  geometry: { minimumHeight: number; startHeight: number },
   startY: number,
   store: WorkspaceLayoutStore,
 ): (event: PointerEvent) => void {
-  const geometry = rowResizeGeometry(item, renderItems, scene);
+  const direction = edge === "top" ? -1 : 1;
   return (event) => {
     store.resizePaneRow(
       item.paneId,
       Math.max(
         geometry.minimumHeight,
-        geometry.startHeight + (event.clientY - startY) / item.scale,
+        geometry.startHeight +
+          (direction * (event.clientY - startY)) / item.scale,
       ),
+      edge === "top" ? "end" : "start",
     );
   };
 }

@@ -11,10 +11,15 @@ import type {
   WorkspaceScene,
 } from "../types.js";
 
+export type PaneResizeAxis = "column" | "row";
+export type PaneResizeFixedEdge = "end" | "start";
+
 interface WorkspaceSizingHooks {
   engine: WorkspaceLikeLayoutEngine;
   focusedColumnId: () => ColumnId | null;
   notify: () => void;
+  offsetCamera: (axis: PaneResizeAxis, delta: number) => void;
+  paneEndEdge: (paneId: PaneId, axis: PaneResizeAxis) => number | null;
   scene: () => WorkspaceScene;
   updateViewport: (viewport: Rect) => void;
   viewport: () => Rect;
@@ -78,7 +83,12 @@ export class WorkspaceSizingController {
     this.hooks.notify();
   }
 
-  resizePaneRow(paneId: PaneId, heightPx: number | null): boolean {
+  resizePaneRow(
+    paneId: PaneId,
+    heightPx: number | null,
+    fixedEdge: PaneResizeFixedEdge = "start",
+  ): boolean {
+    const holdEndEdge = this.endEdgeHold(paneId, "row", fixedEdge);
     if (
       !resizePaneRowAcrossPlane(
         this.hooks.engine,
@@ -89,17 +99,41 @@ export class WorkspaceSizingController {
     ) {
       return false;
     }
+    holdEndEdge();
     this.hooks.notify();
     return true;
   }
 
-  resizePaneColumn(paneId: PaneId, width: ColumnWidthSpec): ColumnId | null {
+  resizePaneColumn(
+    paneId: PaneId,
+    width: ColumnWidthSpec,
+    fixedEdge: PaneResizeFixedEdge = "start",
+  ): ColumnId | null {
     const columnId = this.hooks.scene().paneById.get(paneId)?.columnId;
     if (!columnId) {
       return null;
     }
+    const holdEndEdge = this.endEdgeHold(paneId, "column", fixedEdge);
     this.hooks.engine.resizeColumn(columnId, width);
+    holdEndEdge();
     this.hooks.notify();
     return columnId;
+  }
+
+  private endEdgeHold(
+    paneId: PaneId,
+    axis: PaneResizeAxis,
+    fixedEdge: PaneResizeFixedEdge,
+  ): () => void {
+    if (fixedEdge === "start") {
+      return () => undefined;
+    }
+    const before = this.hooks.paneEndEdge(paneId, axis);
+    return () => {
+      const after = this.hooks.paneEndEdge(paneId, axis);
+      if (before !== null && after !== null && after !== before) {
+        this.hooks.offsetCamera(axis, after - before);
+      }
+    };
   }
 }

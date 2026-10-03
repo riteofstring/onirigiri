@@ -44,6 +44,12 @@ export type {
   OnirigiriWorkspaceProps,
 } from "./workspace/onirigiri-workspace-types.js";
 export { OnirigiriWorkspace } from "./workspace/OnirigiriWorkspace.js";
+export { onirigiriPaneHref } from "./workspace/onirigiri-pane-link.js";
+export type {
+  OnirigiriPaneHrefOptions,
+  OnirigiriPaneLinkHistory,
+  OnirigiriPaneLinkOptions,
+} from "./workspace/onirigiri-pane-link.js";
 
 export { WorkspaceLikeLayoutEngine as OnirigiriLayoutEngine } from "./layout/layout-engine.js";
 export { WorkspaceLayoutStore as OnirigiriLayoutStore } from "./state/layout-store.js";
@@ -58,6 +64,7 @@ export {
   getOnirigiriShortcutBindings,
 } from "./input/workspace-shortcuts.js";
 export {
+  defaultPaneResizeEdges,
   defaultWorkspaceCameraModes,
   defaultWorkspaceGridAxes,
 } from "./types.js";

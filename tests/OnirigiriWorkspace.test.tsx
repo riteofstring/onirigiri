@@ -1240,7 +1240,7 @@ describe("OnirigiriWorkspace interactions", () => {
     );
 
     expect(workspace.getAttribute("role")).toBe("region");
-    expect(workspace.dataset.onirigiriStylingVersion).toBe("8");
+    expect(workspace.dataset.onirigiriStylingVersion).toBe("9");
     expect([...workspace.classList]).toEqual(
       expect.arrayContaining([
         "onirigiri-workspace",

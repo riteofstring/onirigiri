@@ -98,6 +98,17 @@ export interface ColumnWidthSpec {
 }
 
 export type PaneDimension = number | "viewport" | "auto";
+export type PaneResizeEdge = "bottom" | "left" | "right" | "top";
+export const paneResizeEdges: readonly PaneResizeEdge[] = Object.freeze([
+  "left",
+  "right",
+  "top",
+  "bottom",
+]);
+export const defaultPaneResizeEdges: readonly PaneResizeEdge[] = Object.freeze([
+  "right",
+  "bottom",
+]);
 export type PaneContentFit = "contain" | "cover" | "fill";
 
 export interface PaneContentDefaults {
@@ -114,6 +125,7 @@ export interface PaneDefaults {
   maxHeight?: number;
   aspectRatio?: number;
   content?: PaneContentDefaults;
+  resizeEdges?: readonly PaneResizeEdge[];
 }
 
 export interface PaneDefaultsConfiguration {

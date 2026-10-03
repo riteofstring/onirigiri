@@ -10,6 +10,7 @@ import type { OnirigiriWorkspaceProps } from "./onirigiri-workspace-types.js";
 import type { PaneId, PaneRenderItem, WorkspacePane } from "../types.js";
 
 interface OnirigiriWorkspacePaneLayerProps {
+  abovePaneIdByPaneId: ReadonlyMap<PaneId, PaneId>;
   adjacentPaneIdByPaneId: ReadonlyMap<PaneId, PaneId>;
   beginResize: PaneResizeStart;
   closePane: OnirigiriPaneViewProps["closePane"];
@@ -28,6 +29,7 @@ interface OnirigiriWorkspacePaneLayerProps {
 }
 
 export function OnirigiriWorkspacePaneLayer({
+  abovePaneIdByPaneId,
   adjacentPaneIdByPaneId,
   beginResize,
   closePane,
@@ -52,17 +54,18 @@ export function OnirigiriWorkspacePaneLayer({
     if (!item) {
       return null;
     }
-    const adjacentPaneId = adjacentPaneIdByPaneId.get(item.paneId);
-    const adjacentPane = adjacentPaneId
-      ? (paneById.get(adjacentPaneId) ?? null)
-      : null;
-    const adjacentItem = adjacentPaneId
-      ? (renderItemByPaneId.get(adjacentPaneId) ?? null)
-      : null;
+    const neighbour = (paneId: PaneId | undefined) => ({
+      item: paneId ? (renderItemByPaneId.get(paneId) ?? null) : null,
+      pane: paneId ? (paneById.get(paneId) ?? null) : null,
+    });
+    const adjacent = neighbour(adjacentPaneIdByPaneId.get(item.paneId));
+    const above = neighbour(abovePaneIdByPaneId.get(item.paneId));
     return (
       <OnirigiriPaneView
-        adjacentItem={adjacentItem}
-        adjacentPane={adjacentPane}
+        aboveItem={above.item}
+        abovePane={above.pane}
+        adjacentItem={adjacent.item}
+        adjacentPane={adjacent.pane}
         beginResize={beginResize}
         closePane={closePane}
         compactLayout={compactLayout}

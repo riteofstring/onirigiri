@@ -1,4 +1,5 @@
 import { columnSlotIndex } from "./column-slots.js";
+import { paneResizeEdges } from "../types.js";
 import type {
   PaneDefaults,
   PaneContentDefaults,
@@ -45,6 +46,19 @@ export function validatePaneDefaults(defaults: PaneDefaults | undefined): void {
     if (value !== undefined) positiveDimension(value, key);
   }
   validateContentDefaults(defaults.content);
+  validateResizeEdges(defaults.resizeEdges);
+}
+
+function validateResizeEdges(edges: PaneDefaults["resizeEdges"]): void {
+  if (edges === undefined) return;
+  if (
+    !Array.isArray(edges) ||
+    edges.some((edge) => !paneResizeEdges.includes(edge))
+  ) {
+    throw new Error(
+      "Pane resizeEdges must be an array of left, right, top, or bottom",
+    );
+  }
 }
 
 function validateContentDefaults(

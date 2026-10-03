@@ -1,6 +1,7 @@
 import {
   memo,
   useCallback,
+  useContext,
   useLayoutEffect,
   useRef,
   useSyncExternalStore,
@@ -21,22 +22,24 @@ import {
 import type { OnirigiriWorkspaceProps } from "../workspace/onirigiri-workspace-types.js";
 import type { PanePictures } from "../pictures/pane-pictures.js";
 import { minimumPaneHeightPx } from "./pane-resize-geometry.js";
+import { PaneDefaultsContext } from "./pane-content-layout.js";
 import { paneCellSizingForPane } from "../layout/pane-cell-sizing.js";
-import type {
-  PaneResizeStart,
-  ResizeAxis,
-} from "../input/pane-resize-interactions.js";
-import type {
-  PaneId,
-  PaneRenderItem,
-  WorkspacePane,
-  WorkspaceScene,
+import { resolvePaneDefaults } from "../layout/pane-defaults.js";
+import type { PaneResizeStart } from "../input/pane-resize-interactions.js";
+import {
+  defaultPaneResizeEdges,
+  type PaneId,
+  type PaneRenderItem,
+  type WorkspacePane,
+  type WorkspaceScene,
 } from "../types.js";
 
 export interface OnirigiriPaneViewProps extends Omit<
   OnirigiriPaneTitlebarProps,
   "controlsAvailable" | "maximized"
 > {
+  aboveItem: PaneRenderItem | null;
+  abovePane: WorkspacePane | null;
   adjacentItem: PaneRenderItem | null;
   adjacentPane: WorkspacePane | null;
   beginResize: PaneResizeStart;
@@ -51,6 +54,8 @@ export interface OnirigiriPaneViewProps extends Omit<
 }
 
 export const OnirigiriPaneView = memo(function OnirigiriPaneView({
+  aboveItem,
+  abovePane,
   adjacentItem,
   adjacentPane,
   beginResize,
@@ -144,6 +149,8 @@ export const OnirigiriPaneView = memo(function OnirigiriPaneView({
       />
       {item.visible ? (
         <PaneResizeHandles
+          aboveItem={aboveItem}
+          abovePane={abovePane}
           adjacentItem={adjacentItem}
           adjacentPane={adjacentPane}
           beginResize={beginResize}
@@ -170,6 +177,14 @@ function paneViewIsUnchanged(
   );
 }
 
+type PaneItemPropKey = "aboveItem" | "adjacentItem" | "item";
+
+const paneItemPropKeys: ReadonlySet<string> = new Set<PaneItemPropKey>([
+  "aboveItem",
+  "adjacentItem",
+  "item",
+]);
+
 function paneViewFieldsAreUnchanged(
   previous: Readonly<OnirigiriPaneViewProps>,
   next: Readonly<OnirigiriPaneViewProps>,
@@ -177,8 +192,10 @@ function paneViewFieldsAreUnchanged(
   for (const field in previous) {
     const key = field as keyof OnirigiriPaneViewProps;
     if (!(key in next)) return false;
-    if (key === "item" || key === "adjacentItem") {
-      if (!paneItemFieldsAreUnchanged(previous[key], next[key])) return false;
+    if (paneItemPropKeys.has(key)) {
+      const itemKey = key as PaneItemPropKey;
+      if (!paneItemFieldsAreUnchanged(previous[itemKey], next[itemKey]))
+        return false;
     } else if (previous[key] !== next[key]) return false;
   }
   for (const key in next) if (!(key in previous)) return false;
@@ -308,100 +325,108 @@ function isMovingOutOfOverview(
   );
 }
 
-function PaneResizeHandles({
-  adjacentItem,
-  adjacentPane,
-  beginResize,
-  compactLayout,
-  item,
-  pane,
-  rowHeight,
-  store,
-}: Pick<
+type PaneResizeHandleProps = Pick<
   OnirigiriPaneViewProps,
+  | "aboveItem"
+  | "abovePane"
   | "adjacentItem"
   | "adjacentPane"
   | "beginResize"
-  | "compactLayout"
   | "item"
   | "pane"
   | "rowHeight"
   | "store"
->) {
-  const columnResizeSlot = resolveOnirigiriSlotProps(
-    useOnirigiriStyling(),
-    "pane-resize-column",
-    "onirigiri-pane__resize onirigiri-pane__resize--column",
+>;
+
+const paneResizeHandleOrder = ["right", "bottom", "left", "top"] as const;
+
+function PaneResizeHandles({
+  compactLayout,
+  ...props
+}: PaneResizeHandleProps & Pick<OnirigiriPaneViewProps, "compactLayout">) {
+  const configuration = useContext(PaneDefaultsContext);
+  if (paneResizeHandlesHidden(props.item, compactLayout)) {
+    return null;
+  }
+  const edges = new Set(
+    resolvePaneDefaults(props.pane, configuration).resizeEdges ??
+      defaultPaneResizeEdges,
   );
-  if (
+  return paneResizeHandleOrder
+    .filter((edge) => edges.has(edge))
+    .map((edge) =>
+      edge === "left" || edge === "right" ? (
+        <PaneColumnResizeHandle {...props} edge={edge} key={edge} />
+      ) : (
+        <PaneRowResizeHandle {...props} edge={edge} key={edge} />
+      ),
+    );
+}
+
+function paneResizeHandlesHidden(
+  item: PaneRenderItem,
+  compactLayout: boolean,
+): boolean {
+  return (
     compactLayout ||
     (item.moving && !item.focused) ||
     item.presentationMode !== "normal" ||
     item.maximized
-  ) {
-    return null;
-  }
-  return (
-    <>
-      <button
-        aria-label={`Resize ${pane.title} width`}
-        aria-keyshortcuts="ArrowLeft ArrowRight Enter Space"
-        className={columnResizeSlot.className}
-        data-onirigiri-pane-control="true"
-        data-onirigiri-slot="pane-resize-column"
-        onDoubleClick={(event) => {
-          event.stopPropagation();
-          store.focusPane(pane.paneId);
-          store.resetFocusedColumnWidth();
-          store.reanchorFocusedPane();
-        }}
-        onKeyDown={(event) => handleColumnResizeKeyDown(event, item, store)}
-        onPointerDown={(event) => beginResize(event, item, "column")}
-        style={columnResizeSlot.style}
-        type="button"
-      />
-      <PaneRowResizeHandle
-        adjacentItem={adjacentItem}
-        adjacentPane={adjacentPane}
-        beginResize={beginResize}
-        item={item}
-        pane={pane}
-        rowHeight={rowHeight}
-        store={store}
-      />
-    </>
   );
 }
 
-function PaneRowResizeHandle({
-  adjacentItem,
-  adjacentPane,
+function PaneColumnResizeHandle({
   beginResize,
+  edge,
   item,
   pane,
-  rowHeight,
   store,
-}: Pick<
-  OnirigiriPaneViewProps,
-  | "adjacentItem"
-  | "adjacentPane"
-  | "beginResize"
-  | "item"
-  | "pane"
-  | "rowHeight"
-  | "store"
->) {
+}: PaneResizeHandleProps & { edge: "left" | "right" }) {
+  const columnResizeSlot = resolveOnirigiriSlotProps(
+    useOnirigiriStyling(),
+    "pane-resize-column",
+    edge === "left"
+      ? "onirigiri-pane__resize onirigiri-pane__resize--column onirigiri-pane__resize--left"
+      : "onirigiri-pane__resize onirigiri-pane__resize--column",
+  );
+  return (
+    <button
+      aria-label={
+        edge === "left"
+          ? `Resize ${pane.title} width from the left edge`
+          : `Resize ${pane.title} width`
+      }
+      aria-keyshortcuts="ArrowLeft ArrowRight Enter Space"
+      className={columnResizeSlot.className}
+      data-onirigiri-pane-control="true"
+      data-onirigiri-slot="pane-resize-column"
+      data-resize-edge={edge}
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        store.focusPane(pane.paneId);
+        store.resetFocusedColumnWidth();
+        store.reanchorFocusedPane();
+      }}
+      onKeyDown={(event) => handleColumnResizeKeyDown(event, item, edge, store)}
+      onPointerDown={(event) => beginResize(event, item, edge)}
+      style={columnResizeSlot.style}
+      type="button"
+    />
+  );
+}
+
+function PaneRowResizeHandle(
+  props: PaneResizeHandleProps & { edge: "bottom" | "top" },
+) {
+  const { beginResize, edge, item, pane, rowHeight, store } = props;
   const rowResizeSlot = resolveOnirigiriSlotProps(
     useOnirigiriStyling(),
     "pane-resize-row",
-    "onirigiri-pane__resize onirigiri-pane__resize--row",
+    edge === "top"
+      ? "onirigiri-pane__resize onirigiri-pane__resize--row onirigiri-pane__resize--top"
+      : "onirigiri-pane__resize onirigiri-pane__resize--row",
   );
-  const resizeKind: Extract<ResizeAxis, "row" | "split"> = adjacentItem
-    ? "split"
-    : "row";
-  const label = adjacentPane
-    ? `Resize split between ${pane.title} and ${adjacentPane.title}`
-    : `Resize row containing ${pane.title}`;
+  const { label, neighbourItem, split } = paneRowResizeTarget(props);
   return (
     <button
       aria-label={label}
@@ -409,16 +434,17 @@ function PaneRowResizeHandle({
       className={rowResizeSlot.className}
       data-onirigiri-pane-control="true"
       data-onirigiri-slot="pane-resize-row"
-      data-resize-kind={resizeKind}
+      data-resize-edge={edge}
+      data-resize-kind={split ? "split" : "row"}
       onDoubleClick={(event) => {
         event.stopPropagation();
-        resetPaneRowResize(store, pane.paneId, adjacentItem);
+        resetPaneRowResize(store, pane.paneId, split);
       }}
       onKeyDown={(event) =>
-        handleRowResizeKeyDown(event, item, adjacentItem, rowHeight, store)
+        handleRowResizeKeyDown(event, { edge, item, rowHeight, split }, store)
       }
       onPointerDown={(event) =>
-        beginResize(event, item, resizeKind, adjacentItem ?? undefined)
+        beginResize(event, item, edge, neighbourItem ?? undefined)
       }
       style={rowResizeSlot.style}
       type="button"
@@ -426,22 +452,59 @@ function PaneRowResizeHandle({
   );
 }
 
+function paneRowResizeTarget({
+  aboveItem,
+  abovePane,
+  adjacentItem,
+  adjacentPane,
+  edge,
+  item,
+  pane,
+}: PaneResizeHandleProps & { edge: "bottom" | "top" }): {
+  label: string;
+  neighbourItem: PaneRenderItem | null;
+  split: PaneSplitItems | null;
+} {
+  if (edge === "bottom") {
+    return {
+      label: adjacentPane
+        ? `Resize split between ${pane.title} and ${adjacentPane.title}`
+        : `Resize row containing ${pane.title}`,
+      neighbourItem: adjacentItem,
+      split: adjacentItem ? { lower: adjacentItem, upper: item } : null,
+    };
+  }
+  return {
+    label: abovePane
+      ? `Resize split between ${abovePane.title} and ${pane.title}`
+      : `Resize row containing ${pane.title} from the top edge`,
+    neighbourItem: aboveItem,
+    split: aboveItem ? { lower: item, upper: aboveItem } : null,
+  };
+}
+
+interface PaneSplitItems {
+  lower: PaneRenderItem;
+  upper: PaneRenderItem;
+}
+
 function resetPaneRowResize(
   store: WorkspaceLayoutStore,
   paneId: PaneId,
-  adjacentItem: PaneRenderItem | null,
+  split: PaneSplitItems | null,
 ): void {
-  if (!adjacentItem) {
+  if (!split) {
     store.resizePaneRow(paneId, null);
     store.reanchorFocusedPane();
     return;
   }
   const scene = store.toScene();
   const pairWeight =
-    paneWeight(scene, paneId) + paneWeight(scene, adjacentItem.paneId);
+    paneWeight(scene, split.upper.paneId) +
+    paneWeight(scene, split.lower.paneId);
   store.resizePaneSplit(
-    paneId,
-    adjacentItem.paneId,
+    split.upper.paneId,
+    split.lower.paneId,
     pairWeight / 2,
     pairWeight / 2,
   );
@@ -451,6 +514,7 @@ function resetPaneRowResize(
 function handleColumnResizeKeyDown(
   event: KeyboardEvent<HTMLButtonElement>,
   item: PaneRenderItem,
+  edge: "left" | "right",
   store: WorkspaceLayoutStore,
 ): void {
   if (event.key === "Enter" || event.key === " ") {
@@ -469,25 +533,33 @@ function handleColumnResizeKeyDown(
   event.preventDefault();
   event.stopPropagation();
   store.focusPane(item.paneId);
-  store.resizePaneColumn(item.paneId, {
-    unit: "px",
-    value: Math.max(180, item.width + direction * keyboardResizeStep(event)),
-  });
+  const growth =
+    (edge === "left" ? -direction : direction) * keyboardResizeStep(event);
+  store.resizePaneColumn(
+    item.paneId,
+    { unit: "px", value: Math.max(180, item.width + growth) },
+    edge === "left" ? "end" : "start",
+  );
   store.reanchorFocusedPane();
+}
+
+interface PaneRowResizeTarget {
+  edge: "bottom" | "top";
+  item: PaneRenderItem;
+  rowHeight: number;
+  split: PaneSplitItems | null;
 }
 
 function handleRowResizeKeyDown(
   event: KeyboardEvent<HTMLButtonElement>,
-  item: PaneRenderItem,
-  adjacentItem: PaneRenderItem | null,
-  rowHeight: number,
+  { edge, item, rowHeight, split }: PaneRowResizeTarget,
   store: WorkspaceLayoutStore,
 ): void {
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
     event.stopPropagation();
     store.focusPane(item.paneId);
-    resetPaneRowResize(store, item.paneId, adjacentItem);
+    resetPaneRowResize(store, item.paneId, split);
     return;
   }
   const direction =
@@ -499,15 +571,19 @@ function handleRowResizeKeyDown(
   event.stopPropagation();
   store.focusPane(item.paneId);
   const delta = direction * keyboardResizeStep(event);
-  if (!adjacentItem) {
+  if (!split) {
     store.resizePaneRow(
       item.paneId,
-      Math.max(minimumPaneHeightPx, rowHeight + delta),
+      Math.max(
+        minimumPaneHeightPx,
+        rowHeight + (edge === "top" ? -delta : delta),
+      ),
+      edge === "top" ? "end" : "start",
     );
     store.reanchorFocusedPane();
     return;
   }
-  resizePaneSplitFromKeyboard(store, item, adjacentItem, delta);
+  resizePaneSplitFromKeyboard(store, split.upper, split.lower, delta);
   store.reanchorFocusedPane();
 }
 

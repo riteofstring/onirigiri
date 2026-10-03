@@ -287,6 +287,7 @@ export const onirigiriStyleStateAttributes = [
   "data-overview-progress",
   "data-presentation-mode",
   "data-pane-rearrangement-selection",
+  "data-resize-edge",
   "data-resize-kind",
   "data-runtime-state",
   "data-shortcut-scope",
@@ -317,7 +318,7 @@ export const onirigiriStylingContract = {
   stateAttributes: onirigiriStyleStateAttributes,
   tokenGroups: onirigiriThemeTokenGroups,
   tokenNames: onirigiriThemeTokenNames,
-  version: 8,
+  version: 9,
 } as const;
 
 export type OnirigiriWorkspaceStyle = CSSProperties &

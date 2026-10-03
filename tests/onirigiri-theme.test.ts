@@ -102,7 +102,7 @@ describe("Onirigiri theme API", () => {
       stateAttributes: onirigiriStyleStateAttributes,
       tokenGroups: onirigiriThemeTokenGroups,
       tokenNames: onirigiriThemeTokenNames,
-      version: 8,
+      version: 9,
     });
   });
 

@@ -14,7 +14,11 @@ import type { ResolvedCameraMotion } from "../presentation/motion-curve.js";
 import { PaneRearrangementController } from "./layout-store-rearrangement.js";
 import { WorkspacePaneOpeningController } from "./layout-store-pane-opening.js";
 import { restoredWorkspaceScene } from "./layout-store-restoration.js";
-import { WorkspaceSizingController } from "./layout-store-sizing.js";
+import {
+  WorkspaceSizingController,
+  type PaneResizeAxis,
+  type PaneResizeFixedEdge,
+} from "./layout-store-sizing.js";
 import { emptyFramePaneRequest } from "./layout-store-helpers.js";
 import { defaultWorkspaceCameraModes } from "../types.js";
 import type {
@@ -153,6 +157,8 @@ export class WorkspaceLayoutStore {
       engine,
       focusedColumnId: () => this.focusedColumnId(),
       notify: () => this.notify(),
+      offsetCamera: (axis, delta) => this.offsetNormalCamera(axis, delta),
+      paneEndEdge: (paneId, axis) => this.paneEndEdge(paneId, axis),
       scene: () => this.toScene(),
       updateViewport: (viewport) => this.updateViewportAfterSizing(viewport),
       viewport: () => this.lastViewport,
@@ -718,6 +724,29 @@ export class WorkspaceLayoutStore {
     return true;
   }
 
+  startAtPane(paneId: PaneId): boolean {
+    const scene = this.toScene();
+    const cursor = workspaceGridCursorForPane(scene, paneId);
+    if (!cursor) {
+      return false;
+    }
+    if (workspaceGridCursorsEqual(cursor, this.getSnapshot().cursor)) {
+      return true;
+    }
+    this.state.current.setState({
+      cursor: normalizeWorkspaceGridCursor(scene, cursor),
+    });
+    this.focusRevealSuppressed = false;
+    this.paneRearrangement.clearWithoutNotify();
+    this.retargetCameraForCursor(
+      this.initialCursorCameraPending ? "center" : undefined,
+    );
+    this.cameraMotion.reset();
+    this.snapScrollToTarget();
+    this.notify(false);
+    return true;
+  }
+
   focusOverviewPane(paneId: PaneId, viewport: Rect): boolean {
     const cursor = workspaceGridCursorForPane(this.toScene(), paneId);
     if (this.overviewCamera.mode !== "overview" || !cursor) {
@@ -787,8 +816,12 @@ export class WorkspaceLayoutStore {
   resetWorkspaceSizing(viewport: Rect): void {
     this.sizing.resetWorkspaceSizing(viewport);
   }
-  resizePaneRow(paneId: PaneId, heightPx: number | null): boolean {
-    return this.sizing.resizePaneRow(paneId, heightPx);
+  resizePaneRow(
+    paneId: PaneId,
+    heightPx: number | null,
+    fixedEdge?: PaneResizeFixedEdge,
+  ): boolean {
+    return this.sizing.resizePaneRow(paneId, heightPx, fixedEdge);
   }
   renamePane(paneId: PaneId, title: string): boolean {
     if (!this.engine.renamePane(paneId, title)) {
@@ -798,8 +831,12 @@ export class WorkspaceLayoutStore {
     this.notify();
     return true;
   }
-  resizePaneColumn(paneId: PaneId, width: ColumnWidthSpec): ColumnId | null {
-    return this.sizing.resizePaneColumn(paneId, width);
+  resizePaneColumn(
+    paneId: PaneId,
+    width: ColumnWidthSpec,
+    fixedEdge?: PaneResizeFixedEdge,
+  ): ColumnId | null {
+    return this.sizing.resizePaneColumn(paneId, width, fixedEdge);
   }
   restoreLayout(layout: OnirigiriLayout): void {
     const restored = restoredWorkspaceScene(this.scene, layout);
@@ -1013,6 +1050,50 @@ export class WorkspaceLayoutStore {
     });
     this.initialCursorCameraPending = false;
     this.focusRevealSuppressed = true;
+  }
+
+  private paneEndEdge(paneId: PaneId, axis: PaneResizeAxis): number | null {
+    const scene = this.toScene();
+    const cursor = workspaceGridCursorForPane(scene, paneId);
+    if (!cursor) {
+      return null;
+    }
+    const maximizedPaneId = this.getSnapshot().maximizedPaneId;
+    if (axis === "column") {
+      const box = this.engine.gridCellBox(
+        cursor,
+        this.lastViewport,
+        maximizedPaneId,
+      );
+      return box.x + box.width;
+    }
+    const cells = workspaceColumnAtGridCursor(scene, cursor)?.cells.length ?? 1;
+    const box = this.engine.gridCellBox(
+      { ...cursor, split: Math.max(0, cells - 1) },
+      this.lastViewport,
+      maximizedPaneId,
+    );
+    return box.y + box.height;
+  }
+
+  private offsetNormalCamera(axis: PaneResizeAxis, delta: number): void {
+    if (this.overviewCamera.mode !== "normal" || !Number.isFinite(delta)) {
+      return;
+    }
+    const snapshot = this.getSnapshot();
+    this.state.current.setState(
+      axis === "column"
+        ? {
+            horizontalAnchorOffset: snapshot.horizontalAnchorOffset + delta,
+            targetHorizontalAnchorOffset:
+              snapshot.targetHorizontalAnchorOffset + delta,
+          }
+        : {
+            verticalAnchorOffset: snapshot.verticalAnchorOffset + delta,
+            targetVerticalAnchorOffset:
+              snapshot.targetVerticalAnchorOffset + delta,
+          },
+    );
   }
 
   private holdCameraPosition(): void {

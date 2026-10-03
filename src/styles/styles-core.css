@@ -884,6 +884,18 @@
     inset-inline: 0;
   }
 
+  .onirigiri-pane__resize--left,
+  .onirigiri-pane__resize--left::after {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+  }
+
+  .onirigiri-pane__resize--top,
+  .onirigiri-pane__resize--top::after {
+    bottom: auto;
+    top: 0;
+  }
+
   @container (max-width: 208px) {
     .onirigiri-pane__titlebar {
       gap: 0;

@@ -647,11 +647,11 @@ test("preserves region semantics and visible controls in forced colors", async (
 
   await expect(workspace).toHaveAttribute(
     "data-onirigiri-styling-version",
-    "8",
+    "9",
   );
   await expect(desktopControls(page)).toHaveAttribute(
     "data-onirigiri-styling-version",
-    "8",
+    "9",
   );
   const outline = await focusOutline(control);
   expect(outline.style).toBe("solid");
@@ -700,7 +700,7 @@ test("exposes low-friction theme tokens and stable component slots", async ({
   await expect(workspace).toHaveAttribute("data-onirigiri-slot", "workspace");
   await expect(workspace).toHaveAttribute(
     "data-onirigiri-styling-version",
-    "8",
+    "9",
   );
   await expect(desktopControls(page)).toHaveAttribute(
     "data-onirigiri-workspace-id",
