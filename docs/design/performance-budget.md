@@ -99,9 +99,7 @@ mixed native and HTML-in-Canvas performance matrix; it does not certify arbitrar
 content or visible-browser refresh rates.
 
 The production overview cadence check of the full 2D demo with its sibling
-`browser-surface-lab` workloads lives with the demo in the
-[onirigiri-playground](https://github.com/riteofstring/onirigiri-playground)
-repository. It is an integration check of that application, separate from the
+`browser-surface-lab` workloads lives with the demo in `playground/`. It is an integration check of that application, separate from the
 repository-contained native cadence and video proofs, and is not protected-lab
 certification or evidence for a visible 120 Hz display.
 

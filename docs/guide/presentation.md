@@ -45,8 +45,8 @@ native controls shows them again while paused, hovered or focused.
 Visible applications still incur their own rendering costs; frame rate depends on
 the content and device. Pane shells and controls remain DOM.
 
-Both demo playgrounds in
-[onirigiri-playground](https://github.com/riteofstring/onirigiri-playground) expose **Rendering → Always live**, enabled by default. It keeps
+Both demos in
+[the playground](https://github.com/riteofstring/onirigiri/tree/main/playground) expose **Rendering → Always live**, enabled by default. It keeps
 all applications mounted. Disabling it restores ordinary content retention and
 frozen navigation unless an explicit policy requests a different presentation.
 Texture budgets apply to retained pictures, not mounted applications or live buffers.

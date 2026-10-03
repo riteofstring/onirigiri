@@ -1,7 +1,5 @@
 import { createServer } from "vite";
 
-import { requirePlaygroundCheckout } from "./playground-checkout";
-
 const repositoryRoot = new URL("../../", import.meta.url).pathname;
 
 export async function startTwoDimensionalDevServer(): Promise<{
@@ -10,7 +8,7 @@ export async function startTwoDimensionalDevServer(): Promise<{
   repositoryRoot: string;
 }> {
   const server = await createServer({
-    configFile: `${requirePlaygroundCheckout()}two-dimensional/vite.config.ts`,
+    configFile: `${repositoryRoot}playground/two-dimensional/vite.config.ts`,
     logLevel: "error",
     server: { host: "127.0.0.1", open: false, port: 0, strictPort: false },
   });

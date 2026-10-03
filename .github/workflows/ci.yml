@@ -51,3 +51,6 @@ jobs:
 
       - name: Build package
         run: pnpm build
+
+      - name: Build playground
+        run: pnpm build:playground

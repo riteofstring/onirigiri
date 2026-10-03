@@ -374,13 +374,10 @@ the workspace if it is invalid.
 
 ## Development
 
-The interactive 1D and 2D demo playground lives in the separate
-[onirigiri-playground](https://github.com/riteofstring/onirigiri-playground)
-repository, and its lab panes come from
+The interactive 1D and 2D demo playground lives in [`playground/`](playground),
+and its lab panes come from
 [browser-surface-lab](https://github.com/riteofstring/browser-surface-lab).
-Library unit tests need only this repository. Browser tests that drive the
-library through the playground require an installed `onirigiri-playground`
-checkout beside this one; see [Development](docs/guide/development.md).
+Run `pnpm dev:1d` or `pnpm dev:2d`; see [Development](docs/guide/development.md).
 
 ## Known issues
 

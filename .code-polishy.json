@@ -13,14 +13,19 @@
       "bench/src/main.tsx",
       "bench/vite.config.ts",
       "fixtures/packed-consumer/src/main.tsx",
-      "scripts/*.mjs"
+      "scripts/*.mjs",
+      "playground/one-dimensional/src/main.tsx",
+      "playground/two-dimensional/src/main.tsx",
+      "playground/*/vite.config.ts",
+      "playground/scripts/*.mjs"
     ],
     "development": [
       "bench/**",
       "fixtures/**",
       "scripts/**",
       "tests/**",
-      "vite.config.ts"
+      "vite.config.ts",
+      "playground/**"
     ]
   },
   "quality": {
@@ -113,9 +118,7 @@
           "tests/browser/cooperative-fixture-frame.tsx",
           "scripts/preview-retained-capture.mjs",
           "scripts/test-retained-chrome-capture.mjs",
-          "scripts/test-picture-interactions.mjs",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts"
+          "scripts/test-picture-interactions.mjs"
         ]
       },
       {
@@ -238,6 +241,10 @@
         "vite.config.ts",
         ".node-version"
       ]
+    },
+    {
+      "name": "playground",
+      "paths": ["playground/**"]
     }
   ],
   "checks": [
@@ -254,6 +261,14 @@
       "provides": ["build"],
       "argv": ["pnpm", "build"],
       "modules": ["onirigiri"],
+      "runOn": ["build"],
+      "timeoutSeconds": 900
+    },
+    {
+      "name": "playground-build",
+      "provides": ["build"],
+      "argv": ["pnpm", "build:playground"],
+      "modules": ["playground"],
       "runOn": ["build"],
       "timeoutSeconds": 900
     }
@@ -346,8 +361,6 @@
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
           "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts",
           "tests/browser/cooperative-fixture-frame.tsx"
         ],
         "runOn": ["focused", "recommended", "full"],
@@ -369,8 +382,6 @@
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
           "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts",
           "tests/browser/cooperative-fixture-frame.tsx"
         ],
         "runOn": ["focused", "recommended", "full"],
@@ -415,8 +426,6 @@
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
           "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts",
           "tests/browser/cooperative-fixture-frame.tsx"
         ],
         "runOn": ["focused", "recommended", "full"],
@@ -438,9 +447,7 @@
           "scripts/lib/process.mjs",
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
-          "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts"
+          "tests/browser/hardware-webgpu.setup.ts"
         ],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 120
@@ -604,8 +611,7 @@
           "tests/browser/pane-defaults.tsx",
           "tests/browser/cpu.playwright.config.ts",
           "tests/browser/chrome-launch.ts",
-          "tests/browser/hardware-webgpu.ts",
-          "tests/browser/playground-checkout.ts"
+          "tests/browser/hardware-webgpu.ts"
         ],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 120
@@ -627,20 +633,34 @@
           "tests/browser/playwright.config.ts",
           "tests/browser/chrome-launch.ts",
           "tests/browser/hardware-webgpu.ts",
-          "tests/browser/hardware-webgpu.setup.ts",
-          "scripts/playground-server.mjs",
-          "tests/browser/playground-checkout.ts"
+          "tests/browser/hardware-webgpu.setup.ts"
         ],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 300
+      },
+      {
+        "name": "playground-unit",
+        "kind": "unit",
+        "scope": "module",
+        "cost": "quick",
+        "modules": ["playground"],
+        "argv": ["pnpm", "exec", "vitest", "run", "--project", "playground"],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300,
+        "paths": ["playground/**"]
       }
     ],
-    "paths": ["tests/**"],
+    "paths": ["tests/**", "playground/tests/**"],
     "ownership": [
       {
         "paths": ["tests/**"],
         "module": "onirigiri",
         "focusedSuite": "onirigiri-unit"
+      },
+      {
+        "paths": ["playground/tests/**"],
+        "module": "playground",
+        "focusedSuite": "playground-unit"
       }
     ]
   },

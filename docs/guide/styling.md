@@ -239,7 +239,7 @@ The `--onirigiri-tone-cyan`, `--onirigiri-tone-green`, `--onirigiri-tone-orange`
 allowing a host to map those roles to any palette. The default mappings are neutral greys.
 
 Set `data-color-mode="light"` on the workspace or any ancestor to use the bundled light theme. The
-[demo playgrounds](https://github.com/riteofstring/onirigiri-playground) include a persisted light-mode toggle as a host-application example:
+[demo playgrounds](https://github.com/riteofstring/onirigiri/tree/main/playground) include a persisted light-mode toggle as a host-application example:
 
 ```tsx
 <main data-color-mode={colorMode}>
