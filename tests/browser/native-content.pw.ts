@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import { picturePixels } from "./picture-pixels";
 import type { NativeMotionFixture } from "./native-content-scene";
@@ -883,10 +883,26 @@ test("large viewports paint every loaded same-origin frame", async ({
       ),
     ).toHaveAttribute("data-onirigiri-live", "true");
   }
+  let painted: { id: string; ink: number }[] = [];
+  await expect(async () => {
+    painted = await framePaint(page, frames, info);
+    expect(painted.filter(({ ink }) => ink < 100)).toEqual([]);
+  }).toPass({ timeout: 10_000 });
+  await info.attach("large-native-frame-paint", {
+    body: JSON.stringify(painted),
+    contentType: "application/json",
+  });
+});
+
+async function framePaint(
+  page: Page,
+  frames: { id: string; box: { x: number; y: number } }[],
+  info: TestInfo,
+): Promise<{ id: string; ink: number }[]> {
   const screenshot = await page.screenshot({
     path: info.outputPath("large-native-frame-paint.png"),
   });
-  const painted = await page.evaluate(
+  return page.evaluate(
     async ({ frames, base64 }) => {
       const bitmap = await createImageBitmap(
         await (await fetch(`data:image/png;base64,${base64}`)).blob(),
@@ -920,12 +936,7 @@ test("large viewports paint every loaded same-origin frame", async ({
     },
     { frames, base64: screenshot.toString("base64") },
   );
-  await info.attach("large-native-frame-paint", {
-    body: JSON.stringify(painted),
-    contentType: "application/json",
-  });
-  expect(painted.filter(({ ink }) => ink < 100)).toEqual([]);
-});
+}
 
 test("retains sharp mosaics when new full-size pictures exceed the cache budget", async ({
   page,
