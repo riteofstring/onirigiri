@@ -25,6 +25,8 @@ interface ElementImage {
 interface ElementCanvas extends HTMLCanvasElement {
   requestPaint(): void;
   captureElementImage(element: Element): ElementImage;
+  updateElementGeometry?(element: Element): void;
+  clearElementGeometry?(element: Element): void;
 }
 
 interface ElementPaintEvent extends Event {
@@ -141,6 +143,7 @@ export class PaneCanvasSurface {
       },
       interactive: () => callbacks.interactive?.() === true,
       presented: () => {
+        this.canvas.clearElementGeometry?.(this.content);
         this.presentation.restore();
         this.source.prepare(this.callbacks.hideScrollbars());
         this.source.presentVideos(this.callbacks.videoFrames?.() === true);
@@ -294,6 +297,7 @@ export class PaneCanvasSurface {
   dispose(): void {
     this.disposed = true;
     this.source.dispose();
+    this.canvas.clearElementGeometry?.(this.content);
     delete this.content.dataset.onirigiriLive;
     this.presentation.restore();
     this.lastImage?.close();
@@ -491,6 +495,7 @@ export class PaneCanvasSurface {
     const started = performance.now();
     this.copyImage(this.lastImage!, this.context!.getCurrentTexture(), true);
     this.copyBudget.record(this, performance.now() - started);
+    this.canvas.updateElementGeometry?.(this.content);
     this.refreshPending = false;
     this.presentation.painted();
     this.freezePending = false;
@@ -628,6 +633,7 @@ export class PaneCanvasSurface {
               this.context!.getCurrentTexture(),
               true,
             );
+            this.canvas.updateElementGeometry?.(this.content);
             this.presentation.painted();
             this.freezePending = false;
             this.callbacks.drawn(true);

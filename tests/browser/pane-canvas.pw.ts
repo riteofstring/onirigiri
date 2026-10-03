@@ -2069,6 +2069,42 @@ for (const framed of [false, true]) {
   });
 }
 
+for (const dpr of [1, 2]) {
+  test.describe(`canvas pointer input at pixel ratio ${dpr}`, () => {
+    test.use({ deviceScaleFactor: dpr });
+
+    test("pointer input reaches live content presented through the canvas", async ({
+      page,
+    }) => {
+      await page.goto(
+        `/@fs${repositoryRoot}tests/browser/native-content-guard.html?grid&count=2&liveContent&pictures&auto`,
+      );
+      const pane = page.locator('[data-onirigiri-pane-id="pane-1"]');
+      await page.evaluate(() =>
+        window.__nativeMotionFixture.setPresentation("pane-1", "canvas"),
+      );
+      await expect(pane).toHaveAttribute("data-onirigiri-renderer", "canvas");
+      await expect(pane).toHaveAttribute(
+        "data-onirigiri-presentation-live",
+        "true",
+      );
+      await expectLiveColors(page, "pane-1");
+      const textbox = pane.frameLocator("iframe").getByRole("textbox");
+      await textbox.evaluate((element) => {
+        (element as HTMLInputElement).value = "";
+      });
+      const bounds = (await textbox.boundingBox())!;
+      await page.mouse.click(
+        bounds.x + bounds.width / 2,
+        bounds.y + bounds.height / 2,
+      );
+      await page.keyboard.type("Typed through the canvas");
+      await expect(textbox).toHaveValue("Typed through the canvas");
+      await expect(pane).toHaveAttribute("data-onirigiri-renderer", "canvas");
+    });
+  });
+}
+
 test("presentation policies distinguish live canvas, retained previews and custom placeholders without replacing content", async ({
   page,
 }) => {
