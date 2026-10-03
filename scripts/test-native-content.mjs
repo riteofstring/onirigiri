@@ -52,7 +52,7 @@ const commands = {
     "--project=chrome",
     "tests/browser/pane-canvas.pw.ts",
     "--grep",
-    "presentation policies distinguish|texture policies freeze fresh|live motion adapts to graphics",
+    "presentation policies distinguish|texture policies freeze fresh|live motion adapts to graphics|pointer input reaches live content",
   ],
   cadence: [
     "exec",
