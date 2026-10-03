@@ -21,6 +21,7 @@ interface ResolvedPaneLink {
 }
 
 const defaultPaneLinkParam = "pane";
+export const paneLinkSettleMs = 250;
 const maximumPaneLinkLength = 256;
 
 export function onirigiriPaneHref(
@@ -31,15 +32,20 @@ export function onirigiriPaneHref(
     throw new Error("Onirigiri pane links require a linkable pane id");
   }
   const param = resolvedParam(options.param);
-  const base =
-    options.base ??
-    (typeof window === "undefined" ? undefined : window.location.href);
+  const page = typeof window === "undefined" ? undefined : window.location.href;
+  const base = options.base ?? page;
   if (base === undefined) {
     return searchWithPaneParam("", param, paneId);
   }
-  const url = new URL(base);
+  const absolute = /^[a-z][a-z\d+.-]*:/iu.test(String(base));
+  const url = new URL(
+    base,
+    absolute ? undefined : (page ?? "http://onirigiri.invalid"),
+  );
   url.search = searchWithPaneParam(url.search, param, paneId);
-  return url.href;
+  return absolute || page !== undefined
+    ? url.href
+    : `${url.pathname}${url.search}${url.hash}`;
 }
 
 export function useOnirigiriPaneLink(
@@ -65,12 +71,17 @@ export function useOnirigiriPaneLink(
       return;
     }
     let focusedPaneId = store.getSnapshot().focusedPaneId;
+    let pendingWrite: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = store.subscribe((snapshot) => {
       if (snapshot.focusedPaneId === focusedPaneId) {
         return;
       }
       focusedPaneId = snapshot.focusedPaneId;
-      writePaneLink(param, history, focusedPaneId);
+      clearTimeout(pendingWrite);
+      pendingWrite = setTimeout(
+        () => writePaneLink(param, history, focusedPaneId),
+        paneLinkSettleMs,
+      );
     });
     const followHistory = () => {
       const paneId = linkedPaneId(window.location.search, param);
@@ -80,6 +91,7 @@ export function useOnirigiriPaneLink(
     };
     window.addEventListener("popstate", followHistory);
     return () => {
+      clearTimeout(pendingWrite);
       unsubscribe();
       window.removeEventListener("popstate", followHistory);
     };
@@ -135,10 +147,14 @@ function writePaneLink(
     return;
   }
   const url = `${pathname}${searchWithPaneParam(search, param, linkable)}${hash}`;
-  if (history === "push") {
-    window.history.pushState(null, "", url);
-  } else {
-    window.history.replaceState(window.history.state, "", url);
+  try {
+    if (history === "push") {
+      window.history.pushState(null, "", url);
+    } else {
+      window.history.replaceState(window.history.state, "", url);
+    }
+  } catch {
+    return;
   }
 }
 

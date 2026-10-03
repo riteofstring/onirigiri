@@ -11,6 +11,7 @@ import {
   type OnirigiriWorkspaceHandle,
   type OnirigiriWorkspaceProps,
 } from "../src/index";
+import { paneLinkSettleMs } from "../src/workspace/onirigiri-pane-link";
 import {
   requiredWorkspaceHandle,
   stubOnirigiriWorkspaceBrowserGlobals,
@@ -79,6 +80,12 @@ async function mount(
   return requiredWorkspaceHandle(ref.current);
 }
 
+async function settle(): Promise<void> {
+  await act(
+    () => new Promise((resolve) => setTimeout(resolve, paneLinkSettleMs + 50)),
+  );
+}
+
 function currentUrl(): string {
   return `${window.location.pathname}${window.location.search}${window.location.hash}`;
 }
@@ -140,8 +147,10 @@ describe("pane links", () => {
     const workspace = await mount();
 
     await act(async () => workspace.focusPane("hover"));
+    await settle();
     expect(currentUrl()).toBe("/docs?b=a%20b&pane=hover&z=1+2#section");
     await act(async () => workspace.focus("right"));
+    await settle();
     expect(workspace.getSnapshot().focusedPaneId).not.toBe("hover");
     expect(window.location.search).not.toContain("pane=hover");
     expect(window.history.length).toBe(historyLength);
@@ -152,6 +161,7 @@ describe("pane links", () => {
     window.history.replaceState(null, "", "/?pane=below&keep=yes");
     const workspace = await mount();
     await act(async () => workspace.focus("right"));
+    await settle();
     expect(workspace.getSnapshot().focusedPaneId).toBeNull();
     expect(currentUrl()).toBe("/?keep=yes");
   });
@@ -162,6 +172,7 @@ describe("pane links", () => {
     });
     const historyLength = window.history.length;
     await act(async () => workspace.focusPane("notes"));
+    await settle();
     expect(currentUrl()).toBe("/?window=notes");
     expect(window.history.length).toBe(historyLength + 1);
 
@@ -169,6 +180,7 @@ describe("pane links", () => {
     await act(async () => {
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
+    await settle();
     expect(workspace.getSnapshot().focusedPaneId).toBe("below");
     expect(currentUrl()).toBe("/?window=below");
     expect(window.history.length).toBe(historyLength + 2);
@@ -185,6 +197,35 @@ describe("pane links", () => {
     const workspace = await mount({ paneLink: undefined });
     expect(workspace.getSnapshot().focusedPaneId).toBe("home");
     await act(async () => workspace.focusPane("notes"));
+    await settle();
+    expect(currentUrl()).toBe("/?pane=hover");
+  });
+
+  it("writes once focus settles, so fast navigation adds one history entry", async () => {
+    const workspace = await mount({ paneLink: { history: "push" } });
+    const historyLength = window.history.length;
+    for (const paneId of ["notes", "hover", "below", "notes", "hover"])
+      await act(async () => workspace.focusPane(paneId));
+    expect(currentUrl()).toBe("/");
+    await settle();
+    expect(currentUrl()).toBe("/?pane=hover");
+    expect(window.history.length).toBe(historyLength + 1);
+  });
+
+  it("keeps navigating when the browser refuses a history update", async () => {
+    const workspace = await mount();
+    const replace = vi
+      .spyOn(window.history, "replaceState")
+      .mockImplementation(() => {
+        throw new DOMException("Too many calls", "SecurityError");
+      });
+    await act(async () => workspace.focusPane("notes"));
+    await settle();
+    expect(replace).toHaveBeenCalled();
+    replace.mockRestore();
+    await act(async () => workspace.focusPane("hover"));
+    await settle();
+    expect(workspace.getSnapshot().focusedPaneId).toBe("hover");
     expect(currentUrl()).toBe("/?pane=hover");
   });
 
@@ -214,5 +255,12 @@ describe("onirigiriPaneHref", () => {
       `${window.location.origin}/here?x=1&pane=notes`,
     );
     expect(() => onirigiriPaneHref("")).toThrow("linkable pane id");
+  });
+
+  it("resolves a relative base against the current page", () => {
+    window.history.replaceState(null, "", "/here?x=1");
+    expect(onirigiriPaneHref("notes", { base: "/tour?ref=nav" })).toBe(
+      `${window.location.origin}/tour?ref=nav&pane=notes`,
+    );
   });
 });

@@ -172,7 +172,9 @@ The playground exposes the same actions with native buttons; selected groups use
 announcements, and Escape returns to single-pane selection.
 
 Pane movement has no terminal structural edge: moving beyond a leading or trailing slot or plane creates
-one literal adjacent cell and rebases stored indexes when necessary. The renderer keeps bounded viewport
+one literal adjacent cell, which may have a negative row or column. Structural edits never renumber the
+rows or columns already in use: splits and openings shift the occupied cells outward, and closing the
+only pane of a row leaves that row in place, so saved layouts can contain negative numbers and gaps. The renderer keeps bounded viewport
 overscan without eagerly mounting consumer content, and a focused pane remains retained even when Fixed
 camera mode has moved it beyond the visible corridor. Returning uses its exact destination-cell geometry
 and the original consumer host.

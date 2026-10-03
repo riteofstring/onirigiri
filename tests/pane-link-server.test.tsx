@@ -18,5 +18,8 @@ describe("pane links without a browser window", () => {
     );
     expect(markup).toContain('data-onirigiri-slot="workspace"');
     expect(onirigiriPaneHref("hover")).toBe("?pane=hover");
+    expect(onirigiriPaneHref("hover", { base: "/tour?ref=nav#top" })).toBe(
+      "/tour?ref=nav&pane=hover#top",
+    );
   });
 });
