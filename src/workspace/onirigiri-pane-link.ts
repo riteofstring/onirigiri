@@ -37,6 +37,15 @@ export function onirigiriPaneHref(
   if (base === undefined) {
     return searchWithPaneParam("", param, paneId);
   }
+  return paneHrefFromBase(base, page, param, paneId);
+}
+
+function paneHrefFromBase(
+  base: string | URL,
+  page: string | undefined,
+  param: string,
+  paneId: PaneId,
+): string {
   const absolute = /^[a-z][a-z\d+.-]*:/iu.test(String(base));
   const url = new URL(
     base,
