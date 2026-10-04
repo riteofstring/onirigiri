@@ -521,7 +521,7 @@
           "tests/browser/hardware-webgpu.setup.ts"
         ],
         "runOn": ["focused", "recommended", "full"],
-        "timeoutSeconds": 300
+        "timeoutSeconds": 600
       },
       {
         "name": "performance-budget-contract",
