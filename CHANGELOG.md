@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 Changes since 0.1.0. All 0.1.0 exports, props, defaults, styling slots and
 saved-layout formats still work; layouts saved by 0.1.0 restore unchanged.

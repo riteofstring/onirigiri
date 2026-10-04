@@ -1,6 +1,6 @@
 {
   "name": "@riteofstring/onirigiri",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A reusable React window system with tiled panes, overview navigation, resizing, and keyboard layout commands.",
   "type": "module",
   "sideEffects": [
