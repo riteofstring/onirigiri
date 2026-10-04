@@ -83,14 +83,14 @@ test("native live panes sustain cadence in the production playground and overvie
     await expect(page.locator('[data-onirigiri-slot="pane"]')).toHaveCount(100);
     await waitForPlaygroundContent(page);
     for (const key of [
-      ...Array<string>(6).fill("Right"),
-      ...Array<string>(4).fill("Down"),
+      ...Array<string>(7).fill("Right"),
+      ...Array<string>(2).fill("Down"),
     ]) {
       await page.keyboard.press(`Alt+Arrow${key}`);
       await page.waitForTimeout(200);
     }
     await expect(
-      page.locator('[data-onirigiri-pane-id="pane-47"]'),
+      page.locator('[data-onirigiri-pane-id="pane-28"]'),
     ).toHaveAttribute("data-focused", "true");
     await waitForPlaygroundContent(page);
     environment.focused = await playgroundCensus(page);
