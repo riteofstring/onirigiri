@@ -28,3 +28,10 @@ their purpose outside the containing directory. The exported workspace component
 uses PascalCase; supporting modules use kebab-case. Public symbols and CSS selectors
 retain their established names. Tests may import internal owners to exercise their
 boundaries; consumer fixtures continue to use the public package.
+
+The `playground` module depends on `onirigiri` as a development consumer. Its
+applications resolve the public exports to the library source, and its Chrome
+preview reuses the library's browser launch and hardware capability checks.
+The published package excludes the playground. Browser fixture HTML files and
+the root Vitest project list load the playground fixture and test entry points;
+TypeScript loads the surface-lab server declaration for its Vite plugin imports.
