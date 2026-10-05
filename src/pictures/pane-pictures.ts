@@ -142,6 +142,8 @@ export class PanePictures {
     this.configuration.getPresentation !== undefined;
   isInteractive = (): boolean =>
     !this.moving() && !this.overview() && !this.interaction.resizing();
+  acceptsContentInput = (): boolean =>
+    !this.overview() && !this.interaction.resizing();
   private readonly interaction = new PanePictureActivity(
     (presentationChanged) => this.noteActivity(presentationChanged),
   );

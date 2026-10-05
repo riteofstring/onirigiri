@@ -362,7 +362,9 @@ function usePaneContentState({
     () =>
       (pictures.isLive(pane.paneId) ? 8 : 0) |
       (pictures.isContinuous() ? 16 : 0) |
-      (pictures.isLive(pane.paneId) && pictures.isInteractive() ? 32 : 0) |
+      (pictures.isLive(pane.paneId) && pictures.acceptsContentInput()
+        ? 32
+        : 0) |
       (pictures.isDrawn(pane.paneId) ? 4 : 0) |
       (pictures.isOverviewCapture(pane.paneId)
         ? 1

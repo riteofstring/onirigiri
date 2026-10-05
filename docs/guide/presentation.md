@@ -24,8 +24,9 @@ input. Cold overview cards stay unmounted unless `captureMissingOverviewPictures
 normal navigation mounts destination content before the camera settles.
 
 `renderPane` receives `runtimeState` (`"live"`, `"frozen"`, or `"hidden"`) and
-`interactive`, which is true while the pane's content accepts keyboard and
-pointer input, so a host can move focus into it as soon as it can receive it.
+`interactive`, which is true while the pane's content accepts input, so a host
+can move focus into it as soon as it can receive it. Always-live content stays
+interactive during camera motion; only its pointer input is shielded.
 Onirigiri keeps the same content subtree while the engine moves stable pane hosts.
 Ready content stays visible during navigation and overview. Frozen content
 receives no input, and Onirigiri pauses its CSS animations; applications pause

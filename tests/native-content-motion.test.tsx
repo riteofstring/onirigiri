@@ -553,6 +553,61 @@ describe("OnirigiriWorkspace native content motion", () => {
     container.remove();
   });
 
+  it("keeps always-live content interactive and non-inert while the camera moves", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
+
+    await act(async () => {
+      root.render(
+        <OnirigiriWorkspace
+          initialPanes={columnPanes(3, 520)}
+          liveContent
+          ref={workspaceRef}
+          renderPane={(pane, state) => (
+            <input
+              data-field={pane.paneId}
+              data-interactive={String(state.interactive)}
+            />
+          )}
+        />,
+      );
+    });
+    const workspace = requiredWorkspaceHandle(workspaceRef.current);
+    const field = requiredElement<HTMLInputElement>(
+      container,
+      '[data-field="pane-1"]',
+    );
+    const pane = requiredElement<HTMLElement>(
+      container,
+      '[data-onirigiri-pane-id="pane-1"]',
+    );
+    const liveContent = requiredElement<HTMLElement>(
+      pane,
+      ".onirigiri-pane__live-content",
+    );
+    expect(field.dataset.interactive).toBe("true");
+
+    await act(async () => {
+      expect(workspace.focusPane("pane-2")).toBe(true);
+    });
+    expect(workspace.getSnapshot().scrollColumn).not.toBe(
+      workspace.getSnapshot().targetScrollColumn,
+    );
+    expect(pane.dataset.moving).toBe("true");
+    expect(field.dataset.interactive).toBe("true");
+    expect(liveContent.hasAttribute("inert")).toBe(false);
+    expect(
+      requiredElement<HTMLElement>(pane, ".onirigiri-pane__content").dataset
+        .onirigiriShielded,
+    ).toBe("true");
+
+    await flushAnimationFrames(animationFrames);
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
   it("mounts cold unfocused destination entrants during motion without mounting the corridor", async () => {
     const container = document.createElement("div");
     document.body.append(container);
