@@ -16,6 +16,7 @@ import {
   type CSSProperties,
 } from "react";
 import { OnirigiriIcon } from "../workspace/onirigiri-icons.js";
+import { syncContentAnimations } from "./pane-content-animations.js";
 import { PaneInteractiveContext } from "./pane-interactivity.js";
 import {
   PaneContentReadiness,
@@ -96,6 +97,10 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
   useLayoutEffect(() => {
     readiness.invalidate();
   }, [readiness, contentFit, contentDefaults.aspectRatio]);
+  useLayoutEffect(() => {
+    if (contentRef.current)
+      syncContentAnimations(contentRef.current, contentRuntime === "frozen");
+  }, [contentRef, contentRuntime]);
   return (
     <div
       className={contentSlot.className}

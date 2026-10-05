@@ -808,6 +808,8 @@
   }
 
   .onirigiri-pane__content[data-onirigiri-shielded="true"]
+    .onirigiri-pane__input-shield,
+  .onirigiri-pane__content[data-runtime-state="frozen"]
     .onirigiri-pane__input-shield {
     display: block;
   }
