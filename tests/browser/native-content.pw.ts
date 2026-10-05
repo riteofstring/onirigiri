@@ -371,6 +371,45 @@ test("motion keeps input and animations out of pane content without replacing it
   ).toBe(true);
 });
 
+test("native presentation keeps content scrollbars through motion", async ({
+  page,
+}) => {
+  await openNativeFixture(page, false, false, { count: 6, preloadMargin: 0 });
+  await page.evaluate(() => {
+    window.__nativeMotionFixture.setLiveContent(true);
+    window.__nativeMotionFixture.setPresentation("pane-1", "dom");
+  });
+  await page
+    .locator('[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__live-content')
+    .evaluate((content) => {
+      const scroller = document.createElement("div");
+      scroller.id = "scrollbar-probe";
+      scroller.style.cssText = "height: 40px; overflow: scroll";
+      scroller.innerHTML = '<div style="height: 400px"></div>';
+      content.prepend(scroller);
+    });
+  const scrollbarColor = () =>
+    page.evaluate(
+      () =>
+        getComputedStyle(document.getElementById("scrollbar-probe")!)
+          .scrollbarColor,
+    );
+  expect(await scrollbarColor()).toBe("auto");
+  const release = await holdClock(page);
+  try {
+    await page.evaluate(() =>
+      window.__nativeMotionFixture.handle.current!.focusPane("pane-2"),
+    );
+    await stepClock(page, 3);
+    await expect(
+      page.locator('[data-onirigiri-pane-id="pane-1"]'),
+    ).toHaveAttribute("data-moving", "true");
+    expect(await scrollbarColor()).toBe("auto");
+  } finally {
+    await release();
+  }
+});
+
 test("a cold focused pane paints its first frame before navigation settles", async ({
   page,
 }) => {

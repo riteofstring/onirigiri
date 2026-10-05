@@ -770,7 +770,10 @@ function syncContentInput(
     liveContent.toggleAttribute("inert", inert);
     liveContent.inert = inert;
   }
-  liveContent.setAttribute("aria-hidden", String(inert || shielded));
+  liveContent.setAttribute(
+    "aria-hidden",
+    String(inert || item.runtimeState === "frozen"),
+  );
 }
 
 function syncContentAnimations(liveContent: HTMLElement, frozen: boolean) {

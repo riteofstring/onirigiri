@@ -150,6 +150,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
                     pane={pane}
                     content={contentDefaults}
                     focused={focused}
+                    interactive={interactive}
                     maximized={maximized}
                     presentationMode={presentationMode}
                     runtimeState={contentRuntime}
@@ -182,6 +183,7 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
   pane,
   content,
   focused,
+  interactive,
   maximized,
   presentationMode,
   runtimeState,
@@ -195,11 +197,15 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
   | "presentationMode"
   | "runtimeState"
   | "visible"
-> & { content: ReturnType<typeof usePaneContentLayout>["contentDefaults"] }) {
+> & {
+  content: ReturnType<typeof usePaneContentLayout>["contentDefaults"];
+  interactive: boolean;
+}) {
   return renderPane(pane, {
     content,
     focused,
     frozen: runtimeState === "frozen",
+    interactive,
     maximized,
     presentationMode,
     runtimeState,
