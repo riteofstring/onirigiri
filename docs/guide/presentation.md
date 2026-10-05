@@ -25,8 +25,11 @@ normal navigation mounts destination content before the camera settles.
 
 `renderPane` receives `runtimeState` (`"live"`, `"frozen"`, or `"hidden"`).
 Onirigiri keeps the same content subtree while the engine moves stable pane hosts.
-Ready content stays visible during navigation and overview. Frozen content is
-inert; applications pause their own render loops. Normal navigation mounts cold
+Ready content stays visible during navigation and overview. Frozen content
+receives no input, and Onirigiri pauses its CSS animations; applications pause
+their own render loops. During camera motion a transparent shield over each pane
+takes pointer input, and focus leaves content that stops accepting input, so
+motion never restyles the content itself. Normal navigation mounts cold
 destination panes without mounting the entire corridor. Zustand owns layout state.
 
 ### Following the focused pane

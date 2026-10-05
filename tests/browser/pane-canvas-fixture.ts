@@ -71,7 +71,6 @@ export async function openCanvas(page: Page): Promise<void> {
           visible: () => fixture.visible,
           continuous: () => false,
           renderer: () => (fixture.live ? fixture.motionRenderer : "canvas"),
-          hideScrollbars: () => false,
           displayScale: () => 1,
           revision: () => fixture.revision,
           drawn: (drawn) => {

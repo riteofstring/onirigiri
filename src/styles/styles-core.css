@@ -506,11 +506,6 @@
     display: none !important;
   }
 
-  .onirigiri-pane[data-frozen="true"] .onirigiri-pane__content {
-    pointer-events: none;
-    user-select: none;
-  }
-
   .onirigiri-workspace[data-presentation-mode="normal"]
     .onirigiri-pane[data-frozen="true"] {
     pointer-events: none;
@@ -805,31 +800,20 @@
     white-space: nowrap;
   }
 
-  .onirigiri-pane__content[data-runtime-state="frozen"]
-    > .onirigiri-pane__content-surface
-    > :is(.onirigiri-pane__live-surface, .onirigiri-pane__native-surface)
-    > .onirigiri-pane__live-content {
-    pointer-events: none;
-    user-select: none;
+  .onirigiri-pane__input-shield {
+    display: none;
+    inset: 0;
+    position: absolute;
+    z-index: 1;
   }
 
-  .onirigiri-pane__content[data-runtime-state="frozen"]
-    > .onirigiri-pane__content-surface
-    > :is(.onirigiri-pane__live-surface, .onirigiri-pane__native-surface)
-    > .onirigiri-pane__live-content
-    *,
-  .onirigiri-pane__content[data-runtime-state="frozen"]
-    > .onirigiri-pane__content-surface
-    > :is(.onirigiri-pane__live-surface, .onirigiri-pane__native-surface)
-    > .onirigiri-pane__live-content
-    *::before,
-  .onirigiri-pane__content[data-runtime-state="frozen"]
-    > .onirigiri-pane__content-surface
-    > :is(.onirigiri-pane__live-surface, .onirigiri-pane__native-surface)
-    > .onirigiri-pane__live-content
-    *::after {
-    animation-play-state: paused !important;
-    caret-color: transparent !important;
+  .onirigiri-pane__content[data-onirigiri-shielded="true"]
+    .onirigiri-pane__input-shield {
+    display: block;
+  }
+
+  .onirigiri-pane__resize[hidden] {
+    display: none;
   }
 
   .onirigiri-pane__resize {

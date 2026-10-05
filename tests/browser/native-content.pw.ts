@@ -287,6 +287,90 @@ async function stepClock(page: Page, count: number): Promise<void> {
   }
 }
 
+test("motion keeps input and animations out of pane content without replacing its nodes", async ({
+  page,
+}) => {
+  await openNativeFixture(page, false, false, { count: 6, preloadMargin: 0 });
+  await page
+    .locator('[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__live-content')
+    .evaluate((content) => {
+      const style = document.createElement("style");
+      style.textContent =
+        "@keyframes motion-probe { to { translate: 12px 0; } }";
+      document.head.append(style);
+      const probe = document.createElement("div");
+      probe.id = "motion-probe";
+      probe.style.cssText =
+        "width: 8px; height: 8px; animation: motion-probe 1s linear infinite";
+      content.prepend(probe);
+    });
+  const before = await page.evaluateHandle(() => {
+    const pane = document.querySelector('[data-onirigiri-pane-id="pane-1"]')!;
+    return {
+      status: pane.querySelector(".onirigiri-pane__paused-status"),
+      resize: pane.querySelector(".onirigiri-pane__resize"),
+    };
+  });
+  const motionState = () =>
+    page.evaluate(() => {
+      const pane = document.querySelector<HTMLElement>(
+        '[data-onirigiri-pane-id="pane-1"]',
+      )!;
+      const content = pane.querySelector<HTMLElement>(
+        '[data-onirigiri-slot="pane-content"]',
+      )!;
+      const live = pane.querySelector<HTMLElement>(
+        ".onirigiri-pane__live-content",
+      )!;
+      const shield = pane.querySelector<HTMLElement>(
+        ".onirigiri-pane__input-shield",
+      )!;
+      const bounds = shield.getBoundingClientRect();
+      const x = Math.max(bounds.left, 0) + 4;
+      const y = Math.max(bounds.top, 0) + 4;
+      return {
+        moving: pane.dataset.moving,
+        runtime: content.dataset.runtimeState,
+        shielded: getComputedStyle(shield).display === "block",
+        reachesContent: live.contains(document.elementFromPoint(x, y)),
+        animation: document.getElementById("motion-probe")!.getAnimations()[0]
+          ?.playState,
+      };
+    });
+  const release = await holdClock(page);
+  try {
+    await page.evaluate(() =>
+      window.__nativeMotionFixture.handle.current!.focusPane("pane-2"),
+    );
+    await stepClock(page, 3);
+    expect(await motionState()).toEqual({
+      moving: "true",
+      runtime: "frozen",
+      shielded: true,
+      reachesContent: false,
+      animation: "paused",
+    });
+  } finally {
+    await release();
+  }
+  await expect
+    .poll(motionState)
+    .toMatchObject({ moving: "false", shielded: false, animation: "running" });
+  expect(
+    await before.evaluate(
+      ({ status, resize }) =>
+        status ===
+          document.querySelector(
+            '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__paused-status',
+          ) &&
+        resize ===
+          document.querySelector(
+            '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__resize',
+          ),
+    ),
+  ).toBe(true);
+});
+
 test("a cold focused pane paints its first frame before navigation settles", async ({
   page,
 }) => {
@@ -318,9 +402,10 @@ test("a cold focused pane paints its first frame before navigation settles", asy
       "true",
     );
     await expect(content).toHaveAttribute("data-runtime-state", "frozen");
+    await expect(content).toHaveAttribute("data-onirigiri-shielded", "true");
     await expect(
       destination.locator('[data-onirigiri-slot="pane-live-content"]'),
-    ).toHaveAttribute("inert", "");
+    ).not.toHaveAttribute("inert");
     const alpha = await destination
       .locator("canvas.onirigiri-pane__live-surface")
       .evaluate(async (canvas: HTMLCanvasElement) => {
@@ -373,9 +458,9 @@ async function visibleContent(page: Page) {
         return {
           id: pane.dataset.onirigiriPaneId!,
           inert: content?.inert,
-          pointerEvents: content
-            ? getComputedStyle(content).pointerEvents
-            : "missing",
+          shielded: pane
+            .querySelector('[data-onirigiri-slot="pane-content"]')
+            ?.getAttribute("data-onirigiri-shielded"),
           mounted: !!pane.querySelector("iframe"),
           moving: pane.dataset.moving,
           placeholderOpacity: placeholder
@@ -481,7 +566,7 @@ test("native retained frames remain visible through overview entry and return li
   for (const pane of await visibleContent(page)) {
     expect(pane.runtime, pane.id).toBe("frozen");
     expect(pane.inert, pane.id).toBe(true);
-    expect(pane.pointerEvents, pane.id).toBe("none");
+    expect(pane.shielded, pane.id).toBe("true");
   }
   await page.evaluate(() =>
     window.__nativeMotionFixture.handle.current!.toggleOverview(),

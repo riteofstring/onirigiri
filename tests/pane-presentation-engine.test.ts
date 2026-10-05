@@ -114,6 +114,7 @@ describe("PanePresentationEngine", () => {
     );
     expect(host.style.willChange).toBe("");
     expect(liveContent.inert).toBe(false);
+    expect(content.dataset.onirigiriShielded).toBe("false");
 
     const unchanged = presentation.apply(
       [renderItem()],
@@ -145,7 +146,8 @@ describe("PanePresentationEngine", () => {
       "translate(-120.00px, 0.00px) scale(1.0000)",
     );
     expect(host.style.willChange).toBe("");
-    expect(liveContent.inert).toBe(true);
+    expect(liveContent.inert).toBe(false);
+    expect(content.dataset.onirigiriShielded).toBe("true");
     expect(liveContent.getAttribute("aria-hidden")).toBe("true");
     expect(host.querySelector("input")).toBe(consumer);
     expect(host.querySelector("[data-onirigiri-frozen-texture]")).toBeNull();

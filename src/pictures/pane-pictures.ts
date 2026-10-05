@@ -355,7 +355,6 @@ export class PanePictures {
             this.emit(paneId);
             this.wake();
           },
-          hideScrollbars: () => !this.isInteractive(),
           displayScale: () => this.displayScale(paneId, host),
           revision: () => readiness.revision,
           drawn: (drawn, renderer) => {

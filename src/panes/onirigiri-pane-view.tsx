@@ -345,9 +345,10 @@ function PaneResizeHandles({
   ...props
 }: PaneResizeHandleProps & Pick<OnirigiriPaneViewProps, "compactLayout">) {
   const configuration = useContext(PaneDefaultsContext);
-  if (paneResizeHandlesHidden(props.item, compactLayout)) {
+  if (paneResizeHandlesUnavailable(props.item, compactLayout)) {
     return null;
   }
+  const hidden = props.item.moving && !props.item.focused;
   const edges = new Set(
     resolvePaneDefaults(props.pane, configuration).resizeEdges ??
       defaultPaneResizeEdges,
@@ -356,32 +357,38 @@ function PaneResizeHandles({
     .filter((edge) => edges.has(edge))
     .map((edge) =>
       edge === "left" || edge === "right" ? (
-        <PaneColumnResizeHandle {...props} edge={edge} key={edge} />
+        <PaneColumnResizeHandle
+          {...props}
+          edge={edge}
+          hidden={hidden}
+          key={edge}
+        />
       ) : (
-        <PaneRowResizeHandle {...props} edge={edge} key={edge} />
+        <PaneRowResizeHandle
+          {...props}
+          edge={edge}
+          hidden={hidden}
+          key={edge}
+        />
       ),
     );
 }
 
-function paneResizeHandlesHidden(
+function paneResizeHandlesUnavailable(
   item: PaneRenderItem,
   compactLayout: boolean,
 ): boolean {
-  return (
-    compactLayout ||
-    (item.moving && !item.focused) ||
-    item.presentationMode !== "normal" ||
-    item.maximized
-  );
+  return compactLayout || item.presentationMode !== "normal" || item.maximized;
 }
 
 function PaneColumnResizeHandle({
   beginResize,
   edge,
+  hidden,
   item,
   pane,
   store,
-}: PaneResizeHandleProps & { edge: "left" | "right" }) {
+}: PaneResizeHandleProps & { edge: "left" | "right"; hidden: boolean }) {
   const columnResizeSlot = resolveOnirigiriSlotProps(
     useOnirigiriStyling(),
     "pane-resize-column",
@@ -401,6 +408,7 @@ function PaneColumnResizeHandle({
       data-onirigiri-pane-control="true"
       data-onirigiri-slot="pane-resize-column"
       data-resize-edge={edge}
+      hidden={hidden}
       onDoubleClick={(event) => {
         event.stopPropagation();
         store.focusPane(pane.paneId);
@@ -416,9 +424,9 @@ function PaneColumnResizeHandle({
 }
 
 function PaneRowResizeHandle(
-  props: PaneResizeHandleProps & { edge: "bottom" | "top" },
+  props: PaneResizeHandleProps & { edge: "bottom" | "top"; hidden: boolean },
 ) {
-  const { beginResize, edge, item, pane, rowHeight, store } = props;
+  const { beginResize, edge, hidden, item, pane, rowHeight, store } = props;
   const rowResizeSlot = resolveOnirigiriSlotProps(
     useOnirigiriStyling(),
     "pane-resize-row",
@@ -436,6 +444,7 @@ function PaneRowResizeHandle(
       data-onirigiri-slot="pane-resize-row"
       data-resize-edge={edge}
       data-resize-kind={split ? "split" : "row"}
+      hidden={hidden}
       onDoubleClick={(event) => {
         event.stopPropagation();
         resetPaneRowResize(store, pane.paneId, split);

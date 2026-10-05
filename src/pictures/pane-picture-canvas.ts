@@ -61,7 +61,6 @@ interface PaneCanvasCallbacks {
   videoFrames?(): boolean;
   interactive?(): boolean;
   changed?(): void;
-  hideScrollbars(): boolean;
   displayScale(): number;
   revision(): number;
   drawn(ready: boolean, renderer?: PaneLiveRenderer): void;
@@ -145,7 +144,7 @@ export class PaneCanvasSurface {
       presented: () => {
         this.canvas.clearElementGeometry?.(this.content);
         this.presentation.restore();
-        this.source.prepare(this.callbacks.hideScrollbars());
+        this.source.prepare(false);
         this.source.presentVideos(this.callbacks.videoFrames?.() === true);
         callbacks.drawn(true, "dom");
       },
@@ -203,7 +202,7 @@ export class PaneCanvasSurface {
   }
 
   private requestNativePresentation(): void {
-    this.source.prepare(this.callbacks.hideScrollbars());
+    this.source.prepare(false);
     if (this.live) {
       if (this.source.isNative()) {
         if (this.content.dataset.onirigiriLive !== "true")
@@ -245,10 +244,7 @@ export class PaneCanvasSurface {
 
   private prepareContent(): boolean {
     return this.source.prepare(
-      !this.live ||
-        this.captureAbort !== null ||
-        this.nativeRequested() ||
-        this.callbacks.hideScrollbars(),
+      !this.live || this.captureAbort !== null || this.nativeRequested(),
     );
   }
 

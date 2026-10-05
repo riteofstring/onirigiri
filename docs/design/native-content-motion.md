@@ -82,9 +82,20 @@ handoff boundaries. Inactive content keeps its native host and resumes in place.
 The presented world-frame boundary requests renderer changes at motion start and
 completion even when the camera stays in overview. Native presentation restores
 original elements; HTML-in-Canvas stays live during eligible motion. Renderer
-attributes describe completed presentation for developer badges. Scrollbars are
-suppressed without changing layout while motion/overview is inert, including
-native motion hosts and same-origin frames.
+attributes describe completed presentation for developer badges. Native
+presentation keeps the consumer's scrollbars through motion; only recorded
+content suppresses them.
+
+Motion boundaries never restyle consumer content. Applications can mount
+thousands of elements per pane, and a style change that reaches every
+descendant costs a full recalculation of each visible pane at the start and end
+of every camera move. Moving panes therefore block pointer input with a shield
+element over the content instead of inherited `pointer-events`, pause CSS
+animations through the Web Animations API instead of a universal descendant
+rule, and keep `inert` for overview, covered content and hidden panes, whose
+states last longer than a move. Pane chrome toggles visibility rather than
+inserting or removing nodes inside the pane, because node insertion makes the
+browser re-evaluate consumer `:has()` selectors across the whole pane.
 
 Raw input still postpones picture acquisition and cancels invalid captures, but
 scrolling, typing and ordinary pointer interaction do not repaint every mounted
@@ -183,7 +194,7 @@ native-only content stays on its original rendering path. Stationary normal and
 overview presentations both restore native content. Inactive content uses
 `content-visibility: hidden` to skip its rendering while preserving the mounted
 documents; activation and preparation restore rendering. Interaction is independent of
-animation: motion and overview remain inert, and recorded scrollbars stay hidden.
+animation: motion shields input, overview remains inert, and recorded scrollbars stay hidden.
 Continuous resizing permits responsive layout and animation during the gesture.
 
 Live copies reuse canvas contexts and copy changed element images. Chrome
@@ -234,12 +245,12 @@ In the default mode, viewport-intersecting panes resume progressively at normal 
 then increasing distance from focus, one admission per animation frame. The
 next pane waits for the preceding first frame, with a bounded wait so slow
 readiness cannot block other visible content indefinitely. Motion and overview
-freeze mounted content and make it inert while preserving its pixels. Consumers
+freeze mounted content and stop its input while preserving its pixels. Consumers
 pause their own clocks using runtime state. Cold navigation destinations mount
 before the camera settles. A focused destination without a retained picture or
 drawn surface may present its first ready frame during that motion once its
 canvas fits within the browser viewport. It stays
-inert and paused, then freezes that frame until normal live activation; other
+shielded and paused, then freezes that frame until normal live activation; other
 panes do not gain a motion-time paint allowance. Readiness still governs
 asynchronous consumer content. Retained DOM stays within its configured area budget;
 eviction prefers panes already represented by saved pictures, then recency.

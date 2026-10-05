@@ -877,8 +877,11 @@ test("always-live mode preserves animated pixels and documents through motion an
       pane.locator('[data-onirigiri-slot="pane-content"]'),
     ).toHaveAttribute("data-runtime-state", "live");
     await expect(
+      pane.locator('[data-onirigiri-slot="pane-content"]'),
+    ).toHaveAttribute("data-onirigiri-shielded", "true");
+    await expect(
       pane.locator('[data-onirigiri-slot="pane-live-content"]'),
-    ).toHaveAttribute("inert", "");
+    ).not.toHaveAttribute("inert");
     await expectLiveColors(page, "pane-2");
     expect(
       await page.evaluate(

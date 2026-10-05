@@ -738,6 +738,8 @@ const stringDataAttribute = {
   runtimeState: "data-runtime-state",
 } as const;
 
+const pausedContentAnimations = new WeakMap<HTMLElement, Animation[]>();
+
 function syncContentLifecycle(host: HTMLElement, item: PaneRenderItem): void {
   const content = host.querySelector<HTMLElement>(".onirigiri-pane__content");
   const liveContent = host.querySelector<HTMLElement>(
@@ -748,14 +750,49 @@ function syncContentLifecycle(host: HTMLElement, item: PaneRenderItem): void {
   }
   if (content.dataset.onirigiriContinuous !== "true")
     content.dataset.runtimeState = item.runtimeState;
-  const interactive =
-    item.runtimeState === "live" &&
-    !item.moving &&
-    item.presentationMode === "normal" &&
-    content.dataset.onirigiriContentReady !== "false";
-  liveContent.toggleAttribute("inert", !interactive);
-  liveContent.inert = !interactive;
-  liveContent.setAttribute("aria-hidden", String(!interactive));
+  syncContentAnimations(liveContent, content.dataset.runtimeState === "frozen");
+  syncContentInput(content, liveContent, item);
+}
+
+function syncContentInput(
+  content: HTMLElement,
+  liveContent: HTMLElement,
+  item: PaneRenderItem,
+): void {
+  const shielded = item.moving || item.runtimeState === "frozen";
+  if (content.dataset.onirigiriShielded !== String(shielded))
+    content.dataset.onirigiriShielded = String(shielded);
+  const inert =
+    item.presentationMode !== "normal" ||
+    content.dataset.onirigiriContentReady === "false" ||
+    content.dataset.runtimeState === "hidden";
+  if (liveContent.inert !== inert) {
+    liveContent.toggleAttribute("inert", inert);
+    liveContent.inert = inert;
+  }
+  liveContent.setAttribute("aria-hidden", String(inert || shielded));
+}
+
+function syncContentAnimations(liveContent: HTMLElement, frozen: boolean) {
+  const paused = pausedContentAnimations.get(liveContent);
+  if (frozen && !paused) {
+    const running =
+      typeof liveContent.getAnimations === "function" &&
+      typeof CSSAnimation !== "undefined"
+        ? liveContent
+            .getAnimations({ subtree: true })
+            .filter(
+              (animation) =>
+                animation instanceof CSSAnimation &&
+                animation.playState === "running",
+            )
+        : [];
+    for (const animation of running) animation.pause();
+    pausedContentAnimations.set(liveContent, running);
+  } else if (!frozen && paused) {
+    for (const animation of paused) animation.play();
+    pausedContentAnimations.delete(liveContent);
+  }
 }
 
 function emptyWriteCounts(): PanePresentationWriteCounts {

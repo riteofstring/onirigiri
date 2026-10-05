@@ -107,15 +107,16 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
       data-onirigiri-continuous={String(pictures.isContinuous())}
       style={contentSlot.style}
     >
-      {contentRuntime === "frozen" || presentation.kind === "placeholder" ? (
-        <span
-          className="onirigiri-pane__paused-status"
-          role="status"
-          aria-live={focused ? "polite" : "off"}
-        >
-          Content paused
-        </span>
-      ) : null}
+      <span
+        className="onirigiri-pane__paused-status"
+        role="status"
+        aria-live={focused ? "polite" : "off"}
+        hidden={
+          contentRuntime !== "frozen" && presentation.kind !== "placeholder"
+        }
+      >
+        Content paused
+      </span>
       <div
         className="onirigiri-pane__content-surface"
         data-onirigiri-pane-content-surface="true"
@@ -129,7 +130,11 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
             className={liveSlot.className}
             data-onirigiri-slot="pane-live-content"
             data-onirigiri-content-fit={contentFit}
-            {...inertAttribute(!interactive)}
+            {...inertAttribute(
+              presentationMode !== "normal" ||
+                covered ||
+                contentRuntime === "hidden",
+            )}
             ref={contentRef}
             style={liveSlot.style}
           >
@@ -155,6 +160,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
             </div>
           </div>
         </canvas>
+        <div aria-hidden="true" className="onirigiri-pane__input-shield" />
         <PaneContentCover
           pictures={pictures}
           picture={picture}
