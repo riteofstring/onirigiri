@@ -302,7 +302,11 @@ test("motion keeps input and animations out of pane content without replacing it
       probe.id = "motion-probe";
       probe.style.cssText =
         "width: 8px; height: 8px; animation: motion-probe 1s linear infinite";
+      const started = new Promise((resolve) =>
+        probe.addEventListener("animationstart", resolve, { once: true }),
+      );
       content.prepend(probe);
+      return started;
     });
   const before = await page.evaluateHandle(() => {
     const pane = document.querySelector('[data-onirigiri-pane-id="pane-1"]')!;

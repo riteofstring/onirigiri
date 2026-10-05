@@ -16,6 +16,7 @@ import {
   type CSSProperties,
 } from "react";
 import { OnirigiriIcon } from "../workspace/onirigiri-icons.js";
+import { PaneInteractiveContext } from "./pane-interactivity.js";
 import {
   PaneContentReadiness,
   PaneReadinessContext,
@@ -144,19 +145,20 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
               style={paneContentFrameStyle(contentDefaults)}
             >
               <PaneReadinessContext.Provider value={readiness}>
-                {mounted ? (
-                  <PaneApplicationContent
-                    renderPane={renderPane}
-                    pane={pane}
-                    content={contentDefaults}
-                    focused={focused}
-                    interactive={interactive}
-                    maximized={maximized}
-                    presentationMode={presentationMode}
-                    runtimeState={contentRuntime}
-                    visible={visible}
-                  />
-                ) : null}
+                <PaneInteractiveContext value={interactive}>
+                  {mounted ? (
+                    <PaneApplicationContent
+                      renderPane={renderPane}
+                      pane={pane}
+                      content={contentDefaults}
+                      focused={focused}
+                      maximized={maximized}
+                      presentationMode={presentationMode}
+                      runtimeState={contentRuntime}
+                      visible={visible}
+                    />
+                  ) : null}
+                </PaneInteractiveContext>
               </PaneReadinessContext.Provider>
             </div>
           </div>
@@ -183,7 +185,6 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
   pane,
   content,
   focused,
-  interactive,
   maximized,
   presentationMode,
   runtimeState,
@@ -197,15 +198,11 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
   | "presentationMode"
   | "runtimeState"
   | "visible"
-> & {
-  content: ReturnType<typeof usePaneContentLayout>["contentDefaults"];
-  interactive: boolean;
-}) {
+> & { content: ReturnType<typeof usePaneContentLayout>["contentDefaults"] }) {
   return renderPane(pane, {
     content,
     focused,
     frozen: runtimeState === "frozen",
-    interactive,
     maximized,
     presentationMode,
     runtimeState,

@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CooperativeFixtureFrame } from "./browser/cooperative-fixture-frame";
 
 import { OnirigiriWorkspace } from "../src/workspace/OnirigiriWorkspace";
+import { useOnirigiriPaneInteractive } from "../src/panes/pane-interactivity";
 import type { OnirigiriPaneActionButtonProps } from "../src/styles/onirigiri-styling";
 import type { OnirigiriWorkspaceHandle } from "../src/workspace/onirigiri-workspace-types";
 
@@ -449,9 +450,9 @@ describe("OnirigiriWorkspace native content motion", () => {
             return (
               <div
                 data-consumer={pane.paneId}
-                data-consumer-interactive={String(state.interactive)}
                 data-consumer-state={state.runtimeState}
               >
+                <InteractiveProbe paneId={pane.paneId} />
                 <iframe data-frame={pane.paneId} title={pane.title} />
                 <input data-field={pane.paneId} defaultValue="" />
               </div>
@@ -480,11 +481,11 @@ describe("OnirigiriWorkspace native content motion", () => {
     );
 
     expect(liveContent.hasAttribute("inert")).toBe(false);
-    const consumer = requiredElement<HTMLElement>(
+    const probe = requiredElement<HTMLElement>(
       container,
-      '[data-consumer="pane-1"]',
+      '[data-interactive-probe="pane-1"]',
     );
-    expect(consumer.dataset.consumerInteractive).toBe("true");
+    expect(probe.dataset.interactive).toBe("true");
 
     await act(async () => {
       expect(workspace.focusPane("pane-3")).toBe(true);
@@ -516,7 +517,7 @@ describe("OnirigiriWorkspace native content motion", () => {
     ).toBe(true);
     expect(liveContent.hasAttribute("inert")).toBe(true);
     expect(liveContent.getAttribute("aria-hidden")).toBe("true");
-    expect(consumer.dataset.consumerInteractive).toBe("false");
+    expect(probe.dataset.interactive).toBe("false");
     expect(
       requiredElement<HTMLElement>(overviewPane, ".onirigiri-pane__content")
         .dataset.onirigiriPlaceholderOnly,
@@ -547,7 +548,7 @@ describe("OnirigiriWorkspace native content motion", () => {
     expect(settledPane.dataset.visible).toBe("true");
     expect(liveContent.hasAttribute("inert")).toBe(false);
     expect(liveContent.getAttribute("aria-hidden")).toBe("false");
-    expect(consumer.dataset.consumerInteractive).toBe("true");
+    expect(probe.dataset.interactive).toBe("true");
 
     await act(async () => root.unmount());
     container.remove();
@@ -565,19 +566,19 @@ describe("OnirigiriWorkspace native content motion", () => {
           initialPanes={columnPanes(3, 520)}
           liveContent
           ref={workspaceRef}
-          renderPane={(pane, state) => (
-            <input
-              data-field={pane.paneId}
-              data-interactive={String(state.interactive)}
-            />
+          renderPane={(pane) => (
+            <>
+              <input data-field={pane.paneId} />
+              <InteractiveProbe paneId={pane.paneId} />
+            </>
           )}
         />,
       );
     });
     const workspace = requiredWorkspaceHandle(workspaceRef.current);
-    const field = requiredElement<HTMLInputElement>(
+    const probe = requiredElement<HTMLElement>(
       container,
-      '[data-field="pane-1"]',
+      '[data-interactive-probe="pane-1"]',
     );
     const pane = requiredElement<HTMLElement>(
       container,
@@ -587,7 +588,7 @@ describe("OnirigiriWorkspace native content motion", () => {
       pane,
       ".onirigiri-pane__live-content",
     );
-    expect(field.dataset.interactive).toBe("true");
+    expect(probe.dataset.interactive).toBe("true");
 
     await act(async () => {
       expect(workspace.focusPane("pane-2")).toBe(true);
@@ -596,7 +597,7 @@ describe("OnirigiriWorkspace native content motion", () => {
       workspace.getSnapshot().targetScrollColumn,
     );
     expect(pane.dataset.moving).toBe("true");
-    expect(field.dataset.interactive).toBe("true");
+    expect(probe.dataset.interactive).toBe("true");
     expect(liveContent.hasAttribute("inert")).toBe(false);
     expect(
       requiredElement<HTMLElement>(pane, ".onirigiri-pane__content").dataset
@@ -1025,4 +1026,14 @@ async function flushAnimationFrames(
   if (frameLimit >= 240) {
     expect(animationFrames.size).toBe(0);
   }
+}
+
+function InteractiveProbe({ paneId }: { paneId: string }) {
+  const interactive = useOnirigiriPaneInteractive();
+  return (
+    <span
+      data-interactive={String(interactive)}
+      data-interactive-probe={paneId}
+    />
+  );
 }

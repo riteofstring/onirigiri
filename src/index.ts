@@ -91,6 +91,7 @@ export type {
 } from "./input/workspace-shortcuts.js";
 
 export { useOnirigiriPaneContentReady } from "./panes/pane-content-readiness.js";
+export { useOnirigiriPaneInteractive } from "./panes/pane-interactivity.js";
 export type {
   OnirigiriCaptureStatus,
   OnirigiriPaneCaptureReceipt,

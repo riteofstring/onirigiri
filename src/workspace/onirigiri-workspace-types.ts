@@ -58,7 +58,6 @@ export interface OnirigiriPaneRenderState {
   content?: PaneContentDefaults;
   focused: boolean;
   frozen: boolean;
-  interactive: boolean;
   maximized: boolean;
   presentationMode: WorkspacePresentationMode;
   runtimeState: PaneRuntimeState;
