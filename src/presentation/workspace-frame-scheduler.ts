@@ -21,6 +21,7 @@ import type {
   Rect,
   ReservedCellRenderItem,
   WorkspaceCameraMode,
+  WorkspaceFocusedPaneFrame,
   WorkspaceWorldFrame,
 } from "../types.js";
 import { workspaceGridCursorsEqual } from "../workspace/workspace-grid-cursor.js";
@@ -77,6 +78,7 @@ interface WorkspaceFrameSchedulerOptions {
     boundary: WorkspaceFrameBoundary,
     frame: WorkspacePresentationBoundaryFrame | null,
   ) => void;
+  onFocusedPaneFrame?: (frame: WorkspaceFocusedPaneFrame | null) => void;
   onFrame?: (sample: WorkspaceFrameSample) => void;
   onPresentation?: (frame: WorkspacePresentationBoundaryFrame) => void;
   presentation: PanePresentationEngine;
@@ -113,6 +115,7 @@ export class WorkspaceFrameScheduler {
   private frameRequestSequence = 0;
   private lastBoundaryMoving: boolean;
   private lastBoundarySnapshot: WorkspaceLayoutSnapshot;
+  private lastFocusedPaneFrame: WorkspaceFocusedPaneFrame | null = null;
   private lastCursorGeometrySnapshot: WorkspaceLayoutSnapshot;
   private lastRenderedItems: readonly PaneRenderItem[] = [];
   private lastOverviewCameraMode: WorkspaceCameraMode;
@@ -328,7 +331,38 @@ export class WorkspaceFrameScheduler {
     };
     this.lastRenderedItems = items;
     this.options.onPresentation?.(this.lastPresentationBoundaryFrame);
+    this.publishFocusedPaneFrame(items, presentedWorldFrame);
     return writes;
+  }
+
+  private publishFocusedPaneFrame(
+    items: readonly PaneRenderItem[],
+    world: WorkspaceWorldFrame,
+  ): void {
+    const publish = this.options.onFocusedPaneFrame;
+    if (!publish) {
+      return;
+    }
+    const focused = items.find((item) => item.focused);
+    const geometry = focused
+      ? this.options.presentation.displayedPaneGeometry(focused.paneId)
+      : null;
+    const frame =
+      focused && geometry
+        ? {
+            height: geometry.height * world.scale,
+            paneId: focused.paneId,
+            scale: geometry.scale * world.scale,
+            width: geometry.width * world.scale,
+            x: world.x + geometry.x * world.scale,
+            y: world.y + geometry.y * world.scale,
+          }
+        : null;
+    if (sameFocusedPaneFrame(this.lastFocusedPaneFrame, frame)) {
+      return;
+    }
+    this.lastFocusedPaneFrame = frame;
+    publish(frame);
   }
 
   private completeFrame(
@@ -788,5 +822,22 @@ export function workspaceSnapshotIsMoving(
       snapshot.verticalAnchorOffset - snapshot.targetVerticalAnchorOffset,
     ) > 0.001 ||
     Math.abs(snapshot.overviewProgress - overviewTarget) > 0.001
+  );
+}
+
+function sameFocusedPaneFrame(
+  left: WorkspaceFocusedPaneFrame | null,
+  right: WorkspaceFocusedPaneFrame | null,
+): boolean {
+  if (left === null || right === null) {
+    return left === right;
+  }
+  return (
+    left.paneId === right.paneId &&
+    Math.abs(left.height - right.height) <= 0.001 &&
+    Math.abs(left.scale - right.scale) <= 0.0001 &&
+    Math.abs(left.width - right.width) <= 0.001 &&
+    Math.abs(left.x - right.x) <= 0.001 &&
+    Math.abs(left.y - right.y) <= 0.001
   );
 }

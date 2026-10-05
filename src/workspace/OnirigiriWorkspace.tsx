@@ -138,6 +138,7 @@ export const OnirigiriWorkspace = forwardRef<
     onMinimapPlacementChange,
     onPaneClose,
     onPaneRearrangementSelectionChange,
+    onFocusedPaneFrame,
     onPresentationModeChange,
     overviewCardMaxWidthPx,
     overviewCardMinWidthPx,
@@ -213,6 +214,8 @@ export const OnirigiriWorkspace = forwardRef<
   closeHandlerRef.current = onPaneClose;
   const layoutChangeHandlerRef = useRef(onLayoutChange);
   layoutChangeHandlerRef.current = onLayoutChange;
+  const focusedPaneFrameRef = useRef(onFocusedPaneFrame);
+  focusedPaneFrameRef.current = onFocusedPaneFrame;
   const presentationModeChangeHandlerRef = useRef(onPresentationModeChange);
   presentationModeChangeHandlerRef.current = onPresentationModeChange;
   const rearrangementSelectionHandlerRef = useRef(
@@ -375,6 +378,7 @@ export const OnirigiriWorkspace = forwardRef<
     compactBreakpoint,
     cursorRef,
     focusHighlightEnabled,
+    focusedPaneFrameRef,
     motionRef,
     runtime,
     pictures,

@@ -102,6 +102,14 @@ export class PanePresentationEngine {
     };
   }
 
+  displayedPaneGeometry(paneId: PaneId): PresentedPaneGeometry | null {
+    const binding = this.bindings.get(paneId);
+    const box = binding ? displayedPaneBox(binding) : null;
+    return binding && box
+      ? { ...box, scale: binding.lastTransformScale }
+      : null;
+  }
+
   hasPaneHost(paneId: PaneId): boolean {
     return this.bindings.has(paneId);
   }

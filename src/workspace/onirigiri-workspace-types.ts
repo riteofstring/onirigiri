@@ -37,6 +37,7 @@ import type {
   PaneSizingMode,
   WorkspaceCameraModes,
   WorkspaceDirectionControlMode,
+  WorkspaceFocusedPaneFrame,
   WorkspaceFocusAnchor,
   WorkspaceGridAxes,
   WorkspacePane,
@@ -142,6 +143,7 @@ export interface OnirigiriWorkspaceProps extends PaneDefaultsConfiguration {
   initialPanes?: readonly OnirigiriPaneDefinition[];
   minimapAdjustable?: boolean;
   minimapPlacement?: Partial<OnirigiriMinimapPlacement>;
+  onFocusedPaneFrame?: (frame: WorkspaceFocusedPaneFrame | null) => void;
   onLayoutChange?: (
     layout: OnirigiriLayout,
     metadata: OnirigiriLayoutChangeMetadata,

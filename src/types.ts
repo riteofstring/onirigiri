@@ -258,6 +258,15 @@ export interface PaneWorldBox {
   y: number;
 }
 
+export interface WorkspaceFocusedPaneFrame {
+  height: number;
+  paneId: PaneId;
+  scale: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
 export interface WorkspaceWorldFrame {
   focalScreenX: number;
   focalScreenY: number;

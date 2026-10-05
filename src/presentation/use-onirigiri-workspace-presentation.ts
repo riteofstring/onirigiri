@@ -3,7 +3,7 @@ import { useLayoutEffect, type Dispatch, type SetStateAction } from "react";
 import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
 import type { OnirigiriRuntime } from "../workspace/onirigiri-workspace-runtime.js";
 import type { PanePictures } from "../pictures/pane-pictures.js";
-import type { Rect } from "../types.js";
+import type { Rect, WorkspaceFocusedPaneFrame } from "../types.js";
 import {
   WorkspaceFrameScheduler,
   type WorkspaceFrameMotionOptions,
@@ -17,6 +17,9 @@ interface OnirigiriWorkspacePresentationOptions {
   compactBreakpoint: number;
   cursorRef: { current: HTMLDivElement | null };
   focusHighlightEnabled: boolean;
+  focusedPaneFrameRef: {
+    current: ((frame: WorkspaceFocusedPaneFrame | null) => void) | undefined;
+  };
   motionRef: { current: WorkspaceFrameMotionOptions };
   runtime: OnirigiriRuntime;
   pictures: PanePictures;
@@ -78,6 +81,7 @@ export function useOnirigiriWorkspacePresentation(
     compactBreakpoint,
     cursorRef,
     focusHighlightEnabled,
+    focusedPaneFrameRef,
     motionRef,
     runtime,
     pictures,
@@ -137,6 +141,7 @@ export function useOnirigiriWorkspacePresentation(
       motionProvider: () => motionRef.current,
       onBoundary: (snapshot, boundary, frame) =>
         boundaryPublisher.publish(snapshot, boundary, frame),
+      onFocusedPaneFrame: (frame) => focusedPaneFrameRef.current?.(frame),
       onPresentation: pictures.present,
       presentation: runtime.presentation,
       reducedMotionQuery,
@@ -156,6 +161,7 @@ export function useOnirigiriWorkspacePresentation(
   }, [
     boundaryFrameRef,
     compactBreakpoint,
+    focusedPaneFrameRef,
     motionRef,
     runtime,
     pictures,

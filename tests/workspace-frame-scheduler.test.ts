@@ -588,6 +588,51 @@ describe("WorkspaceFrameScheduler", () => {
     harness.scheduler.teardown();
   });
 
+  it("reports the focused pane's displayed workspace frame on each presented frame", () => {
+    const harness = createTwoDimensionalSchedulerHarness();
+    const expectReportedFrameDisplayed = () => {
+      const frame = harness.focusedPaneFrames.at(-1);
+      if (!frame) {
+        throw new Error("no focused pane frame was reported");
+      }
+      const displayed = visualWorldPaneBox(
+        requiredHost(harness.hosts, frame.paneId),
+        harness.stage,
+      );
+      expect(frame.x).toBeCloseTo(displayed.x, 2);
+      expect(frame.y).toBeCloseTo(displayed.y, 2);
+      expect(frame.width).toBeCloseTo(displayed.width, 1);
+      expect(frame.height).toBeCloseTo(displayed.height, 1);
+      return frame;
+    };
+    harness.scheduler.start();
+    harness.frameHost.flushOne(0);
+    const resting = expectReportedFrameDisplayed();
+    expect(resting).toMatchObject({ paneId: "source", scale: 1 });
+
+    expect(harness.store.focusPane("lower")).toBe(true);
+    const motionYs: number[] = [];
+    while (harness.frameHost.pendingFrameCount() > 0) {
+      harness.frameHost.flushFrames(1);
+      const frame = expectReportedFrameDisplayed();
+      if (frame.paneId === "lower") {
+        motionYs.push(frame.y);
+      }
+    }
+    expect(new Set(motionYs).size).toBeGreaterThan(2);
+    const reportedDuringMove = harness.focusedPaneFrames.length;
+    harness.scheduler.requestFrame();
+    harness.frameHost.flushAll();
+    expect(harness.focusedPaneFrames).toHaveLength(reportedDuringMove);
+
+    harness.store.toggleOverviewMode();
+    harness.frameHost.flushAll();
+    const overview = expectReportedFrameDisplayed();
+    expect(overview.paneId).toBe("lower");
+    expect(overview.scale).toBeLessThan(1);
+    harness.scheduler.teardown();
+  });
+
   it("uses the following camera in overview and preserves the selected mode across overview changes", () => {
     const harness = createTwoDimensionalSchedulerHarness();
     harness.scheduler.start();

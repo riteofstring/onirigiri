@@ -29,6 +29,30 @@ Ready content stays visible during navigation and overview. Frozen content is
 inert; applications pause their own render loops. Normal navigation mounts cold
 destination panes without mounting the entire corridor. Zustand owns layout state.
 
+### Following the focused pane
+
+`onFocusedPaneFrame` reports where the focused pane is displayed, so a host can
+keep content outside the workspace aligned with it, such as one expensive view
+shared by every pane of a kind:
+
+```tsx
+<OnirigiriWorkspace
+  onFocusedPaneFrame={(frame) => {
+    overlay.style.transform = frame
+      ? `translate(${frame.x}px, ${frame.y}px) scale(${frame.scale})`
+      : "";
+  }}
+  renderPane={renderPane}
+/>
+```
+
+The frame is the pane's displayed box in CSS pixels relative to the workspace
+stage (`data-onirigiri-slot="stage"`): `x` and `y` locate its top-left corner,
+`width` and `height` include camera and pane scaling, and `scale` is their
+combined factor. Onirigiri calls it during the same animation frame that moves
+the pane, only when the frame changes, and with `null` when no pane has focus.
+It reads no layout; the values come from the geometry Onirigiri writes.
+
 ### Always-live mode
 
 Set `liveContent` to keep pane content mounted and visible panes animated during
