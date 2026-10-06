@@ -609,6 +609,48 @@ describe("OnirigiriWorkspace native content motion", () => {
     container.remove();
   });
 
+  it("moves focus out of content that freezes for camera motion", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
+
+    await act(async () => {
+      root.render(
+        <OnirigiriWorkspace
+          initialPanes={columnPanes(3, 520)}
+          ref={workspaceRef}
+          renderPane={(pane) => <input data-field={pane.paneId} />}
+        />,
+      );
+    });
+    const workspace = requiredWorkspaceHandle(workspaceRef.current);
+    const pane = requiredElement<HTMLElement>(
+      container,
+      '[data-onirigiri-pane-id="pane-1"]',
+    );
+    const field = requiredElement<HTMLInputElement>(
+      pane,
+      '[data-field="pane-1"]',
+    );
+    field.focus();
+    expect(document.activeElement).toBe(field);
+
+    await act(async () => {
+      expect(workspace.focusPane("pane-2")).toBe(true);
+    });
+    expect(pane.dataset.moving).toBe("true");
+    expect(
+      requiredElement<HTMLElement>(pane, ".onirigiri-pane__content").dataset
+        .runtimeState,
+    ).toBe("frozen");
+    expect(document.activeElement).toBe(pane);
+
+    await flushAnimationFrames(animationFrames);
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
   it("mounts cold unfocused destination entrants during motion without mounting the corridor", async () => {
     const container = document.createElement("div");
     document.body.append(container);
