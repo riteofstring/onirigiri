@@ -4,7 +4,13 @@ export interface OnirigiriPanePicture {
   image: Blob;
   fit?: "contain" | "cover" | "fill";
   position?: string;
+  replaceable?: boolean;
 }
+
+export type OnirigiriPanePictureCaptureListener = (
+  pane: WorkspacePane,
+  image: Blob,
+) => void;
 
 export type OnirigiriPanePictureResolver = (
   pane: WorkspacePane,

@@ -781,7 +781,7 @@ export class PanePictures {
     const pane = this.configuration.panes.get(item.paneId);
     const host = this.hosts.get(item.paneId);
     if (!pane || !host || !hostReady(host)) return null;
-    if (this.configuration.resolver?.(pane)) return null;
+    if (this.suppliedOnly(pane)) return null;
     return this.candidateAtBounds(pane, host, !this.overview());
   }
 
@@ -879,6 +879,9 @@ export class PanePictures {
       if (!accepted) {
         const attempt = this.attempts.get(pane.paneId);
         if (attempt) attempt.retryAt = Date.now() + 1000;
+      } else {
+        const captured = this.configuration.panes.get(pane.paneId);
+        if (captured) this.configuration.onCaptured?.(captured, result.image);
       }
       this.reason = null;
       return accepted;
@@ -945,6 +948,11 @@ export class PanePictures {
       const supplied = this.configuration.resolver?.(pane);
       if (supplied && !(await this.resolveSource(id, pane, supplied))) return;
     }
+  }
+
+  private suppliedOnly(pane: WorkspacePane): boolean {
+    const supplied = this.configuration.resolver?.(pane);
+    return Boolean(supplied && !supplied.replaceable);
   }
 
   private updatePictureStyle(id: PaneId, supplied: OnirigiriPanePicture): void {
@@ -1207,7 +1215,7 @@ export class PanePictures {
     if (!this.overviewPicturePending(item)) return false;
     const pane = this.configuration.panes.get(item.paneId);
     const host = this.hosts.get(item.paneId);
-    if (!pane || !host || this.configuration.resolver?.(pane)) return false;
+    if (!pane || !host || this.suppliedOnly(pane)) return false;
     return (
       this.canAcquire(item.paneId, host) &&
       host.content.isConnected &&

@@ -97,6 +97,7 @@ export type {
   OnirigiriCaptureStatus,
   OnirigiriPaneCaptureReceipt,
   OnirigiriPanePicture,
+  OnirigiriPanePictureCaptureListener,
   OnirigiriPanePictureResolver,
 } from "./pictures/pane-picture-types.js";
 

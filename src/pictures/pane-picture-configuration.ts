@@ -5,6 +5,7 @@ import type {
 } from "../presentation/pane-presentation-policy.js";
 import type {
   OnirigiriCaptureStatus,
+  OnirigiriPanePictureCaptureListener,
   OnirigiriPanePictureResolver,
 } from "./pane-picture-types.js";
 import type { PaneId, PaneRenderItem, WorkspacePane } from "../types.js";
@@ -24,6 +25,7 @@ export interface Configuration {
   preloadAllPanePictures?: boolean;
   onPresentationChange?: (paneId: PaneId, state: PanePresentationState) => void;
   onStatus?: (status: OnirigiriCaptureStatus) => void;
+  onCaptured?: OnirigiriPanePictureCaptureListener;
 }
 
 export type ResolvedConfiguration = Configuration & {

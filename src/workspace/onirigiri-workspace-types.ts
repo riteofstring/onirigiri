@@ -5,6 +5,7 @@ import type {
 } from "../presentation/pane-presentation-policy.js";
 import type {
   OnirigiriCaptureStatus,
+  OnirigiriPanePictureCaptureListener,
   OnirigiriPanePictureResolver,
 } from "../pictures/pane-picture-types.js";
 import type { ReactNode } from "react";
@@ -170,6 +171,7 @@ export interface OnirigiriWorkspaceProps extends PaneDefaultsConfiguration {
   paneLink?: boolean | OnirigiriPaneLinkOptions;
   cameraModes?: WorkspaceCameraModes;
   getPanePicture?: OnirigiriPanePictureResolver;
+  onPanePictureCaptured?: OnirigiriPanePictureCaptureListener;
   panePresentation?: PanePresentation;
   getPanePresentation?: PanePresentationResolver;
   renderPanePlaceholder?: (

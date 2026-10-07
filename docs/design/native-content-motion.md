@@ -276,6 +276,11 @@ at the pane's top-left while that corner follows the pointer.
 
 One engine service owns acquired and developer-supplied PNG pictures.
 `getPanePicture` supplies immutable Blob revisions and optional fit/position.
+A supplied picture replaces capture for its pane unless it is marked
+replaceable: then it only seeds the pane until a capture is accepted, which lets
+an application restore pictures saved from an earlier session without freezing
+them. Accepted captures are reported with their PNG so the application owns
+persistence; the engine keeps no storage of its own.
 The engine owns acceptance, compressed originals, prepared GPU textures and
 presentation. Immutable PNG originals survive live-DOM eviction without a
 freshness expiry. Pane identity changes and workspace disposal release their

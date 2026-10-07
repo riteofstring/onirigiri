@@ -9,7 +9,10 @@ import {
 } from "../src/presentation/pane-presentation-policy";
 import { PaneContentReadiness } from "../src/panes/pane-content-readiness";
 import { PaneContentPreloader } from "../src/panes/pane-content-preloader";
-import type { OnirigiriPanePicture } from "../src/pictures/pane-picture-types";
+import type {
+  OnirigiriPanePicture,
+  OnirigiriPanePictureCaptureListener,
+} from "../src/pictures/pane-picture-types";
 import { createWorkspaceScene } from "../src/workspace/workspace-scene";
 import { renderItem } from "./pane-presentation-engine-test-support";
 
@@ -283,6 +286,7 @@ describe("engine pane pictures", () => {
       captureMissingOverviewPictures: false,
       resolver: undefined as
         ((pane: { paneId: string }) => OnirigiriPanePicture | null) | undefined,
+      onCaptured: undefined as OnirigiriPanePictureCaptureListener | undefined,
     };
     pictures.configure(config);
     cleanups.push(
@@ -1110,6 +1114,37 @@ describe("engine pane pictures", () => {
     await vi.advanceTimersByTimeAsync(150);
     expect(f.pictures.get("a")).toBe(accepted);
     expect(f.pictures.getStatus()).toMatchObject({ state: "unavailable" });
+  });
+
+  it("lets a capture replace a replaceable supplied picture and reports it", async () => {
+    const f = fixture(capture);
+    const seed = png();
+    const captured = vi.fn();
+    f.config.resolver = () => ({ image: seed, replaceable: true });
+    f.config.onCaptured = captured;
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(capture).toHaveBeenCalled();
+    const accepted = f.pictures.get("a");
+    expect(accepted?.capture).not.toBeNull();
+    expect(accepted?.image).not.toBe(seed);
+    expect(captured).toHaveBeenCalledWith(
+      f.config.panes.get("a"),
+      accepted?.image,
+    );
+  });
+
+  it("does not capture over a supplied picture that is not replaceable", async () => {
+    const f = fixture(capture);
+    const image = png();
+    const captured = vi.fn();
+    f.config.resolver = () => ({ image });
+    f.config.onCaptured = captured;
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(capture).not.toHaveBeenCalled();
+    expect(f.pictures.get("a")?.image).toBe(image);
+    expect(captured).not.toHaveBeenCalled();
   });
 
   it("shares supplied and captured ownership, preserves withdrawn sources, and releases removed panes", async () => {

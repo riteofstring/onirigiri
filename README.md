@@ -383,6 +383,7 @@ Only `renderPane` is required.
 | `getPanePresentation`      | —        | Per-pane, per-phase presentation choice                           |
 | `renderPanePlaceholder`    | icon     | Custom placeholder content                                        |
 | `getPanePicture`           | —        | Supply your own pictures for panes that are not mounted           |
+| `onPanePictureCaptured`    | —        | Receive each captured picture, for example to save it             |
 | `onPanePresentationChange` | —        | Observe each pane's effective presentation                        |
 | `onCaptureStatusChange`    | —        | Observe picture capture, including `"unavailable"` and its reason |
 

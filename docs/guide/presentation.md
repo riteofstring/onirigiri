@@ -176,7 +176,12 @@ styled icon and title.
 Capture is built into the engine. Optional `getPanePicture` returns `{ image: pngBlob, fit?, position? }`.
 Use an immutable PNG Blob per revision; Onirigiri owns its prepared textures. Withdrawing a
 source retains its last accepted picture. Removing the pane or replacing its
-surface releases that picture. Developers can set both retention budgets:
+surface releases that picture. A supplied picture otherwise stands in for
+capture; mark it `replaceable: true` when it only seeds the pane, such as a
+picture saved from an earlier session, and the engine still captures the pane
+when it can. `onPanePictureCaptured(pane, pngBlob)` reports each accepted
+capture, so an application can save it and supply it again after a reload.
+Developers can set both retention budgets:
 
 - `pictureBudgetBytes`: retained PNG bytes, default 256 MiB.
 - `pictureRasterBudgetBytes`: prepared GPU texture bytes (`width × height × 4`),
