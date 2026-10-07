@@ -1517,6 +1517,25 @@ describe("engine pane pictures", () => {
     expect(capture).not.toHaveBeenCalled();
   });
 
+  it("does not retry a rejected supplied image on navigation and accepts its replacement", async () => {
+    const f = fixture();
+    let image = new NodeBlob(["invalid PNG"]) as Blob;
+    f.config.resolver = (pane) => (pane.paneId === "a" ? { image } : null);
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.getStatus().rejected).toBe(1);
+    for (let move = 0; move < 3; move++) {
+      f.pictures.activity();
+      await vi.advanceTimersByTimeAsync(300);
+    }
+    expect(f.pictures.getStatus().rejected).toBe(1);
+    expect(f.pictures.get("a")).toBeNull();
+    image = png();
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")?.image).toBe(image);
+  });
+
   it("disposes a late detail preparation after its pane is removed", async () => {
     const f = fixture();
     const original = png();

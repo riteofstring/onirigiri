@@ -104,7 +104,10 @@ export class PanePictures {
   private readonly listeners = new Map<PaneId, Set<() => void>>();
   private readonly attempts = new Map<PaneId, Attempt>();
   private readonly captureExcluded = new Set<PaneId>();
-  private readonly supplied = new Map<PaneId, WeakRef<Blob>>();
+  private readonly supplied = new Map<
+    PaneId,
+    { image: WeakRef<Blob>; failed: boolean }
+  >();
   private readonly seeds = new Map<PaneId, Blob>();
   private readonly stalePictures = new Set<PaneId>();
   private readonly retiredSeeds = new Map<PaneId, WeakRef<Blob>>();
@@ -1022,7 +1025,7 @@ export class PanePictures {
     if (
       !accepted ||
       (accepted.image !== supplied.image &&
-        this.supplied.get(id)?.deref() !== supplied.image)
+        this.supplied.get(id)?.image.deref() !== supplied.image)
     )
       return;
     const fit = supplied.fit ?? "contain";
@@ -1047,10 +1050,11 @@ export class PanePictures {
     );
   }
 
-  private suppliedAccepted(id: PaneId, image: Blob): boolean {
+  private suppliedSettled(id: PaneId, image: Blob): boolean {
+    const supplied = this.supplied.get(id);
     return (
-      image === this.supplied.get(id)?.deref() &&
-      this.pictures.get(id)?.image === image
+      image === supplied?.image.deref() &&
+      (supplied.failed || this.pictures.get(id)?.image === image)
     );
   }
 
@@ -1063,7 +1067,7 @@ export class PanePictures {
     if (
       (supplied.replaceable
         ? this.seedSettled(id, supplied.image)
-        : this.suppliedAccepted(id, supplied.image)) ||
+        : this.suppliedSettled(id, supplied.image)) ||
       supplied.image === this.deferredSupplied.get(id)?.deref()
     )
       return true;
@@ -1087,11 +1091,17 @@ export class PanePictures {
       );
       if (!current()) return false;
       if (await this.accept(id, supplied, size, current)) {
-        this.supplied.set(id, new WeakRef(supplied.image));
+        this.supplied.set(id, {
+          image: new WeakRef(supplied.image),
+          failed: false,
+        });
         if (supplied.replaceable) this.seeds.set(id, supplied.image);
       }
     } catch {
-      this.supplied.set(id, new WeakRef(supplied.image));
+      this.supplied.set(id, {
+        image: new WeakRef(supplied.image),
+        failed: true,
+      });
       this.rejected++;
     }
     return true;
