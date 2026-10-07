@@ -134,7 +134,7 @@
     height: 100%;
     min-height: var(--onirigiri-workspace-min-height);
     min-width: 0;
-    overflow: hidden;
+    overflow: clip;
     position: relative;
     width: 100%;
   }
@@ -214,7 +214,7 @@
     grid-row: 2;
     height: auto;
     min-height: 0;
-    overflow: hidden;
+    overflow: clip;
     position: relative;
     touch-action: none;
     width: 100%;
@@ -466,7 +466,7 @@
     flex-direction: column;
     inset: 0 auto auto 0;
     min-height: var(--onirigiri-pane-min-height);
-    overflow: hidden;
+    overflow: clip;
     position: absolute;
     transform-origin: left top;
   }

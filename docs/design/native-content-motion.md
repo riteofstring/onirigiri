@@ -179,6 +179,11 @@ remain asynchronous. Background acquisition prepares offscreen pictures once;
 those pictures can bridge the first paint without replacing the retained DOM.
 Disabling the option resumes ordinary mounting and retention rules.
 
+Live content can move native focus and scroll selections into view. The
+workspace, stage and pane boxes therefore clip with `overflow: clip` rather than
+`hidden`: they are not scroll containers, so focusing a composer or caret near a
+pane edge cannot scroll them and shift the world away from the camera.
+
 The frame scheduler supplies its presented world geometry directly to the picture
 service. Visible world rectangles determine active content on each camera frame,
 including panes encountered by an interrupted move. During an overview camera move
