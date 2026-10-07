@@ -653,6 +653,67 @@ describe("OnirigiriWorkspace keyboard shortcuts", () => {
     container.remove();
   });
 
+  it("runs only bindings marked whileEditing from a text field", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
+    const editingRight = {
+      altKey: true,
+      ctrlKey: true,
+      key: "ArrowRight",
+      metaKey: false,
+      shiftKey: false,
+      whileEditing: true,
+    };
+
+    await act(async () => {
+      root.render(
+        <OnirigiriWorkspace
+          initialPanes={[
+            { paneId: "left", surfaceKind: "test", title: "Left" },
+            { paneId: "right", surfaceKind: "test", title: "Right" },
+          ]}
+          ref={workspaceRef}
+          renderPane={(pane) => <input aria-label={`${pane.paneId} field`} />}
+          shortcuts={{
+            focusRight: [
+              { ...editingRight, ctrlKey: false, whileEditing: false },
+              editingRight,
+            ],
+          }}
+        />,
+      );
+    });
+    const workspace = requiredWorkspaceHandle(workspaceRef.current);
+    expect(workspace.focusPane("left")).toBe(true);
+    const input = container.querySelector<HTMLInputElement>(
+      '[aria-label="left field"]',
+    );
+
+    let plainEvent: KeyboardEvent | undefined;
+    await act(async () => {
+      input?.focus();
+      plainEvent = dispatchKeyDown(input, { altKey: true, key: "ArrowRight" });
+    });
+    expect(plainEvent?.defaultPrevented).toBe(false);
+    expect(workspace.getSnapshot().focusedPaneId).toBe("left");
+
+    let editingEvent: KeyboardEvent | undefined;
+    await act(async () => {
+      editingEvent = dispatchKeyDown(input, {
+        altKey: true,
+        ctrlKey: true,
+        key: "ArrowRight",
+      });
+    });
+    expect(editingEvent?.defaultPrevented).toBe(true);
+    expect(workspace.getSnapshot().focusedPaneId).toBe("right");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
   it("leaves overview and then a maximized pane with Escape", async () => {
     const container = document.createElement("div");
     document.body.append(container);

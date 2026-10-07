@@ -104,6 +104,7 @@ import {
   eventTargetIsInsideAnotherWorkspace,
   isActiveApplicationShortcutWorkspace,
   registerApplicationShortcutWorkspace,
+  eventTargetAcceptsText,
   shortcutEventIsIgnored,
   workspaceChromeFocusedPaneId,
   type OnirigiriShortcutKeyboardEvent,
@@ -306,13 +307,16 @@ export const OnirigiriWorkspace = forwardRef<
       if (shortcutEventIsIgnored(event)) {
         return;
       }
+      const editing = eventTargetAcceptsText(event.target);
       if (event.key === "Escape") {
+        if (editing) return;
         handleWorkspaceEscapeShortcut(event, runtime.store, announceStatus);
         return;
       }
       const shortcutAction = matchOnirigiriShortcutAction(
         event,
         normalizedShortcuts,
+        { editing },
       );
       if (!shortcutAction) {
         return;

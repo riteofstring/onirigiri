@@ -248,6 +248,8 @@ const shortcuts = {
 
 An empty array disables that action. Set `shortcuts={false}` to disable all configurable shortcuts.
 Escape always retains its exit-overview and restore behavior. Editable controls, content-editable
-content, composing input, and modal dialogs keep their native keyboard behavior. Custom modal
+content, composing input, and modal dialogs keep their native keyboard behavior. A binding with
+`whileEditing: true` also runs from an editable control, for chords that never edit text, such as
+Control+Alt+Arrow; Escape in an editable control stays with the control. Custom modal
 overlays should use native `<dialog>` or `role="dialog" aria-modal="true"`; a host can also switch
 back to `shortcutScope="workspace"` while a custom overlay is open.

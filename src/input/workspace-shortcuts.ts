@@ -44,6 +44,7 @@ export interface OnirigiriShortcutBinding {
   readonly key: string;
   readonly metaKey: boolean;
   readonly shiftKey: boolean;
+  readonly whileEditing?: boolean;
 }
 
 export type OnirigiriShortcutBindings = {
@@ -234,6 +235,7 @@ function currentShortcutPlatform(): OnirigiriShortcutPlatform {
 export function matchOnirigiriShortcutAction(
   event: OnirigiriShortcutKeyEvent,
   shortcuts: readonly NormalizedOnirigiriShortcutBinding[],
+  { editing = false }: { editing?: boolean } = {},
 ): OnirigiriShortcutAction | null {
   const keys = [event.key];
   if (event.altKey && isAppleKeyboard() && /^Key[A-Z]$/.test(event.code)) {
@@ -242,6 +244,7 @@ export function matchOnirigiriShortcutAction(
   for (const key of keys) {
     const shortcut = shortcuts.find(
       ({ binding }) =>
+        (!editing || binding.whileEditing === true) &&
         binding.altKey === event.altKey &&
         binding.ctrlKey === event.ctrlKey &&
         binding.metaKey === event.metaKey &&

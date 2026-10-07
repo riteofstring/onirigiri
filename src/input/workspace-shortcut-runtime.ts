@@ -36,7 +36,7 @@ export function activateApplicationShortcutWorkspaceIfEnabled(
   }
 }
 
-function eventTargetAcceptsText(target: EventTarget | null): boolean {
+export function eventTargetAcceptsText(target: EventTarget | null): boolean {
   return (
     target instanceof HTMLElement &&
     (target.isContentEditable ||
@@ -95,7 +95,6 @@ export function shortcutEventIsIgnored(
   return (
     event.defaultPrevented ||
     shortcutEventIsComposing(event) ||
-    eventTargetAcceptsText(event.target) ||
     eventTargetIsInsideModal(event.target)
   );
 }
