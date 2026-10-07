@@ -18,7 +18,11 @@ export class PanePictureContent {
   private native = false;
   private readonly videos = new Map<HTMLVideoElement, PaneVideoSurface>();
   private readonly watchedVideos = new Set<HTMLVideoElement>();
+  private readonly scrolled = new Set<Element>();
   private videosActive = false;
+  private readonly recordScroll = (event: Event): void => {
+    if (event.target instanceof Element) this.scrolled.add(event.target);
+  };
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -29,6 +33,10 @@ export class PanePictureContent {
     this.host = canvas.ownerDocument.createElement("div");
     this.host.className = "onirigiri-pane__native-surface";
     this.host.hidden = true;
+    content.addEventListener("scroll", this.recordScroll, {
+      capture: true,
+      passive: true,
+    });
   }
 
   isNative(): boolean {
@@ -146,6 +154,9 @@ export class PanePictureContent {
   }
 
   dispose(): void {
+    this.content.removeEventListener("scroll", this.recordScroll, {
+      capture: true,
+    });
     this.capabilities.dispose();
     this.freeze();
     this.restoreScrollbars();
@@ -154,7 +165,10 @@ export class PanePictureContent {
   }
 
   preserveScroll(update: () => void): void {
-    const offsets = [this.content, ...this.content.querySelectorAll("*")]
+    for (const element of this.scrolled) {
+      if (!this.content.contains(element)) this.scrolled.delete(element);
+    }
+    const offsets = [this.content, ...this.scrolled]
       .filter((element) => element.scrollLeft !== 0 || element.scrollTop !== 0)
       .map((element) => ({
         element,

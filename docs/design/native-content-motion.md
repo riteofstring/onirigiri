@@ -298,7 +298,9 @@ the native host and capture canvas preserves effective CSS zoom, text and border
 descendant geometry and scroll offsets. Actual recording-density changes
 preserve nonzero CSS scroll offsets: Chromium otherwise keeps physical offsets
 across zoom changes. Offset restoration is immediate even when the consumer
-requests smooth scrolling.
+requests smooth scrolling. Only elements that have dispatched a scroll event are
+checked: a capturing listener records them, so moving a large application
+between hosts does not read the offsets of every descendant.
 
 A capture replays a recorded element image into a private GPU texture, reads its pixels
 into a bounded buffer and encodes a PNG. Encoding runs in one shared worker
