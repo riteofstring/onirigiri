@@ -105,6 +105,8 @@ export class PanePictures {
   private readonly attempts = new Map<PaneId, Attempt>();
   private readonly captureExcluded = new Set<PaneId>();
   private readonly supplied = new Map<PaneId, WeakRef<Blob>>();
+  private readonly seeds = new Map<PaneId, Blob>();
+  private readonly retiredSeeds = new Map<PaneId, WeakRef<Blob>>();
   private readonly deferredSupplied = new Map<PaneId, WeakRef<Blob>>();
   private configuration: ResolvedConfiguration = {
     panes: new Map(),
@@ -263,6 +265,8 @@ export class PanePictures {
         this.pictures.release(id);
         this.supplied.delete(id);
         this.deferredSupplied.delete(id);
+        this.seeds.delete(id);
+        this.retiredSeeds.delete(id);
         this.overviewAttempts.delete(id);
         if (this.isOverviewCapture(id)) this.setOverviewPane(null);
         this.attempts.delete(id);
@@ -312,6 +316,8 @@ export class PanePictures {
       this.activity();
       for (const id of this.pictures.keys()) this.pictures.release(id);
       this.supplied.clear();
+      this.seeds.clear();
+      this.retiredSeeds.clear();
       this.attempts.clear();
       this.captureExcluded.clear();
       this.publish();
@@ -394,7 +400,9 @@ export class PanePictures {
         this.cancel();
       if (readiness.contentRevision !== contentRevision) {
         contentRevision = readiness.contentRevision;
-        if (this.pictures.get(paneId)?.capture) {
+        const seeded = this.isSeed(paneId);
+        if (seeded) this.retireSeed(paneId);
+        if (seeded || this.pictures.get(paneId)?.capture) {
           this.pictures.release(paneId);
           this.publish();
         }
@@ -880,6 +888,7 @@ export class PanePictures {
         const attempt = this.attempts.get(pane.paneId);
         if (attempt) attempt.retryAt = Date.now() + 1000;
       } else {
+        this.retireSeed(pane.paneId);
         const captured = this.configuration.panes.get(pane.paneId);
         if (captured) this.configuration.onCaptured?.(captured, result.image);
       }
@@ -950,6 +959,28 @@ export class PanePictures {
     }
   }
 
+  private isSeed(id: PaneId): boolean {
+    const seed = this.seeds.get(id);
+    return seed !== undefined && this.pictures.get(id)?.image === seed;
+  }
+
+  private retireSeed(id: PaneId): void {
+    const seed = this.seeds.get(id);
+    if (seed === undefined) return;
+    this.retiredSeeds.set(id, new WeakRef(seed));
+    this.seeds.delete(id);
+  }
+
+  private seedSettled(id: PaneId, image: Blob): boolean {
+    if (this.retiredSeeds.get(id)?.deref() === image) return true;
+    const current = this.pictures.get(id);
+    if (current?.capture) {
+      this.retiredSeeds.set(id, new WeakRef(image));
+      return true;
+    }
+    return current?.image === image;
+  }
+
   private suppliedOnly(pane: WorkspacePane): boolean {
     const supplied = this.configuration.resolver?.(pane);
     return Boolean(supplied && !supplied.replaceable);
@@ -999,34 +1030,35 @@ export class PanePictures {
   ): Promise<boolean> {
     this.updatePictureStyle(id, supplied);
     if (
-      this.suppliedAccepted(id, supplied.image) ||
+      (supplied.replaceable
+        ? this.seedSettled(id, supplied.image)
+        : this.suppliedAccepted(id, supplied.image)) ||
       supplied.image === this.deferredSupplied.get(id)?.deref()
     )
       return true;
     this.deferredSupplied.set(id, new WeakRef(supplied.image));
     const epoch = this.epoch;
     const resolver = this.configuration.resolver;
+    const current = () =>
+      this.suppliedCurrent(id, pane, supplied.image, epoch, resolver) &&
+      !(supplied.replaceable && this.pictures.get(id)?.capture);
     try {
       const size = await pngDimensions(
         supplied.image,
         maxEncodedBytes,
         maxRasterBytes,
       );
-      if (!this.suppliedCurrent(id, pane, supplied.image, epoch, resolver))
-        return false;
+      if (!current()) return false;
       await validatePictureDecode(
         this.root!.ownerDocument,
         supplied.image,
         size,
       );
-      if (!this.suppliedCurrent(id, pane, supplied.image, epoch, resolver))
-        return false;
-      if (
-        await this.accept(id, supplied, size, () =>
-          this.suppliedCurrent(id, pane, supplied.image, epoch, resolver),
-        )
-      )
+      if (!current()) return false;
+      if (await this.accept(id, supplied, size, current)) {
         this.supplied.set(id, new WeakRef(supplied.image));
+        if (supplied.replaceable) this.seeds.set(id, supplied.image);
+      }
     } catch {
       this.supplied.set(id, new WeakRef(supplied.image));
       this.rejected++;
@@ -1120,7 +1152,7 @@ export class PanePictures {
   private pictureMatchesContent(paneId: PaneId, host: ContentHost): boolean {
     const picture = this.pictures.get(paneId);
     if (!picture) return false;
-    if (!picture.capture) return true;
+    if (!picture.capture) return !this.isSeed(paneId);
     return (
       picture.capture.bounds.width === host.content.offsetWidth &&
       picture.capture.bounds.height === host.content.offsetHeight

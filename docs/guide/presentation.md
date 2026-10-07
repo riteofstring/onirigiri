@@ -179,7 +179,8 @@ source retains its last accepted picture. Removing the pane or replacing its
 surface releases that picture. A supplied picture otherwise stands in for
 capture; mark it `replaceable: true` when it only seeds the pane, such as a
 picture saved from an earlier session, and the engine still captures the pane
-when it can. `onPanePictureCaptured(pane, pngBlob)` reports each accepted
+when it can. A seed is dropped when the pane's content revision changes and is
+never accepted again once a capture has replaced it. `onPanePictureCaptured(pane, pngBlob)` reports each accepted
 capture, so an application can save it and supply it again after a reload.
 Developers can set both retention budgets:
 

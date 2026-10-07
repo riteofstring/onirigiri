@@ -279,7 +279,9 @@ One engine service owns acquired and developer-supplied PNG pictures.
 A supplied picture replaces capture for its pane unless it is marked
 replaceable: then it only seeds the pane until a capture is accepted, which lets
 an application restore pictures saved from an earlier session without freezing
-them. Accepted captures are reported with their PNG so the application owns
+them. A content revision releases a seed as it does a capture, a capture always
+takes precedence, and a seed that was replaced or released is not accepted
+again for that pane. Accepted captures are reported with their PNG so the application owns
 persistence; the engine keeps no storage of its own.
 The engine owns acceptance, compressed originals, prepared GPU textures and
 presentation. Immutable PNG originals survive live-DOM eviction without a

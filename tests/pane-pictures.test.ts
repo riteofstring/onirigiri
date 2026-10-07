@@ -1134,6 +1134,38 @@ describe("engine pane pictures", () => {
     );
   });
 
+  it("releases a seed when its content changes and does not accept it again", async () => {
+    const f = fixture(capture);
+    canvasMock.uncapturable.add(f.content);
+    const source = {};
+    f.readiness.update(source, true, 1);
+    const seed = png();
+    f.config.resolver = () => ({ image: seed, replaceable: true });
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(f.pictures.get("a")?.image).toBe(seed);
+    f.readiness.update(source, true, 2);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.pictures.get("a")).toBeNull();
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(f.pictures.get("a")).toBeNull();
+  });
+
+  it("keeps a capture over the seed it replaced after navigation", async () => {
+    const f = fixture(capture);
+    const seed = png();
+    f.config.resolver = () => ({ image: seed, replaceable: true });
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(500);
+    const captured = f.pictures.get("a");
+    expect(captured?.capture).not.toBeNull();
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(f.pictures.get("a")?.image).toBe(captured?.image);
+    expect(f.pictures.get("a")?.capture).not.toBeNull();
+  });
+
   it("does not capture over a supplied picture that is not replaceable", async () => {
     const f = fixture(capture);
     const image = png();
