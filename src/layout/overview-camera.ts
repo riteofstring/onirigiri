@@ -37,6 +37,8 @@ interface OverviewPanInput extends OverviewCameraInput {
 interface OverviewZoomInput extends OverviewCameraInput {
   focalX: number;
   focalY: number;
+  followOffsetX: number;
+  followOffsetY: number;
   zoomFactor: number;
 }
 
@@ -75,7 +77,9 @@ function panOverviewCamera(
 
 function zoomOverviewCamera(
   input: OverviewZoomInput,
-): OverviewCameraState | null {
+):
+  | (OverviewCameraState & { followOffsetX: number; followOffsetY: number })
+  | null {
   if (!Number.isFinite(input.zoomFactor) || input.zoomFactor <= 0) {
     return null;
   }
@@ -114,10 +118,12 @@ function zoomOverviewCamera(
   ) {
     return null;
   }
+  const followX = input.followOffsetX;
+  const followY = input.followOffsetY;
   const surfaceX =
-    (input.focalX - (before.baseXOffset - input.panX)) / before.scale;
+    (input.focalX - (before.baseXOffset - input.panX + followX)) / before.scale;
   const surfaceY =
-    (input.focalY - (before.baseYOffset - input.panY)) / before.scale;
+    (input.focalY - (before.baseYOffset - input.panY + followY)) / before.scale;
   const after = input.engine.overviewContentBounds(
     input.viewport,
     input.maximizedPaneId,
@@ -125,16 +131,22 @@ function zoomOverviewCamera(
     input.cursor,
     fixedScale,
   );
+  const panX = clampPan(
+    after.baseXOffset + followX + surfaceX * after.scale - input.focalX,
+    after.maxPanX,
+  );
+  const panY = clampPan(
+    after.baseYOffset + followY + surfaceY * after.scale - input.focalY,
+    after.maxPanY,
+  );
   return {
     fixedScale,
-    panX: clampPan(
-      after.baseXOffset + surfaceX * after.scale - input.focalX,
-      after.maxPanX,
-    ),
-    panY: clampPan(
-      after.baseYOffset + surfaceY * after.scale - input.focalY,
-      after.maxPanY,
-    ),
+    followOffsetX:
+      input.focalX - (after.baseXOffset - panX) - surfaceX * after.scale,
+    followOffsetY:
+      input.focalY - (after.baseYOffset - panY) - surfaceY * after.scale,
+    panX,
+    panY,
     zoom,
   };
 }
@@ -281,12 +293,17 @@ export class WorkspaceOverviewCamera {
     maximizedPaneId,
     viewport,
     zoomFactor,
-  }: Omit<OverviewZoomInput, "panX" | "panY" | "zoom">): boolean {
+  }: Omit<
+    OverviewZoomInput,
+    "followOffsetX" | "followOffsetY" | "panX" | "panY" | "zoom"
+  >): boolean {
     const camera = zoomOverviewCamera({
       cursor,
       engine,
       focalX,
       focalY,
+      followOffsetX: this.followOffsetX,
+      followOffsetY: this.followOffsetY,
       maximizedPaneId,
       panX: this.panX,
       panY: this.panY,
@@ -298,6 +315,8 @@ export class WorkspaceOverviewCamera {
     if (!camera) {
       return false;
     }
+    this.followOffsetX = camera.followOffsetX;
+    this.followOffsetY = camera.followOffsetY;
     this.panX = camera.panX;
     this.panY = camera.panY;
     this.zoom = camera.zoom;
