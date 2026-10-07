@@ -19,6 +19,7 @@ export class PanePictureContent {
   private readonly videos = new Map<HTMLVideoElement, PaneVideoSurface>();
   private readonly watchedVideos = new Set<HTMLVideoElement>();
   private readonly scrolled = new Set<Element>();
+  private scrolledBeforeTracking = true;
   private videosActive = false;
   private readonly recordScroll = (event: Event): void => {
     if (event.target instanceof Element) this.scrolled.add(event.target);
@@ -49,13 +50,15 @@ export class PanePictureContent {
       () => {
         this.frame = null;
         if (!this.callbacks.canPresent()) return;
-        this.host.style.setProperty(
-          "--_onirigiri-capture-scale",
-          this.canvas.style.getPropertyValue("--_onirigiri-capture-scale"),
-        );
-        this.canvas.before(this.host);
-        this.host.hidden = false;
-        this.preserveScroll(() => moveInto(this.host, this.content));
+        this.preserveScroll(() => {
+          this.host.style.setProperty(
+            "--_onirigiri-capture-scale",
+            this.canvas.style.getPropertyValue("--_onirigiri-capture-scale"),
+          );
+          this.canvas.before(this.host);
+          this.host.hidden = false;
+          moveInto(this.host, this.content);
+        });
         this.native = true;
         this.canvas.dataset.onirigiriNativeActive = "true";
         this.content.dataset.onirigiriLive = "true";
@@ -165,6 +168,13 @@ export class PanePictureContent {
   }
 
   preserveScroll(update: () => void): void {
+    if (this.scrolledBeforeTracking) {
+      this.scrolledBeforeTracking = false;
+      for (const element of this.content.querySelectorAll("*")) {
+        if (element.scrollLeft !== 0 || element.scrollTop !== 0)
+          this.scrolled.add(element);
+      }
+    }
     for (const element of this.scrolled) {
       if (!this.content.contains(element)) this.scrolled.delete(element);
     }

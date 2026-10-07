@@ -13,7 +13,7 @@ function scrolledTo(element: Element, top: number) {
 }
 
 describe("PanePictureContent", () => {
-  it("restores the scroll offsets of scrolled descendants across a move without scanning the rest", () => {
+  it("restores scroll offsets across moves, scanning descendants only the first time", () => {
     const canvas = document.createElement("canvas");
     const content = document.createElement("div");
     const timeline = document.createElement("div");
@@ -28,6 +28,21 @@ describe("PanePictureContent", () => {
     });
     const scrollTo = vi.fn();
     timeline.scrollTo = scrollTo;
+    const initial = document.createElement("div");
+    content.append(initial);
+    Object.defineProperty(initial, "scrollTop", {
+      configurable: true,
+      value: 64,
+    });
+    const initialScrollTo = vi.fn();
+    initial.scrollTo = initialScrollTo;
+    source.preserveScroll(() => {});
+    expect(initialScrollTo).toHaveBeenCalledWith({
+      left: 0,
+      top: 64,
+      behavior: "instant",
+    });
+
     const untouchedReads = vi.fn(() => 0);
     Object.defineProperty(untouched, "scrollTop", { get: untouchedReads });
 
