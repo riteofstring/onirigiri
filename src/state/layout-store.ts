@@ -45,6 +45,7 @@ import type {
   ColumnId,
   ColumnWidthSpec,
   FocusDirection,
+  OnirigiriRestoreLayoutOptions,
   OpenPaneRequest,
   PaneId,
   PaneDefaultsConfiguration,
@@ -850,15 +851,35 @@ export class WorkspaceLayoutStore {
   ): ColumnId | null {
     return this.sizing.resizePaneColumn(paneId, width, fixedEdge);
   }
-  restoreLayout(layout: OnirigiriLayout): void {
+  restoreLayout(
+    layout: OnirigiriLayout,
+    options: OnirigiriRestoreLayoutOptions = {},
+  ): void {
     const restored = restoredWorkspaceScene(this.scene, layout);
+    const maximizedPaneId = this.getSnapshot().maximizedPaneId;
     this.engine.restoreScene(restored.scene);
     this.scene = restored.scene;
     this.activeLayoutMutationId = null;
     this.focusRevealSuppressed = false;
+    this.clearPaneRearrangementSource();
+    if (options.keepPresentation) {
+      this.state.current.setState({
+        maximizedPaneId:
+          maximizedPaneId && restored.scene.paneById.has(maximizedPaneId)
+            ? maximizedPaneId
+            : null,
+      });
+      this.setCursor(restored.cursor);
+      if (this.overviewCamera.mode === "normal") {
+        this.snapScrollToTarget();
+      } else {
+        this.retargetOverviewFollowCamera();
+      }
+      this.notify(true, "restore");
+      return;
+    }
     this.state.current.setState({ maximizedPaneId: null });
     this.overviewCamera.reset();
-    this.clearPaneRearrangementSource();
     this.setCursor(restored.cursor);
     this.snapAnimationsToTarget();
     this.notify(true, "restore");

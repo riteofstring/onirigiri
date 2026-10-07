@@ -39,6 +39,7 @@ import type {
   WorkspaceDirectionControlMode,
   WorkspaceFocusedPaneFrame,
   WorkspaceFocusAnchor,
+  OnirigiriRestoreLayoutOptions,
   WorkspaceCursorTargets,
   WorkspaceGridAxes,
   WorkspacePane,
@@ -108,7 +109,10 @@ export interface OnirigiriWorkspaceHandle {
   getCaptureStatus(): OnirigiriCaptureStatus;
   getPanePresentationState(paneId: PaneId): PanePresentationState;
   refreshPanePictures(): void;
-  restoreLayout(layout: OnirigiriLayout): void;
+  restoreLayout(
+    layout: OnirigiriLayout,
+    options?: OnirigiriRestoreLayoutOptions,
+  ): void;
   resizePanes(mode: PaneSizingMode): void;
   setFocusAnchor(anchor: WorkspaceFocusAnchor): void;
   selectPaneGroup(): boolean;

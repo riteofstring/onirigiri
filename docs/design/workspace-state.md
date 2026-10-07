@@ -46,6 +46,13 @@ No persistence middleware is used: the existing explicit layout serialization an
 restore contract remains responsible for persisted layout data. Picture blobs,
 browser resources, and animation handles have separate resource lifetimes.
 
+A restore normally starts a fresh presentation: it leaves overview, clears
+maximization and snaps the camera to the restored cursor. A host that rebuilds
+the layout because its panes came or went asks the restore to keep the
+presentation instead. Overview stays open and follows the restored cursor, a
+maximized pane that survives stays maximized, and the normal camera lands on
+the restored cursor, so a host's membership changes do not undo the user's view.
+
 Boundary tests cover complete command notifications, immutable prior snapshots,
 unsubscription, independent workspaces, layout restoration, and continuous camera
 motion. Browser tests cover keyboard navigation and retained pane presentation.

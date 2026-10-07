@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { WorkspaceLikeLayoutEngine } from "../src/layout/layout-engine";
 import { WorkspaceLayoutStore } from "../src/state/layout-store";
-import { createWorkspaceScene } from "../src/workspace/workspace-scene";
+import {
+  createWorkspaceScene,
+  serializeWorkspaceLayout,
+} from "../src/workspace/workspace-scene";
 
 describe("workspace overview scale", () => {
   it("keeps a large following overview close at one stable scale", () => {
@@ -85,5 +88,43 @@ describe("workspace overview scale", () => {
     const after = focusedCenter();
     expect(after.x).toBeCloseTo(before.x, 0);
     expect(after.y).toBeCloseTo(before.y, 0);
+  });
+
+  it("keeps overview and maximization through a restore that keeps presentation", () => {
+    const definitions = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        columnId: `restore-column-${String(index)}`,
+        paneId: `restore-pane-${String(index)}`,
+        slotIndex: index,
+        surfaceKind: "test",
+        title: `Restore pane ${String(index)}`,
+      }));
+    const result = createWorkspaceScene({ panes: definitions(4) });
+    const engine = new WorkspaceLikeLayoutEngine(result.scene);
+    const store = new WorkspaceLayoutStore(engine, result.scene, result.cursor);
+    const viewport = { height: 800, width: 1_280, x: 0, y: 0 };
+    store.ensureFocusedPaneVisible(viewport);
+    expect(store.focusPane("restore-pane-2")).toBe(true);
+    store.togglePaneMaximized("restore-pane-2");
+    store.toggleOverviewMode();
+    store.snapAnimationsToTarget();
+
+    const grown = createWorkspaceScene({ panes: definitions(6) });
+    store.restoreLayout(
+      serializeWorkspaceLayout(grown.scene, { column: 2, row: 0, split: 0 }),
+      { keepPresentation: true },
+    );
+
+    const kept = store.getSnapshot();
+    expect(kept.presentationMode).toBe("overview");
+    expect(kept.maximizedPaneId).toBe("restore-pane-2");
+    expect(kept.focusedPaneId).toBe("restore-pane-2");
+    expect(engine.paneLocation("restore-pane-5")).toBeTruthy();
+
+    store.restoreLayout(
+      serializeWorkspaceLayout(grown.scene, { column: 2, row: 0, split: 0 }),
+    );
+    expect(store.getSnapshot().presentationMode).toBe("normal");
+    expect(store.getSnapshot().maximizedPaneId).toBeNull();
   });
 });

@@ -31,6 +31,10 @@ export interface OnirigiriFocusHighlightOptions {
 }
 export type WorkspaceGridAxes = "horizontal" | "spatial";
 export type WorkspaceCursorTargets = "cells" | "panes";
+
+export interface OnirigiriRestoreLayoutOptions {
+  keepPresentation?: boolean;
+}
 export const defaultWorkspaceGridAxes: WorkspaceGridAxes = "spatial";
 export type PaneRearrangementSelection = "group" | "pane";
 export type PaneRuntimeState = "frozen" | "hidden" | "live";

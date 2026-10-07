@@ -623,8 +623,8 @@ export const OnirigiriWorkspace = forwardRef<
       getCaptureStatus: pictures.getStatus,
       getPanePresentationState: pictures.getPresentation,
       refreshPanePictures: pictures.refresh,
-      restoreLayout(layout) {
-        runtime.store.restoreLayout(layout);
+      restoreLayout(layout, options) {
+        runtime.store.restoreLayout(layout, options);
       },
       selectPaneGroup() {
         return runtime.store.selectFocusedPaneGroup();
