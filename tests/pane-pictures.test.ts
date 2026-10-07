@@ -1496,6 +1496,27 @@ describe("engine pane pictures", () => {
     );
   });
 
+  it("restores existing continuous pictures while typing postpones background capture", async () => {
+    const f = fixture();
+    const original = png();
+    f.config.resolver = (pane) =>
+      pane.paneId === "a" ? { image: original } : null;
+    f.config.rasterBudgetBytes = 20000;
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")?.pixelated).toBe(true);
+    f.config.rasterBudgetBytes = 100000;
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(f.pictures.get("a")).toMatchObject({
+      width: 200,
+      height: 100,
+      pixelated: false,
+    });
+    expect(capture).not.toHaveBeenCalled();
+  });
+
   it("disposes a late detail preparation after its pane is removed", async () => {
     const f = fixture();
     const original = png();

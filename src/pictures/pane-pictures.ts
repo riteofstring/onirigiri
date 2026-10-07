@@ -127,7 +127,10 @@ export class PanePictures {
       this.publish();
       this.wake();
     },
-    () => this.preloadAllowed() && !this.moving(),
+    () =>
+      this.preloadAllowed() &&
+      !this.moving() &&
+      (!this.isContinuous() || this.idle()),
     () => this.idle(),
     (paneId, signal) => this.capturePreload(paneId, signal),
     () => !this.busy,
@@ -669,7 +672,7 @@ export class PanePictures {
       this.captureUnavailable === null &&
       this.browserReady() &&
       this.interaction.canPreload() &&
-      (!this.isContinuous() || (this.idle() && !this.overview()))
+      (!this.isContinuous() || (!this.moving() && !this.overview()))
     );
   }
 
@@ -1138,6 +1141,7 @@ export class PanePictures {
     return Boolean(
       this.deviceReady &&
       this.preloadAllowed() &&
+      (!this.isContinuous() || this.idle()) &&
       this.root &&
       (this.moving() || this.activation.settled()),
     );
