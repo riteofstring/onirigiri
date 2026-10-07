@@ -106,6 +106,7 @@ export class PanePictures {
   private readonly captureExcluded = new Set<PaneId>();
   private readonly supplied = new Map<PaneId, WeakRef<Blob>>();
   private readonly seeds = new Map<PaneId, Blob>();
+  private readonly stalePictures = new Set<PaneId>();
   private readonly retiredSeeds = new Map<PaneId, WeakRef<Blob>>();
   private readonly deferredSupplied = new Map<PaneId, WeakRef<Blob>>();
   private configuration: ResolvedConfiguration = {
@@ -266,6 +267,7 @@ export class PanePictures {
         this.supplied.delete(id);
         this.deferredSupplied.delete(id);
         this.seeds.delete(id);
+        this.stalePictures.delete(id);
         this.retiredSeeds.delete(id);
         this.overviewAttempts.delete(id);
         if (this.isOverviewCapture(id)) this.setOverviewPane(null);
@@ -317,6 +319,7 @@ export class PanePictures {
       for (const id of this.pictures.keys()) this.pictures.release(id);
       this.supplied.clear();
       this.seeds.clear();
+      this.stalePictures.clear();
       this.retiredSeeds.clear();
       this.attempts.clear();
       this.captureExcluded.clear();
@@ -403,8 +406,9 @@ export class PanePictures {
         const seeded = this.isSeed(paneId);
         if (seeded) this.retireSeed(paneId);
         if (seeded || this.pictures.get(paneId)?.capture) {
-          this.pictures.release(paneId);
-          this.publish();
+          this.stalePictures.add(paneId);
+          this.preloader.forget(paneId);
+          this.overviewAttempts.delete(paneId);
         }
       }
       this.attempts.delete(paneId);
@@ -665,7 +669,7 @@ export class PanePictures {
       this.captureUnavailable === null &&
       this.browserReady() &&
       this.interaction.canPreload() &&
-      (!this.isContinuous() || (!this.moving() && !this.overview()))
+      (!this.isContinuous() || (this.idle() && !this.overview()))
     );
   }
 
@@ -736,7 +740,11 @@ export class PanePictures {
     } finally {
       clearTimeout(deadline);
       const id = batch.panes[0]?.paneId;
-      if (id && this.isOverviewCapture(id) && !this.pictures.has(id))
+      if (
+        id &&
+        this.isOverviewCapture(id) &&
+        (!this.pictures.has(id) || this.stalePictures.has(id))
+      )
         this.setOverviewPane(null);
     }
   }
@@ -779,7 +787,8 @@ export class PanePictures {
     if (!item.visible) return false;
     if (this.overview())
       return (
-        this.isOverviewCapture(item.paneId) && !this.pictures.has(item.paneId)
+        this.isOverviewCapture(item.paneId) &&
+        (!this.pictures.has(item.paneId) || this.stalePictures.has(item.paneId))
       );
     return !item.placeholderOnly && item.runtimeState === "live";
   }
@@ -1038,7 +1047,7 @@ export class PanePictures {
   private suppliedAccepted(id: PaneId, image: Blob): boolean {
     return (
       image === this.supplied.get(id)?.deref() &&
-      !this.pictures.get(id)?.capture
+      this.pictures.get(id)?.image === image
     );
   }
 
@@ -1096,8 +1105,10 @@ export class PanePictures {
       ...options,
       revision: this.accepted + 1,
     });
-    if (accepted) this.accepted++;
-    else this.rejected++;
+    if (accepted) {
+      this.accepted++;
+      this.stalePictures.delete(id);
+    } else this.rejected++;
     this.publish();
     return accepted;
   }
@@ -1110,13 +1121,16 @@ export class PanePictures {
         this.configuration.liveContent) &&
       this.idle();
     if (!margin && !all) return;
-    const stage =
-      this.root!.querySelector('[data-onirigiri-slot="stage"]') ?? this.root!;
-    const viewport = stage.getBoundingClientRect();
+    const viewport = all
+      ? null
+      : (
+          this.root!.querySelector('[data-onirigiri-slot="stage"]') ??
+          this.root!
+        ).getBoundingClientRect();
     const candidates = orderPaneActivation(
       this.configuration.items,
       this.focused(),
-    ).flatMap((item) => this.preloadCandidate(item, viewport, margin, !!all));
+    ).flatMap((item) => this.preloadCandidate(item, viewport, margin));
     this.preloader.advance(candidates);
   }
 
@@ -1131,17 +1145,17 @@ export class PanePictures {
 
   private preloadCandidate(
     item: PaneRenderItem,
-    viewport: DOMRect,
+    viewport: DOMRect | null,
     margin: number,
-    all: boolean,
   ) {
     const host = this.preloadHost(item);
     if (!host) return [];
-    const bounds = (
-      host.content.closest('[data-onirigiri-slot="pane"]') ?? host.content
-    ).getBoundingClientRect();
-    const nearby = adjacentPreloadDistance(bounds, viewport, margin);
-    if (nearby === null && !all) return [];
+    if (viewport) {
+      const bounds = (
+        host.content.closest('[data-onirigiri-slot="pane"]') ?? host.content
+      ).getBoundingClientRect();
+      if (adjacentPreloadDistance(bounds, viewport, margin) === null) return [];
+    }
     return [
       {
         ...host,
@@ -1169,6 +1183,7 @@ export class PanePictures {
   }
 
   private pictureMatchesContent(paneId: PaneId, host: ContentHost): boolean {
+    if (this.stalePictures.has(paneId)) return false;
     const picture = this.pictures.get(paneId);
     if (!picture) return false;
     if (!picture.capture) return !this.isSeed(paneId);
@@ -1215,6 +1230,7 @@ export class PanePictures {
     if (
       !this.isOverviewCapture(paneId) ||
       !picture ||
+      this.stalePictures.has(paneId) ||
       this.get(paneId) !== picture
     )
       return;
@@ -1257,7 +1273,8 @@ export class PanePictures {
   private overviewPicturePending(item: PaneRenderItem): boolean {
     return (
       item.visible &&
-      !this.pictures.has(item.paneId) &&
+      (!this.pictures.has(item.paneId) ||
+        this.stalePictures.has(item.paneId)) &&
       !this.overviewAttempts.has(item.paneId)
     );
   }

@@ -593,6 +593,54 @@ describe("engine pane pictures", () => {
       loaded: () => neighbor.dispatchEvent(new Event("load")),
     };
   }
+  it("prepares distant content without measuring pane or stage bounds when warming all pictures", async () => {
+    const f = adjacentFixture();
+    f.pictures.configure({
+      ...f.config,
+      items: [
+        ...f.config.items,
+        renderItem({
+          paneId: "b",
+          x: 5000,
+          visible: false,
+          runtimeState: "hidden",
+        }),
+      ],
+      preloadAllPanePictures: true,
+    });
+    vi.spyOn(
+      f.content.parentElement!,
+      "getBoundingClientRect",
+    ).mockImplementation(() => {
+      throw new Error("A full warmup does not need stage layout");
+    });
+    vi.spyOn(f.neighbor, "getBoundingClientRect").mockImplementation(() => {
+      throw new Error("A full warmup does not need pane layout");
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    expect(f.pictures.getStatus().preloadingPaneId).toBe("b");
+  });
+
+  it("waits for typing to stop before preparing hidden continuous content", async () => {
+    const f = adjacentFixture();
+    f.pictures.configure({
+      ...f.config,
+      liveContent: true,
+      preloadMarginPanes: 1,
+      items: [
+        ...f.config.items,
+        renderItem({ paneId: "b", visible: false, runtimeState: "hidden" }),
+      ],
+    });
+    for (let key = 0; key < 4; key++) {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+      await vi.advanceTimersByTimeAsync(100);
+      expect(f.pictures.getStatus().preloadingPaneId).toBeNull();
+    }
+    await vi.advanceTimersByTimeAsync(250);
+    expect(f.pictures.getStatus().preloadingPaneId).toBe("b");
+  });
+
   it("does not preload every hidden application merely because a presentation policy exists", async () => {
     const f = adjacentFixture();
     const configuration = {
@@ -1062,7 +1110,7 @@ describe("engine pane pictures", () => {
     expect(window.createImageBitmap).not.toHaveBeenCalled();
   });
 
-  it("waits for all readiness sources and releases an accepted image when its content revision changes", async () => {
+  it("keeps accepted pixels across content revisions until all readiness sources and the replacement are ready", async () => {
     const f = fixture(capture);
     const a = {},
       b = {};
@@ -1081,9 +1129,17 @@ describe("engine pane pictures", () => {
     f.readiness.update(a, true, 1);
     expect(f.pictures.get("a")).toBe(accepted);
     f.readiness.update(a, false, 2);
+    await vi.advanceTimersByTimeAsync(150);
+    expect(f.pictures.get("a")).toBe(accepted);
+    const replacement = deferred<CanvasPicture>();
+    canvasMock.capture = () => replacement.promise;
+    f.readiness.update(a, true, 2);
+    await vi.advanceTimersByTimeAsync(150);
+    expect(f.pictures.get("a")).toBe(accepted);
+    const image = png();
+    replacement.resolve({ image, width: 200, height: 100 });
     await vi.advanceTimersByTimeAsync(0);
-    expect(f.pictures.get("a")).toBeNull();
-    expect(f.pictures.getStatus().pictures).toEqual([]);
+    expect(f.pictures.get("a")?.image).toBe(image);
   });
 
   it("rejects a reply after readiness revision changes before decode", async () => {
@@ -1134,7 +1190,7 @@ describe("engine pane pictures", () => {
     );
   });
 
-  it("releases a seed when its content changes and does not accept it again", async () => {
+  it("retains a seed as coverage across content changes without accepting it again", async () => {
     const f = fixture(capture);
     canvasMock.uncapturable.add(f.content);
     const source = {};
@@ -1144,12 +1200,14 @@ describe("engine pane pictures", () => {
     f.pictures.configure(f.config);
     await vi.advanceTimersByTimeAsync(500);
     expect(f.pictures.get("a")?.image).toBe(seed);
+    const accepted = f.pictures.getStatus().accepted;
     f.readiness.update(source, true, 2);
     await vi.advanceTimersByTimeAsync(0);
-    expect(f.pictures.get("a")).toBeNull();
+    expect(f.pictures.get("a")?.image).toBe(seed);
     f.pictures.activity();
     await vi.advanceTimersByTimeAsync(500);
-    expect(f.pictures.get("a")).toBeNull();
+    expect(f.pictures.get("a")?.image).toBe(seed);
+    expect(f.pictures.getStatus().accepted).toBe(accepted);
   });
 
   it("releases a seed its resolver no longer offers", async () => {
@@ -1182,6 +1240,29 @@ describe("engine pane pictures", () => {
     await vi.advanceTimersByTimeAsync(500);
     expect(f.pictures.get("a")?.image).toBe(captured?.image);
     expect(f.pictures.get("a")?.capture).not.toBeNull();
+  });
+
+  it("restores an evicted supplied picture when its pane is revisited", async () => {
+    const f = fixture(capture);
+    const image = png();
+    f.config.resolver = () => ({ image });
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")?.image).toBe(image);
+    f.config.items = [];
+    f.config.budgetBytes = 0;
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toBeNull();
+    f.config.budgetBytes = 1000;
+    f.config.items = [
+      renderItem({ paneId: "a", visible: true, runtimeState: "live" }),
+    ];
+    f.pictures.configure(f.config);
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")?.image).toBe(image);
+    expect(capture).not.toHaveBeenCalled();
   });
 
   it("does not capture over a supplied picture that is not replaceable", async () => {

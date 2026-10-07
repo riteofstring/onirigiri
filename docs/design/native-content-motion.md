@@ -284,8 +284,10 @@ One engine service owns acquired and developer-supplied PNG pictures.
 A supplied picture replaces capture for its pane unless it is marked
 replaceable: then it only seeds the pane until a capture is accepted, which lets
 an application restore pictures saved from an earlier session without freezing
-them. A content revision releases a seed as it does a capture, a capture always
-takes precedence, and a seed that was replaced or released is not accepted
+them. A content revision marks an accepted seed or capture stale while retaining
+its pixels until a replacement is prepared. Stale pictures provide coverage but
+do not suppress acquisition. A capture always takes precedence, and a seed that
+was replaced or retired after a revision change is not accepted
 again for that pane. A seed the resolver stops offering is released, and one
 the cache evicted can be offered again. Accepted captures are reported with their PNG so the application owns
 persistence; the engine keeps no storage of its own.
@@ -428,6 +430,13 @@ than treating initialization alone as a retained picture. Accepted pictures do
 not need another speculative warmup. Zero disables this neighbor queue. `preloadAllPanePictures` additionally fills
 missing distant pictures at rest, after visible work. Live activation, overview
 capture and background acquisition share an outward order centered on focus.
+Warming all missing pictures does not measure stage or pane screen rectangles:
+there is no viewport-distance filter to evaluate in that mode. This removes
+unnecessary layout reads after a prepared application commits; capture-size
+validation still checks content dimensions. Neighbor-only admission
+continues to check the actual viewport margin.
+Continuous presentation waits for input and camera motion to be idle before
+background preparation, including after typing inside a stationary pane.
 Distance is measured in pane widths and heights using the larger axis, so
 immediate neighbors, including diagonals, precede the next surrounding ring.
 Changing focus reorders queued work; an acquisition already running may finish.
