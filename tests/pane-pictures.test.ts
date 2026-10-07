@@ -1210,22 +1210,54 @@ describe("engine pane pictures", () => {
     expect(f.pictures.getStatus().accepted).toBe(accepted);
   });
 
-  it("releases a seed its resolver no longer offers", async () => {
+  it.each([false, true])(
+    "releases a withdrawn seed, including retired coverage (%s)",
+    async (retired) => {
+      const f = fixture(capture);
+      canvasMock.uncapturable.add(f.content);
+      const source = {};
+      f.readiness.update(source, true, 1);
+      const seed = png();
+      let offered = true;
+      f.config.resolver = () =>
+        offered ? { image: seed, replaceable: true } : null;
+      f.pictures.configure(f.config);
+      await vi.advanceTimersByTimeAsync(500);
+      expect(f.pictures.get("a")?.image).toBe(seed);
+      if (retired) f.readiness.update(source, true, 2);
+      offered = false;
+      f.config.resolver = () =>
+        offered ? { image: seed, replaceable: true } : null;
+      f.pictures.configure(f.config);
+      await vi.advanceTimersByTimeAsync(500);
+      expect(f.pictures.get("a")).toBeNull();
+    },
+  );
+
+  it("keeps the old seed visible while its replacement is being decoded", async () => {
     const f = fixture(capture);
     canvasMock.uncapturable.add(f.content);
     const seed = png();
-    let offered = true;
-    f.config.resolver = () =>
-      offered ? { image: seed, replaceable: true } : null;
+    let image = seed;
+    f.config.resolver = () => ({ image, replaceable: true });
     f.pictures.configure(f.config);
     await vi.advanceTimersByTimeAsync(500);
+    const replacement = png(300, 100);
+    const decoded = deferred<ImageBitmap>();
+    vi.spyOn(window, "createImageBitmap").mockImplementationOnce(
+      () => decoded.promise,
+    );
+    image = replacement;
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
     expect(f.pictures.get("a")?.image).toBe(seed);
-    offered = false;
-    f.config.resolver = () =>
-      offered ? { image: seed, replaceable: true } : null;
-    f.pictures.configure(f.config);
-    await vi.advanceTimersByTimeAsync(500);
-    expect(f.pictures.get("a")).toBeNull();
+    decoded.resolve({
+      width: 300,
+      height: 100,
+      close: vi.fn(),
+    } as unknown as ImageBitmap);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(f.pictures.get("a")?.image).toBe(replacement);
   });
 
   it("keeps a capture over the seed it replaced after navigation", async () => {

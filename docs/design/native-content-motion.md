@@ -288,7 +288,8 @@ them. A content revision marks an accepted seed or capture stale while retaining
 its pixels until a replacement is prepared. Stale pictures provide coverage but
 do not suppress acquisition. A capture always takes precedence, and a seed that
 was replaced or retired after a revision change is not accepted
-again for that pane. A seed the resolver stops offering is released, and one
+again for that pane. Withdrawing a seed releases even its retained stale coverage;
+offering a replacement keeps the old pixels until the new image is prepared. A seed
 the cache evicted can be offered again. Accepted captures are reported with their PNG so the application owns
 persistence; the engine keeps no storage of its own.
 The engine owns acceptance, compressed originals, prepared GPU textures and

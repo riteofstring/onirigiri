@@ -975,13 +975,11 @@ export class PanePictures {
     }
   }
 
-  // A seed the resolver no longer offers is released; one the cache already
-  // let go is forgotten so the resolver can offer it again.
   private reconcileSeed(
     id: PaneId,
     supplied: OnirigiriPanePicture | null | undefined,
   ): void {
-    const seed = this.seeds.get(id);
+    const seed = this.seeds.get(id) ?? this.retiredSeeds.get(id)?.deref();
     if (seed === undefined) return;
     if (this.pictures.get(id)?.image !== seed) {
       this.seeds.delete(id);
@@ -989,8 +987,10 @@ export class PanePictures {
     }
     if (supplied?.image === seed) return;
     this.retireSeed(id);
-    this.pictures.release(id);
-    this.publish();
+    if (!supplied) {
+      this.pictures.release(id);
+      this.publish();
+    }
   }
 
   private isSeed(id: PaneId): boolean {
