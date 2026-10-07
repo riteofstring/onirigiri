@@ -1091,20 +1091,22 @@ export class PanePictures {
       );
       if (!current()) return false;
       if (await this.accept(id, supplied, size, current)) {
-        this.supplied.set(id, {
-          image: new WeakRef(supplied.image),
-          failed: false,
-        });
-        if (supplied.replaceable) this.seeds.set(id, supplied.image);
+        this.recordSuppliedResult(id, supplied, false);
       }
     } catch {
-      this.supplied.set(id, {
-        image: new WeakRef(supplied.image),
-        failed: true,
-      });
+      this.recordSuppliedResult(id, supplied, true);
       this.rejected++;
     }
     return true;
+  }
+
+  private recordSuppliedResult(
+    id: PaneId,
+    supplied: OnirigiriPanePicture,
+    failed: boolean,
+  ): void {
+    this.supplied.set(id, { image: new WeakRef(supplied.image), failed });
+    if (!failed && supplied.replaceable) this.seeds.set(id, supplied.image);
   }
 
   private async accept(
