@@ -1152,6 +1152,24 @@ describe("engine pane pictures", () => {
     expect(f.pictures.get("a")).toBeNull();
   });
 
+  it("releases a seed its resolver no longer offers", async () => {
+    const f = fixture(capture);
+    canvasMock.uncapturable.add(f.content);
+    const seed = png();
+    let offered = true;
+    f.config.resolver = () =>
+      offered ? { image: seed, replaceable: true } : null;
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(f.pictures.get("a")?.image).toBe(seed);
+    offered = false;
+    f.config.resolver = () =>
+      offered ? { image: seed, replaceable: true } : null;
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(f.pictures.get("a")).toBeNull();
+  });
+
   it("keeps a capture over the seed it replaced after navigation", async () => {
     const f = fixture(capture);
     const seed = png();

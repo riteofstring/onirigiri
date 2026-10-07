@@ -955,8 +955,27 @@ export class PanePictures {
     for (const [id, pane] of this.configuration.panes) {
       if (!this.idle()) return;
       const supplied = this.configuration.resolver?.(pane);
+      this.reconcileSeed(id, supplied);
       if (supplied && !(await this.resolveSource(id, pane, supplied))) return;
     }
+  }
+
+  // A seed the resolver no longer offers is released; one the cache already
+  // let go is forgotten so the resolver can offer it again.
+  private reconcileSeed(
+    id: PaneId,
+    supplied: OnirigiriPanePicture | null | undefined,
+  ): void {
+    const seed = this.seeds.get(id);
+    if (seed === undefined) return;
+    if (this.pictures.get(id)?.image !== seed) {
+      this.seeds.delete(id);
+      return;
+    }
+    if (supplied?.image === seed) return;
+    this.retireSeed(id);
+    this.pictures.release(id);
+    this.publish();
   }
 
   private isSeed(id: PaneId): boolean {
