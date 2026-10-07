@@ -152,6 +152,13 @@ plus `N` logical rows and columns on every side. The default remains unbounded. 
 rearrangement, restoration, direct pane focus, and `returnHome()` remain unrestricted, so a runway can
 never make a pane inaccessible. When removing or moving an edge pane contracts the runway around a cursor
 that is already outside it, inward steps remain available until the cursor re-enters.
+Set `cursorTargets="panes"` when every focus move should land on a pane: Left/Right goes to the
+nearest occupied column in the same row, Up/Down to the nearest pane in the column and then to the
+nearest occupied column in the nearest row that has one, and a move with no pane in its direction does
+nothing. The default `"cells"` keeps adjacent empty-cell navigation.
+In overview, `focusPane(paneId)` moves the overview cursor; `focusPane(paneId, { exitOverview: true })`
+leaves overview and zooms into the pane, as a pointer selection does. Zooming the overview keeps the
+point under the zoom focus in place.
 One decorative `grid-cursor` surface draws the selected cell in normal and overview presentation; it
 is not a Tab stop or assistive-technology target, while the workspace status region announces the
 coordinates and selected pane title or `Empty cell`.

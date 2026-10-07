@@ -97,4 +97,46 @@ describe("OnirigiriWorkspace focus surface", () => {
     await act(async () => root.unmount());
     container.remove();
   });
+
+  it("leaves overview when a host focuses a pane with exitOverview", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
+
+    await act(async () => {
+      root.render(
+        <OnirigiriWorkspace
+          initialPanes={[
+            { paneId: "first-pane", surfaceKind: "test", title: "First pane" },
+            {
+              paneId: "second-pane",
+              surfaceKind: "test",
+              title: "Second pane",
+            },
+          ]}
+          ref={workspaceRef}
+          renderPane={() => <div>Test content</div>}
+        />,
+      );
+    });
+
+    await act(async () => workspaceRef.current?.toggleOverview());
+    await act(async () => workspaceRef.current?.focusPane("second-pane"));
+    expect(workspaceRef.current?.getSnapshot()).toMatchObject({
+      focusedPaneId: "second-pane",
+      presentationMode: "overview",
+    });
+
+    await act(async () =>
+      workspaceRef.current?.focusPane("first-pane", { exitOverview: true }),
+    );
+    expect(workspaceRef.current?.getSnapshot()).toMatchObject({
+      focusedPaneId: "first-pane",
+      presentationMode: "normal",
+    });
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
 });

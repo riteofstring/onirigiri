@@ -271,6 +271,51 @@ describe("workspace grid cursor", () => {
     expect(store.getSnapshot().focusedPaneId).toBe("other");
   });
 
+  it("moves only between panes when cursor targets are panes", () => {
+    const pane = (paneId: string, planeIndex: number, slotIndex: number) => ({
+      paneId,
+      planeIndex,
+      slotIndex,
+      surfaceId: `${paneId}-surface`,
+      surfaceKind: "test",
+      title: paneId,
+    });
+    const source = createWorkspaceScene({
+      panes: [
+        pane("a0", 0, 0),
+        pane("a1", 0, 1),
+        pane("a2", 0, 2),
+        pane("a3", 0, 3),
+        pane("b0", 1, 0),
+        pane("b1", 1, 1),
+      ],
+    });
+    const store = (cursorTargets?: "cells" | "panes") => {
+      const next = new WorkspaceLayoutStore(
+        new WorkspaceLikeLayoutEngine(source.scene),
+        source.scene,
+        source.cursor,
+        cursorTargets ? { cursorTargets } : {},
+      );
+      expect(next.focusPane("a3")).toBe(true);
+      return next;
+    };
+
+    const cells = store();
+    expect(cells.moveFocus("down")).toBe(true);
+    expect(cells.getSnapshot().focusedPaneId).toBeNull();
+
+    const panes = store("panes");
+    expect(panes.canMoveFocus("up")).toBe(false);
+    expect(panes.moveFocus("up")).toBe(false);
+    expect(panes.moveFocus("down")).toBe(true);
+    expect(panes.getSnapshot().focusedPaneId).toBe("b1");
+    expect(panes.moveFocus("right")).toBe(false);
+    expect(panes.moveFocus("down")).toBe(false);
+    expect(panes.moveFocus("up")).toBe(true);
+    expect(panes.getSnapshot().focusedPaneId).toBe("a1");
+  });
+
   it("validates cursor runway values without changing the unbounded default", () => {
     const source = createWorkspaceScene();
     for (const cursorRunway of [

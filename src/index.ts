@@ -34,6 +34,7 @@ export type {
   OnirigiriWorkspaceStyle,
 } from "./styles/onirigiri-theme.js";
 export type {
+  OnirigiriFocusPaneOptions,
   OnirigiriLayoutChangeKind,
   OnirigiriLayoutChangeMetadata,
   OnirigiriMinimapCorner,

@@ -36,6 +36,7 @@ import {
   retainedPaneShells,
 } from "../panes/pane-viewport-lifecycle.js";
 import type {
+  OnirigiriFocusPaneOptions,
   OnirigiriWorkspaceHandle,
   OnirigiriWorkspaceProps,
 } from "./onirigiri-workspace-types.js";
@@ -125,6 +126,7 @@ export const OnirigiriWorkspace = forwardRef<
     compactBreakpoint,
     compactPanePeek,
     cursorRunway,
+    cursorTargets = "cells",
     desktopControlsContainer,
     directionControlMode,
     focusAnchor,
@@ -196,6 +198,9 @@ export const OnirigiriWorkspace = forwardRef<
   useLayoutEffect(() => {
     runtime.store.setCursorRunway(cursorRunway);
   }, [cursorRunway, runtime]);
+  useLayoutEffect(() => {
+    runtime.store.setCursorTargets(cursorTargets);
+  }, [cursorTargets, runtime]);
   useOnirigiriPaneLink(runtime.store, paneLink);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const pictures = usePanePictures(runtime, workspaceRef);
@@ -555,8 +560,11 @@ export const OnirigiriWorkspace = forwardRef<
       configurePane(paneId: PaneId, request: OpenPaneRequest) {
         return runtime.store.configurePane(paneId, request);
       },
-      focusPane(paneId: PaneId) {
-        return runtime.store.focusPane(paneId);
+      focusPane(paneId: PaneId, options?: OnirigiriFocusPaneOptions) {
+        return options?.exitOverview &&
+          runtime.store.getSnapshot().presentationMode === "overview"
+          ? runtime.store.focusOverviewPane(paneId, viewport)
+          : runtime.store.focusPane(paneId);
       },
       returnHome() {
         return runtime.store.returnHome(viewport);

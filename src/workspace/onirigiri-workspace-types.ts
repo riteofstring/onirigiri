@@ -39,6 +39,7 @@ import type {
   WorkspaceDirectionControlMode,
   WorkspaceFocusedPaneFrame,
   WorkspaceFocusAnchor,
+  WorkspaceCursorTargets,
   WorkspaceGridAxes,
   WorkspacePane,
   WorkspacePresentationMode,
@@ -77,6 +78,10 @@ export interface OnirigiriLayoutChangeMetadata {
   layoutRevision: number;
 }
 
+export interface OnirigiriFocusPaneOptions {
+  exitOverview?: boolean;
+}
+
 export interface OnirigiriWorkspaceHandle {
   closePane(paneId: PaneId): Promise<boolean>;
   configurePane(paneId: PaneId, request: OpenPaneRequest): PaneId;
@@ -84,7 +89,7 @@ export interface OnirigiriWorkspaceHandle {
   clearPaneRearrangementGroup(): boolean;
   focus(direction: FocusDirection): boolean;
   focusColumn(edge: ColumnFocusEdge): boolean;
-  focusPane(paneId: PaneId): boolean;
+  focusPane(paneId: PaneId, options?: OnirigiriFocusPaneOptions): boolean;
   returnHome(): boolean;
   getLayout(): OnirigiriLayout;
   getScene(): WorkspaceScene;
@@ -134,6 +139,7 @@ export interface OnirigiriWorkspaceProps extends PaneDefaultsConfiguration {
   compactBreakpoint?: number;
   compactPanePeek?: number;
   cursorRunway?: number;
+  cursorTargets?: WorkspaceCursorTargets;
   desktopControlsContainer?: Element | null;
   directionControlMode?: WorkspaceDirectionControlMode;
   focusAnchor?: WorkspaceFocusAnchor;

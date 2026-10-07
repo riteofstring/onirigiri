@@ -115,6 +115,119 @@ export function nextWorkspaceGridCursor({
   return nextVerticalGridCursor(current, direction, scene);
 }
 
+type SceneColumn = WorkspaceScene["columns"][number];
+
+export function nextPaneGridCursor({
+  cursor,
+  direction,
+  scene,
+}: {
+  cursor: WorkspaceGridCursor;
+  direction: FocusDirection;
+  scene: WorkspaceScene;
+}): WorkspaceGridCursor | null {
+  const current = normalizeWorkspaceGridCursor(scene, cursor);
+  const delta = directionDelta(direction);
+  const occupied = scene.columns.filter((column) =>
+    column.cells.some((cell) => cell.paneId !== null),
+  );
+  if (horizontalDirections.has(direction)) {
+    return nextPaneInRow(current, delta, occupied);
+  }
+  return (
+    nextPaneInColumn(current, delta, scene) ??
+    (scene.gridAxes === "horizontal"
+      ? null
+      : nextPaneInRows(current, delta, occupied))
+  );
+}
+
+function paneCursorInColumn(
+  column: SceneColumn,
+  split: number,
+): WorkspaceGridCursor {
+  return {
+    column: columnSlotIndex(column),
+    row: column.planeIndex,
+    split: nearestOccupiedSplit(column, split),
+  };
+}
+
+function nearestColumn(
+  columns: readonly SceneColumn[],
+  slot: number,
+): SceneColumn | undefined {
+  return columns.toSorted(
+    (a, b) =>
+      Math.abs(columnSlotIndex(a) - slot) -
+        Math.abs(columnSlotIndex(b) - slot) ||
+      columnSlotIndex(a) - columnSlotIndex(b),
+  )[0];
+}
+
+function nextPaneInRow(
+  current: WorkspaceGridCursor,
+  delta: -1 | 1,
+  occupied: readonly SceneColumn[],
+): WorkspaceGridCursor | null {
+  const target = nearestColumn(
+    occupied.filter(
+      (column) =>
+        column.planeIndex === current.row &&
+        (columnSlotIndex(column) - current.column) * delta > 0,
+    ),
+    current.column,
+  );
+  return target ? paneCursorInColumn(target, current.split) : null;
+}
+
+function nextPaneInColumn(
+  current: WorkspaceGridCursor,
+  delta: -1 | 1,
+  scene: WorkspaceScene,
+): WorkspaceGridCursor | null {
+  const cells = workspaceColumnAtGridCursor(scene, current)?.cells ?? [];
+  for (
+    let split = current.split + delta;
+    split >= 0 && split < cells.length;
+    split += delta
+  ) {
+    if (cells[split]!.paneId !== null) return { ...current, split };
+  }
+  return null;
+}
+
+function nextPaneInRows(
+  current: WorkspaceGridCursor,
+  delta: -1 | 1,
+  occupied: readonly SceneColumn[],
+): WorkspaceGridCursor | null {
+  const row = occupied
+    .map((column) => column.planeIndex)
+    .filter((plane) => (plane - current.row) * delta > 0)
+    .toSorted(
+      (a, b) => Math.abs(a - current.row) - Math.abs(b - current.row),
+    )[0];
+  if (row === undefined) return null;
+  const target = nearestColumn(
+    occupied.filter((column) => column.planeIndex === row),
+    current.column,
+  )!;
+  return paneCursorInColumn(target, delta > 0 ? 0 : target.cells.length - 1);
+}
+
+function nearestOccupiedSplit(column: SceneColumn, split: number): number {
+  let best = -1;
+  column.cells.forEach((cell, index) => {
+    if (
+      cell.paneId !== null &&
+      (best < 0 || Math.abs(index - split) < Math.abs(best - split))
+    )
+      best = index;
+  });
+  return Math.max(best, 0);
+}
+
 export function resolveWorkspaceCursorRunway(
   cursorRunway: number | undefined,
 ): number | null {
