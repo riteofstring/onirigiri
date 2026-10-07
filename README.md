@@ -1,4 +1,6 @@
-# Onirigiri
+<p align="center">
+  <a href="https://onirigiri.dev"><img src="docs/images/onirigiri-card.png" alt="Onirigiri: pnpm add @riteofstring/onirigiri" width="880"></a>
+</p>
 
 Onirigiri is a React window system for spatially arranged panes. You supply pane
 content; Onirigiri supplies tiled columns and rows, keyboard navigation and
