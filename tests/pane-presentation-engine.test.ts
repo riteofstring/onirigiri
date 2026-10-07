@@ -40,6 +40,25 @@ describe("PanePresentationEngine", () => {
     expect(reads).toBe(0);
   });
 
+  it("marks narrow and compact titlebars from the presented width", () => {
+    const presentation = new PanePresentationEngine();
+    const host = document.createElement("section");
+    const narrowest = renderItem({ width: 120 });
+    presentation.registerPaneHost("pane", host, narrowest);
+    const widths: [number, string][] = [
+      [120, "compact"],
+      [188, "compact"],
+      [200, "narrow"],
+      [208, "narrow"],
+      [420, "normal"],
+      [150, "compact"],
+    ];
+    for (const [width, titlebar] of widths) {
+      presentation.apply([renderItem({ width })], snapshot(), false, viewport);
+      expect(host.dataset.onirigiriTitlebar).toBe(titlebar);
+    }
+  });
+
   it("publishes presented geometry and interpolates unmounted ingress panes", () => {
     const presentation = new PanePresentationEngine();
     const host = document.createElement("section");

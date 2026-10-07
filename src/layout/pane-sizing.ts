@@ -234,7 +234,6 @@ function preparePaneClone(clone: HTMLElement, maximumWidthPx: number): void {
   clone.inert = true;
   Object.assign(clone.style, {
     contain: "none",
-    containerType: "normal",
     height: "max-content",
     inset: "auto",
     maxHeight: "none",

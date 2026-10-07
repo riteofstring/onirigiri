@@ -665,6 +665,10 @@ function writeBox(
 ): number {
   let writes = 0;
   if (binding.lastWidth !== geometry.width) {
+    const titlebar = titlebarWidthClass(geometry.width);
+    if (binding.host.dataset.onirigiriTitlebar !== titlebar) {
+      binding.host.dataset.onirigiriTitlebar = titlebar;
+    }
     binding.lastWidth = geometry.width;
     binding.host.style.width = `${geometry.width.toFixed(2)}px`;
     writes += 1;
@@ -675,6 +679,10 @@ function writeBox(
     writes += 1;
   }
   return writes;
+}
+
+function titlebarWidthClass(width: number): "compact" | "narrow" | "normal" {
+  return width <= 188 ? "compact" : width <= 208 ? "narrow" : "normal";
 }
 
 function writeNumberStyle(

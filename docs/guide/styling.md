@@ -90,6 +90,11 @@ top and bottom handles; `data-resize-edge` (`left`, `right`, `top` or `bottom`) 
 }
 ```
 
+A pane whose presented width is at most 208px has `data-onirigiri-titlebar="narrow"`, and at most
+188px `"compact"`; the built-in titlebar styles hide the heading and compact the actions there. Panes
+are not CSS query containers, so container queries in pane content resolve against the content's own
+containers, and a pane's size changes never restyle its content through a container.
+
 Use `classNames` when a framework produces classes and `styles` only for genuinely dynamic inline
 values. Both maps are keyed by the same slot catalog:
 

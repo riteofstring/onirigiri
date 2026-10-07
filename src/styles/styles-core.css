@@ -462,7 +462,6 @@
     border-radius: var(--onirigiri-pane-radius);
     box-shadow: var(--onirigiri-pane-shadow);
     contain: layout paint size style;
-    container-type: inline-size;
     display: flex;
     flex-direction: column;
     inset: 0 auto auto 0;
@@ -882,7 +881,10 @@
     top: 0;
   }
 
-  @container (max-width: 208px) {
+  .onirigiri-pane:is(
+    [data-onirigiri-titlebar="narrow"],
+    [data-onirigiri-titlebar="compact"]
+  ) {
     .onirigiri-pane__titlebar {
       gap: 0;
       padding-inline: var(--onirigiri-titlebar-narrow-padding-inline);
@@ -899,7 +901,7 @@
     }
   }
 
-  @container (max-width: 188px) {
+  .onirigiri-pane[data-onirigiri-titlebar="compact"] {
     .onirigiri-pane__actions {
       flex-wrap: wrap;
     }
