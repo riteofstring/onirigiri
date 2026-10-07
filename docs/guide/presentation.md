@@ -268,7 +268,9 @@ function DocumentPane({ ready, documentId }) {
 ```
 
 All readiness sources within a pane must be ready before Onirigiri reveals its live
-content or captures it. A changed revision invalidates pending work. Ordinary
+content or captures it. A changed revision invalidates pending work and releases
+a picture captured from the previous revision, so the placeholder covers the pane
+until the new content is ready and captured. Ordinary
 synchronous HTML needs no hook. Frame adapters validate their own messages and
 combine document identity, load and application readiness. Onirigiri does not interpret
 application protocols. The `pane-picture` and `pane-placeholder` styling slots,

@@ -7,6 +7,7 @@ export class PaneContentReadiness {
   >();
   private readonly listeners = new Set<() => void>();
   revision = 0;
+  contentRevision = 0;
 
   getSnapshot = (): boolean =>
     [...this.sources.values()].every((source) => source.ready);
@@ -21,6 +22,7 @@ export class PaneContentReadiness {
   update(key: object, ready: boolean, revision: unknown): void {
     const old = this.sources.get(key);
     if (old?.ready === ready && Object.is(old.revision, revision)) return;
+    if (old && !Object.is(old.revision, revision)) this.contentRevision++;
     this.sources.set(key, { ready, revision });
     this.invalidate();
   }

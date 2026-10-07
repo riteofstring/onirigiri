@@ -388,9 +388,17 @@ export class PanePictures {
     this.hosts.set(paneId, host);
     this.publishPresentation(paneId);
     this.attempts.delete(paneId);
+    let contentRevision = readiness.contentRevision;
     const unsubscribe = readiness.subscribe(() => {
       if (this.active?.panes.some((pane) => pane.paneId === paneId))
         this.cancel();
+      if (readiness.contentRevision !== contentRevision) {
+        contentRevision = readiness.contentRevision;
+        if (this.pictures.get(paneId)?.capture) {
+          this.pictures.release(paneId);
+          this.publish();
+        }
+      }
       this.attempts.delete(paneId);
       host.error = null;
       this.emit(paneId);

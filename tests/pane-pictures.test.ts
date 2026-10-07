@@ -1058,7 +1058,7 @@ describe("engine pane pictures", () => {
     expect(window.createImageBitmap).not.toHaveBeenCalled();
   });
 
-  it("waits for all readiness sources and keeps an accepted image during a document change", async () => {
+  it("waits for all readiness sources and releases an accepted image when its content revision changes", async () => {
     const f = fixture(capture);
     const a = {},
       b = {};
@@ -1073,9 +1073,13 @@ describe("engine pane pictures", () => {
     await vi.advanceTimersByTimeAsync(150);
     const accepted = f.pictures.get("a");
     expect(accepted).not.toBeNull();
-    f.readiness.update(a, false, 2);
-    await vi.advanceTimersByTimeAsync(150);
+    f.readiness.update(a, false, 1);
+    f.readiness.update(a, true, 1);
     expect(f.pictures.get("a")).toBe(accepted);
+    f.readiness.update(a, false, 2);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.pictures.get("a")).toBeNull();
+    expect(f.pictures.getStatus().pictures).toEqual([]);
   });
 
   it("rejects a reply after readiness revision changes before decode", async () => {
