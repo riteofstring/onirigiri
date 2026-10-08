@@ -34,6 +34,7 @@ export class PanePictureContent {
     this.host = canvas.ownerDocument.createElement("div");
     this.host.className = "onirigiri-pane__native-surface";
     this.host.hidden = true;
+    this.host.style.opacity = "0";
     content.addEventListener("scroll", this.recordScroll, {
       capture: true,
       passive: true,
@@ -61,10 +62,15 @@ export class PanePictureContent {
         });
         this.native = true;
         this.canvas.dataset.onirigiriNativeActive = "true";
-        this.content.dataset.onirigiriLive = "true";
         this.callbacks.presented();
       },
     );
+  }
+
+  reveal(): void {
+    if (this.host.style.opacity) this.host.style.removeProperty("opacity");
+    if (this.content.dataset.onirigiriLive !== "true")
+      this.content.dataset.onirigiriLive = "true";
   }
 
   presentVideos(active: boolean): void {
@@ -123,6 +129,7 @@ export class PanePictureContent {
     this.preserveScroll(() => moveInto(this.canvas, this.content));
     this.native = false;
     this.host.hidden = true;
+    this.host.style.opacity = "0";
     delete this.canvas.dataset.onirigiriNativeActive;
     this.content.dataset.onirigiriLive = "false";
     return true;

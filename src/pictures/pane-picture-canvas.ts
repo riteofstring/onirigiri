@@ -135,7 +135,7 @@ export class PaneCanvasSurface {
         !this.resizing &&
         !this.captureAbort &&
         this.nativeRequested() &&
-        callbacks.canDraw(),
+        (this.nativeOnly || callbacks.canDraw()),
       changed: () => {
         callbacks.changed?.();
         this.requestPaint();
@@ -145,8 +145,7 @@ export class PaneCanvasSurface {
         this.canvas.clearElementGeometry?.(this.content);
         this.presentation.restore();
         this.source.prepare(false);
-        this.source.presentVideos(this.callbacks.videoFrames?.() === true);
-        callbacks.drawn(true, "dom");
+        this.requestPaint();
       },
     });
     this.applyRecordingScale();
@@ -203,14 +202,11 @@ export class PaneCanvasSurface {
 
   private requestNativePresentation(): void {
     this.source.prepare(false);
-    if (this.live) {
-      if (this.source.isNative()) {
-        if (this.content.dataset.onirigiriLive !== "true")
-          this.content.dataset.onirigiriLive = "true";
-        this.callbacks.drawn(true, "dom");
-      }
-      this.source.present();
+    if (this.live && this.source.isNative()) {
+      this.source.reveal();
+      this.callbacks.drawn(true, "dom");
     }
+    if (this.live || this.nativeOnly) this.source.present();
   }
 
   private canvasPaintRequested(): boolean {

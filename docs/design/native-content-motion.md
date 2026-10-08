@@ -168,6 +168,15 @@ fall back to native, and no capture work is admitted. The capture status reports
 `unavailable` with the reason for developers. Device and canvas resources are
 released with their owners.
 
+Without HTML-in-Canvas, children inside a canvas have no layout boxes. Native-only
+surfaces therefore attach their original content to an invisible native host
+before consumer readiness, allowing size observers and responsive layout to
+settle. Readiness still controls revealing content and reporting completed
+presentation; the cover and input shield remain in place during preparation.
+Already presented native content stays attached and visible when inactive.
+Browsers with HTML-in-Canvas retain their existing attachment timing because
+their canvas subtree already participates in layout.
+
 ## Optional continuous presentation
 
 `liveContent` opts into keeping every pane's content mounted. It overrides the
