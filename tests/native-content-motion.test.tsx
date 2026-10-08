@@ -74,7 +74,7 @@ it("browser suites intercept every explicit launch before it can open a visible 
     import {pathToFileURL} from "node:url";
     import {createContext, SourceTextModule, SyntheticModule} from "node:vm";
     import ts from "typescript";
-    const context = createContext({URL});
+    const context = createContext({URL, URLSearchParams});
     const cases = [];
     const test = (name, run) => cases.push({name, run});
     test.describe = (_name, register) => register();
@@ -112,7 +112,7 @@ it("browser suites intercept every explicit launch before it can open a visible 
       });
       return module;
     }
-    for (const file of ["playwright.config.ts", "performance.playwright.config.ts", "pane-canvas.pw.ts", "multi-video.performance.ts", "workspace-performance.performance.ts"]) {
+    for (const file of ["playwright.config.ts", "performance.playwright.config.ts", "pane-canvas.pw.ts", "native-content.pw.ts", "multi-video.performance.ts", "workspace-performance.performance.ts"]) {
       const module = await load(resolve("tests/browser", file));
       await module.evaluate();
       if (file.endsWith("config.ts")) {

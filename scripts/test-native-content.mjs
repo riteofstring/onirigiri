@@ -51,6 +51,7 @@ const commands = {
     "tests/browser/playwright.config.ts",
     "--project=chrome",
     "tests/browser/pane-canvas.pw.ts",
+    "tests/browser/native-content.pw.ts",
     "--grep",
     "presentation policies distinguish|texture policies freeze fresh|live motion adapts to graphics|pointer input reaches live content",
   ],

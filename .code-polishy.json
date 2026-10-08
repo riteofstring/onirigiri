@@ -375,6 +375,7 @@
           "src/**",
           "tests/browser/native-content-scene.tsx",
           "tests/browser/pane-canvas.pw.ts",
+          "tests/browser/native-content.pw.ts",
           "tests/browser/playwright.config.ts",
           "scripts/test-native-content.mjs",
           "scripts/lib/process.mjs",
