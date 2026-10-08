@@ -506,7 +506,8 @@
   }
 
   .onirigiri-workspace[data-presentation-mode="normal"]
-    .onirigiri-pane[data-frozen="true"] {
+    .onirigiri-pane[data-frozen="true"]
+    > :is(.onirigiri-pane__titlebar, .onirigiri-pane__resize) {
     pointer-events: none;
   }
 

@@ -410,93 +410,105 @@ async function stepClock(page: Page, count: number): Promise<void> {
   }
 }
 
-test("motion keeps input and animations out of pane content without replacing its nodes", async ({
-  page,
-}) => {
-  await openNativeFixture(page, false, false, { count: 6, preloadMargin: 0 });
-  await page
-    .locator('[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__live-content')
-    .evaluate((content) => {
-      const style = document.createElement("style");
-      style.textContent =
-        "@keyframes motion-probe { to { translate: 12px 0; } }";
-      document.head.append(style);
-      const probe = document.createElement("div");
-      probe.id = "motion-probe";
-      probe.style.cssText =
-        "width: 8px; height: 8px; animation: motion-probe 1s linear infinite";
-      const started = new Promise((resolve) =>
-        probe.addEventListener("animationstart", resolve, { once: true }),
+for (const continuous of [false, true]) {
+  test(`motion shields input while preserving consumer styles and nodes (continuous=${continuous})`, async ({
+    page,
+  }) => {
+    await openNativeFixture(page, false, false, { count: 6, preloadMargin: 0 });
+    if (continuous)
+      await page.evaluate(() =>
+        window.__nativeMotionFixture.setLiveContent(true),
       );
-      content.prepend(probe);
-      return started;
-    });
-  const before = await page.evaluateHandle(() => {
-    const pane = document.querySelector('[data-onirigiri-pane-id="pane-1"]')!;
-    return {
-      status: pane.querySelector(".onirigiri-pane__paused-status"),
-      resize: pane.querySelector(".onirigiri-pane__resize"),
-    };
-  });
-  const motionState = () =>
-    page.evaluate(() => {
-      const pane = document.querySelector<HTMLElement>(
-        '[data-onirigiri-pane-id="pane-1"]',
-      )!;
-      const content = pane.querySelector<HTMLElement>(
-        '[data-onirigiri-slot="pane-content"]',
-      )!;
-      const live = pane.querySelector<HTMLElement>(
-        ".onirigiri-pane__live-content",
-      )!;
-      const shield = pane.querySelector<HTMLElement>(
-        ".onirigiri-pane__input-shield",
-      )!;
-      const bounds = shield.getBoundingClientRect();
-      const x = Math.max(bounds.left, 0) + 4;
-      const y = Math.max(bounds.top, 0) + 4;
+    await page
+      .locator(
+        '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__live-content',
+      )
+      .evaluate((content) => {
+        const style = document.createElement("style");
+        style.textContent =
+          "@keyframes motion-probe { to { translate: 12px 0; } }";
+        document.head.append(style);
+        const probe = document.createElement("div");
+        probe.id = "motion-probe";
+        probe.style.cssText =
+          "width: 8px; height: 8px; animation: motion-probe 1s linear infinite";
+        const started = new Promise((resolve) =>
+          probe.addEventListener("animationstart", resolve, { once: true }),
+        );
+        content.prepend(probe);
+        return started;
+      });
+    const before = await page.evaluateHandle(() => {
+      const pane = document.querySelector('[data-onirigiri-pane-id="pane-1"]')!;
       return {
-        moving: pane.dataset.moving,
-        runtime: content.dataset.runtimeState,
-        shielded: getComputedStyle(shield).display === "block",
-        reachesContent: live.contains(document.elementFromPoint(x, y)),
-        animation: document.getElementById("motion-probe")!.getAnimations()[0]
-          ?.playState,
+        status: pane.querySelector(".onirigiri-pane__paused-status"),
+        resize: pane.querySelector(".onirigiri-pane__resize"),
       };
     });
-  const release = await holdClock(page);
-  try {
-    await page.evaluate(() =>
-      window.__nativeMotionFixture.handle.current!.focusPane("pane-2"),
-    );
-    await stepClock(page, 3);
-    expect(await motionState()).toEqual({
-      moving: "true",
-      runtime: "frozen",
-      shielded: true,
-      reachesContent: false,
-      animation: "paused",
+    const motionState = () =>
+      page.evaluate(() => {
+        const pane = document.querySelector<HTMLElement>(
+          '[data-onirigiri-pane-id="pane-1"]',
+        )!;
+        const content = pane.querySelector<HTMLElement>(
+          '[data-onirigiri-slot="pane-content"]',
+        )!;
+        const live = pane.querySelector<HTMLElement>(
+          ".onirigiri-pane__live-content",
+        )!;
+        const shield = pane.querySelector<HTMLElement>(
+          ".onirigiri-pane__input-shield",
+        )!;
+        const bounds = shield.getBoundingClientRect();
+        const x = Math.max(bounds.left, 0) + 4;
+        const y = Math.max(bounds.top, 0) + 4;
+        return {
+          moving: pane.dataset.moving,
+          runtime: content.dataset.runtimeState,
+          shielded: getComputedStyle(shield).display === "block",
+          contentPointerEvents: getComputedStyle(live).pointerEvents,
+          reachesContent: live.contains(document.elementFromPoint(x, y)),
+          animation: document.getElementById("motion-probe")!.getAnimations()[0]
+            ?.playState,
+        };
+      });
+    const release = await holdClock(page);
+    try {
+      await page.evaluate(() =>
+        window.__nativeMotionFixture.handle.current!.focusPane("pane-2"),
+      );
+      await stepClock(page, 3);
+      expect(await motionState()).toEqual({
+        moving: "true",
+        runtime: continuous ? "live" : "frozen",
+        shielded: true,
+        contentPointerEvents: "auto",
+        reachesContent: false,
+        animation: continuous ? "running" : "paused",
+      });
+    } finally {
+      await release();
+    }
+    await expect.poll(motionState).toMatchObject({
+      moving: "false",
+      shielded: false,
+      animation: "running",
     });
-  } finally {
-    await release();
-  }
-  await expect
-    .poll(motionState)
-    .toMatchObject({ moving: "false", shielded: false, animation: "running" });
-  expect(
-    await before.evaluate(
-      ({ status, resize }) =>
-        status ===
-          document.querySelector(
-            '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__paused-status',
-          ) &&
-        resize ===
-          document.querySelector(
-            '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__resize',
-          ),
-    ),
-  ).toBe(true);
-});
+    expect(
+      await before.evaluate(
+        ({ status, resize }) =>
+          status ===
+            document.querySelector(
+              '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__paused-status',
+            ) &&
+          resize ===
+            document.querySelector(
+              '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__resize',
+            ),
+      ),
+    ).toBe(true);
+  });
+}
 
 test("native presentation keeps content scrollbars through motion", async ({
   page,

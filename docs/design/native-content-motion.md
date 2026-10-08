@@ -96,6 +96,9 @@ rule, and keep `inert` for overview, covered content and hidden panes, whose
 states last longer than a move. Pane chrome toggles visibility rather than
 inserting or removing nodes inside the pane, because node insertion makes the
 browser re-evaluate consumer `:has()` selectors across the whole pane.
+Frozen normal-mode panes disable pointer events only on titlebars and resize
+handles. Their existing content shield blocks application input without changing
+the inherited pointer behavior of the application subtree.
 
 Raw input still postpones picture acquisition and cancels invalid captures, but
 scrolling, typing and ordinary pointer interaction do not repaint every mounted
