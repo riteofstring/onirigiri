@@ -1,4 +1,4 @@
-import { chromium, expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { holdPaneFrames } from "./pane-frame-clock";
 import { picturePixels } from "./picture-pixels";
 import { openCanvas } from "./pane-canvas-fixture";
@@ -611,8 +611,9 @@ test.describe("native preparation without HTML-in-Canvas", () => {
   for (const continuous of [false, true]) {
     test(`presentation policies distinguish preparation from ready native content (continuous=${continuous})`, async ({
       baseURL,
+      playwright,
     }) => {
-      const browser = await chromium.launch({
+      const browser = await playwright.chromium.launch({
         ...chromeLaunchOptions,
         args: [],
         headless: true,
