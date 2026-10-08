@@ -776,7 +776,7 @@ function syncContentInput(
   }
   liveContent.setAttribute(
     "aria-hidden",
-    String(inert || item.runtimeState === "frozen"),
+    String(inert || content.dataset.runtimeState === "frozen"),
   );
 }
 

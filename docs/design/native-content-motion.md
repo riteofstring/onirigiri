@@ -99,6 +99,11 @@ browser re-evaluate consumer `:has()` selectors across the whole pane.
 Frozen normal-mode panes disable pointer events only on titlebars and resize
 handles. Their existing content shield blocks application input without changing
 the inherited pointer behavior of the application subtree.
+Selecting another pane releases native keyboard focus from the departing pane's
+content to its shell, even when that content remains live. This preserves focus
+handoff for editors and games without treating camera motion itself as lost
+focus. Same-pane movement retains live input focus, and accessibility visibility
+follows the content's runtime rather than the shell's motion state.
 
 Raw input still postpones picture acquisition and cancels invalid captures, but
 scrolling, typing and ordinary pointer interaction do not repaint every mounted

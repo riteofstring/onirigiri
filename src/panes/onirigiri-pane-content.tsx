@@ -90,6 +90,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
   } = usePaneContentState({
     pictures,
     pane,
+    focused,
     placeholderOnly,
     presentationMode,
     runtimeState,
@@ -342,12 +343,18 @@ function usePaneContentLayout(pane: WorkspacePane) {
 function usePaneContentState({
   pictures,
   pane,
+  focused,
   placeholderOnly,
   presentationMode,
   runtimeState,
 }: Pick<
   OnirigiriPaneContentProps,
-  "pictures" | "pane" | "placeholderOnly" | "presentationMode" | "runtimeState"
+  | "pictures"
+  | "pane"
+  | "focused"
+  | "placeholderOnly"
+  | "presentationMode"
+  | "runtimeState"
 >) {
   const [readiness] = useState(() => new PaneContentReadiness());
   useSyncExternalStore(
@@ -412,13 +419,17 @@ function usePaneContentState({
     presentationMode === "normal" &&
     !covered &&
     (warming & 32) !== 0;
+  const wasFocused = useRef(focused);
   useLayoutEffect(() => {
+    const lostFocus = wasFocused.current && !focused;
+    wasFocused.current = focused;
+    if (interactive && !lostFocus) return;
     const content = contentRef.current;
-    if (!interactive && content?.contains(content.ownerDocument.activeElement))
+    if (content?.contains(content.ownerDocument.activeElement))
       content
         .closest<HTMLElement>('[data-onirigiri-slot="pane"]')
         ?.focus({ preventScroll: true });
-  }, [interactive]);
+  }, [interactive, focused]);
   useLayoutEffect(() => {
     if (!contentRef.current) return;
     return pictures.register(

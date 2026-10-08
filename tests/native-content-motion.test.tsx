@@ -554,7 +554,7 @@ describe("OnirigiriWorkspace native content motion", () => {
     container.remove();
   });
 
-  it("keeps always-live content interactive and non-inert while the camera moves", async () => {
+  it("keeps live input through reanchoring and releases it when another pane is selected", async () => {
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -563,6 +563,7 @@ describe("OnirigiriWorkspace native content motion", () => {
     await act(async () => {
       root.render(
         <OnirigiriWorkspace
+          focusAnchor="center"
           initialPanes={columnPanes(3, 520)}
           liveContent
           ref={workspaceRef}
@@ -589,6 +590,14 @@ describe("OnirigiriWorkspace native content motion", () => {
       ".onirigiri-pane__live-content",
     );
     expect(probe.dataset.interactive).toBe("true");
+    const field = requiredElement<HTMLInputElement>(pane, "input");
+    field.focus();
+    expect(document.activeElement).toBe(field);
+    await act(async () => workspace.setFocusAnchor("start"));
+    expect(pane.dataset.moving).toBe("true");
+    expect(document.activeElement).toBe(field);
+    expect.soft(liveContent.getAttribute("aria-hidden")).toBe("false");
+    await flushAnimationFrames(animationFrames);
 
     await act(async () => {
       expect(workspace.focusPane("pane-2")).toBe(true);
@@ -599,12 +608,40 @@ describe("OnirigiriWorkspace native content motion", () => {
     expect(pane.dataset.moving).toBe("true");
     expect(probe.dataset.interactive).toBe("true");
     expect(liveContent.hasAttribute("inert")).toBe(false);
+    expect(document.activeElement).toBe(pane);
     expect(
       requiredElement<HTMLElement>(pane, ".onirigiri-pane__content").dataset
         .onirigiriShielded,
     ).toBe("true");
 
     await flushAnimationFrames(animationFrames);
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("preserves focus claimed by a ready application in an initially unfocused pane", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
+    function ReadyInput() {
+      return useOnirigiriPaneInteractive() ? <input autoFocus /> : null;
+    }
+    await act(async () => {
+      root.render(
+        <OnirigiriWorkspace
+          initialPanes={columnPanes(3, 520)}
+          liveContent
+          ref={workspaceRef}
+          renderPane={(pane) =>
+            pane.paneId === "pane-2" ? <ReadyInput /> : null
+          }
+        />,
+      );
+    });
+    const workspace = requiredWorkspaceHandle(workspaceRef.current);
+    expect(workspace.getSnapshot().focusedPaneId).toBe("pane-1");
+    expect(document.activeElement).toBe(requiredElement(container, "input"));
     await act(async () => root.unmount());
     container.remove();
   });

@@ -28,7 +28,9 @@ normal navigation mounts destination content before the camera settles.
 accepts input, so a host can move focus into it as soon as it can receive it.
 Only components that call the hook re-render when it changes. Always-live
 content stays interactive during camera motion; only its pointer input is
-shielded.
+shielded. When another pane is selected, native keyboard focus leaves the
+departing pane's content. Motion that keeps the same pane selected preserves
+its input focus.
 Onirigiri keeps the same content subtree while the engine moves stable pane hosts.
 Ready content stays visible during navigation and overview. Frozen content
 receives no input, and Onirigiri pauses its CSS animations; applications pause
