@@ -300,24 +300,30 @@ describe("OnirigiriWorkspace native content motion", () => {
     const ref = createRef<OnirigiriWorkspaceHandle>();
     const renderPlaceholder = vi.fn<
       NonNullable<OnirigiriWorkspaceProps["renderPanePlaceholder"]>
-    >((pane) => <input aria-label={`Preview ${pane.title}`} />);
-    try {
-      await act(async () =>
-        root.render(
-          <OnirigiriWorkspace
-            initialPanes={gridPanes(20, 2, 520)}
-            paneDefaults={{
-              minWidth: 240,
-              resizeEdges: ["right", "bottom", "left", "top"],
-            }}
-            panePresentation={{ kind: "placeholder" }}
-            preloadMarginPanes={0}
-            ref={ref}
-            renderPane={() => <div>Application</div>}
-            renderPanePlaceholder={renderPlaceholder}
-          />,
-        ),
+    >((pane, presentation) => (
+      <input
+        aria-label={`Preview ${pane.title}`}
+        data-variant={presentation.variant}
+      />
+    ));
+    const initialPanes = gridPanes(20, 2, 520);
+    const renderWorkspace = (variant: string) =>
+      root.render(
+        <OnirigiriWorkspace
+          initialPanes={initialPanes}
+          paneDefaults={{
+            minWidth: 240,
+            resizeEdges: ["right", "bottom", "left", "top"],
+          }}
+          panePresentation={{ kind: "placeholder", variant }}
+          preloadMarginPanes={0}
+          ref={ref}
+          renderPane={() => <div>Application</div>}
+          renderPanePlaceholder={renderPlaceholder}
+        />,
       );
+    try {
+      await act(async () => renderWorkspace("initial"));
       await flushAnimationFrames(animationFrames);
       const workspace = requiredWorkspaceHandle(ref.current);
       const pane = requiredElement<HTMLElement>(
@@ -351,6 +357,14 @@ describe("OnirigiriWorkspace native content motion", () => {
       ];
       expect(handles).toHaveLength(4);
       expect(handles.every((handle) => handle.hidden)).toBe(true);
+
+      expect(input.dataset.variant).toBe("initial");
+      await act(async () => renderWorkspace("updated"));
+      expect(pane.dataset.visible).toBe("false");
+      expect(input.dataset.variant).toBe("updated");
+      expect(cover.hasAttribute("inert")).toBe(true);
+      expect(requiredElement(cover, "input")).toBe(input);
+      expect(input.value).toBe("Preview draft");
 
       await act(async () => workspace.renamePane("pane-40", "Updated pane"));
       expect(hiddenCalls()).toBeGreaterThan(calls);
