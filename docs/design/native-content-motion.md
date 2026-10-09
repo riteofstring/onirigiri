@@ -87,6 +87,12 @@ unrelated hidden content; incoming live panes retain their usual activation path
 Explicit canvas and texture policies continue to use their requested surfaces.
 Browser guards cover successful and aborted captures, unchanged iframe and input
 identity, retained scroll offsets and reentry without another content move.
+Frozen display surfaces respect pane visibility in both continuous and ordinary
+workspaces. Cancelling a capture after its pane leaves the viewport does not
+request a final display copy of hidden content. Staged background acquisition
+remains independent of display visibility, and reentry resumes native content
+and ordinary picture acquisition. This avoids repeated failed copies of a
+hidden subtree on unrelated navigation boundaries.
 
 The presented world-frame boundary requests renderer changes at motion start and
 completion even when the camera stays in overview. Native presentation restores

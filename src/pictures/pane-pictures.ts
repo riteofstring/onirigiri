@@ -357,7 +357,7 @@ export class PanePictures {
           continuous: this.isContinuous,
           canDraw: () => this.canDraw(paneId, host),
           canPrime: () => this.canPrime(paneId, host),
-          visible: () => !this.isContinuous() || this.paneVisible(paneId),
+          visible: () => this.paneVisible(paneId),
           renderer: () => {
             const decision = this.decision(paneId);
             return decision.kind === "canvas" ||
