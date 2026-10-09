@@ -54,6 +54,7 @@ vi.mock("../src/pictures/pane-picture-canvas", () => ({
     }
     dispose() {}
     clear() {}
+    setResizing() {}
     static resizeAll() {}
     hasVideo() {
       return false;
