@@ -609,17 +609,15 @@ describe("engine pane pictures", () => {
       ],
       preloadAllPanePictures: true,
     });
-    vi.spyOn(
+    const measureStage = vi.spyOn(
       f.content.parentElement!,
       "getBoundingClientRect",
-    ).mockImplementation(() => {
-      throw new Error("A full warmup does not need stage layout");
-    });
-    vi.spyOn(f.neighbor, "getBoundingClientRect").mockImplementation(() => {
-      throw new Error("A full warmup does not need pane layout");
-    });
+    );
+    const measurePane = vi.spyOn(f.neighbor, "getBoundingClientRect");
     await vi.advanceTimersByTimeAsync(200);
     expect(f.pictures.getStatus().preloadingPaneId).toBe("b");
+    expect(measureStage).not.toHaveBeenCalled();
+    expect(measurePane).not.toHaveBeenCalled();
   });
 
   it("waits for typing to stop before preparing hidden continuous content", async () => {
