@@ -14,6 +14,112 @@ function scrolledTo(element: Element, top: number) {
 }
 
 describe("PanePictureContent", () => {
+  it("checks focused priming once per paint and rechecks before the native handoff", async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    const requestFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        frames.set(++frameId, callback);
+        return frameId;
+      });
+    const cancelFrame = vi
+      .spyOn(window, "cancelAnimationFrame")
+      .mockImplementation((id) => {
+        frames.delete(id);
+      });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal("GPUTextureUsage", { COPY_DST: 2, RENDER_ATTACHMENT: 16 });
+    const canvas = document.createElement("canvas");
+    const content = document.createElement("div");
+    const input = document.createElement("input");
+    input.value = "Retained draft";
+    content.append(input);
+    canvas.append(content);
+    document.body.append(canvas);
+    vi.spyOn(canvas, "getContext").mockReturnValue({
+      configure: vi.fn(),
+      unconfigure: vi.fn(),
+    } as unknown as GPUCanvasContext);
+    let prime = false;
+    let drawn = false;
+    let renderer: "canvas" | "dom" = "canvas";
+    const canPrime = vi.fn(() => prime && !drawn);
+    const surface = new PaneCanvasSurface(
+      canvas,
+      content,
+      Promise.resolve({
+        lost: new Promise(() => {}),
+      } as GPUDevice),
+      {
+        continuous: () => false,
+        canDraw: () => false,
+        canPrime,
+        visible: () => true,
+        renderer: () => renderer,
+        displayScale: () => 1,
+        revision: () => 0,
+        drawn: (value) => {
+          drawn = value;
+        },
+        failed: (error) => {
+          throw error;
+        },
+      },
+    );
+    const flushFrames = () => {
+      const pending = [...frames.values()];
+      frames.clear();
+      for (const callback of pending) callback(16);
+    };
+    try {
+      await Promise.resolve();
+      prime = true;
+      canPrime.mockClear();
+      surface.requestPaint();
+      expect(canPrime).toHaveBeenCalledOnce();
+      expect(content.parentElement).toBe(canvas);
+
+      renderer = "dom";
+      prime = false;
+      canPrime.mockClear();
+      surface.requestPaint();
+      expect(canPrime).toHaveBeenCalledOnce();
+      expect(frames.size).toBe(0);
+
+      prime = true;
+      canPrime.mockClear();
+      surface.requestPaint();
+      expect(canPrime).toHaveBeenCalledOnce();
+      prime = false;
+      flushFrames();
+      expect(canPrime).toHaveBeenCalledTimes(2);
+      expect(content.parentElement).toBe(canvas);
+      expect(drawn).toBe(false);
+
+      prime = true;
+      surface.requestPaint();
+      flushFrames();
+      expect(content.parentElement).not.toBe(canvas);
+      expect(content.parentElement!.style.opacity).toBe("");
+      expect(drawn).toBe(true);
+      expect(content.querySelector("input")).toBe(input);
+      expect(input.value).toBe("Retained draft");
+    } finally {
+      surface.dispose();
+      canvas.remove();
+      requestFrame.mockRestore();
+      cancelFrame.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("prepares native-only content before readiness and reveals the same input when ready", async () => {
     const frames = new Map<number, FrameRequestCallback>();
     let nextFrame = 0;

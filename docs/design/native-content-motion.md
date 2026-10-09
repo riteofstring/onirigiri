@@ -157,6 +157,10 @@ Document visibility remains a fresh check, and viewport listeners are released
 with the workspace. The [CSSOM View event model](https://drafts.csswg.org/cssom-view/#events)
 supplies the scale and scroll invalidation notifications.
 Within a paint request, live renderer checks reuse one native/canvas decision.
+Cold focused priming also reuses its eligibility result through that synchronous
+request, avoiding repeated geometry reads around recording preparation. Canvas
+decisions and active captures do not query native priming. The later native
+handoff still checks eligibility against current geometry before moving content.
 Presentation and frozen-surface checks also share the decision already resolved
 for that query. Subsequent requests still refresh capabilities, including
 synchronous subtree mutations; no decision cache spans a host sweep.

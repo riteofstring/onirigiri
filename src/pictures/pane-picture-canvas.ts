@@ -177,18 +177,17 @@ export class PaneCanvasSurface {
   requestPaint = (): void => {
     if (this.disposed) return;
     this.updateLiveState();
-    const native =
-      this.live || this.callbacks.continuous()
-        ? this.nativeRequested()
-        : undefined;
+    const native = this.nativeRequested();
+    const primeNative =
+      !this.live && !this.captureAbort && native && this.canPrimeNative();
     this.updateVideoPresentation(native);
     this.updateFrozenScale();
-    if (this.usesNativePresentation(native)) {
-      this.requestNativePresentation();
+    if (this.usesNativePresentation(native, primeNative)) {
+      this.requestNativePresentation(primeNative);
       return;
     }
     if (!this.prepareCanvasPresentation(native)) return;
-    if (!this.canvasPaintRequested()) return;
+    if (!this.canvasPaintRequested(native ? primeNative : undefined)) return;
     this.prepareContent();
     if (typeof this.canvas.requestPaint === "function")
       this.canvas.requestPaint();
@@ -215,9 +214,9 @@ export class PaneCanvasSurface {
     this.frozenScale = frozenScale;
   }
 
-  private requestNativePresentation(): void {
+  private requestNativePresentation(primeNative: boolean): void {
     this.source.prepare(false);
-    const display = this.live || this.canPrimeNative();
+    const display = this.live || primeNative;
     if (display && this.source.isNative()) {
       this.source.reveal(this.live);
       this.callbacks.drawn(true, "dom");
@@ -238,12 +237,12 @@ export class PaneCanvasSurface {
     );
   }
 
-  private canvasPaintRequested(): boolean {
+  private canvasPaintRequested(prime?: boolean): boolean {
     return Boolean(
       this.live ||
       (this.freezePending && this.callbacks.visible()) ||
       this.captureAbort ||
-      this.callbacks.canPrime(),
+      (prime ?? this.callbacks.canPrime()),
     );
   }
 
@@ -538,15 +537,18 @@ export class PaneCanvasSurface {
     return true;
   }
 
-  private usesNativePresentation(native?: boolean): boolean {
+  private usesNativePresentation(
+    native?: boolean,
+    primeNative?: boolean,
+  ): boolean {
     return (
+      !this.captureAbort &&
+      (native ?? this.nativeRequested()) &&
       (this.live ||
         this.callbacks.continuous() ||
         this.source.isNative() ||
         !this.canCapture() ||
-        this.canPrimeNative()) &&
-      (native ?? this.nativeRequested()) &&
-      !this.captureAbort
+        (primeNative ?? this.canPrimeNative()))
     );
   }
 
