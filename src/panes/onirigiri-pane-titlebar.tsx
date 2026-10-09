@@ -79,23 +79,44 @@ export const OnirigiriPaneTitlebar = memo(function OnirigiriPaneTitlebar({
           data-visible={String(controlsAvailable)}
           style={actionsSlot.style}
         >
-          <PaneButton
-            action={
-              maximized
-                ? { id: "restore", label: "Restore pane", pane }
-                : { id: "maximize", label: "Maximize pane", pane }
-            }
-            icon={maximized ? "restore" : "maximize"}
-            onActivate={() => store.togglePaneMaximized(pane.paneId)}
-          />
-          <PaneButton
-            action={{ id: "close", label: "Close pane", pane }}
-            icon="close"
-            onActivate={() => void closePane(pane.paneId)}
+          <PaneTitlebarActions
+            closePane={closePane}
+            maximized={maximized}
+            pane={pane}
+            store={store}
           />
         </span>
       ) : null}
     </header>
+  );
+});
+
+const PaneTitlebarActions = memo(function PaneTitlebarActions({
+  closePane,
+  maximized,
+  pane,
+  store,
+}: Pick<
+  OnirigiriPaneTitlebarProps,
+  "closePane" | "maximized" | "pane" | "store"
+>) {
+  return (
+    <>
+      <PaneButton
+        action={
+          maximized
+            ? { id: "restore", label: "Restore pane", pane }
+            : { id: "maximize", label: "Maximize pane", pane }
+        }
+        icon={maximized ? "restore" : "maximize"}
+        onActivate={() => store.togglePaneMaximized(pane.paneId)}
+      />
+      <PaneButton
+        action={{ id: "close", label: "Close pane", pane }}
+        icon="close"
+        onActivate={() => void closePane(pane.paneId)}
+      />
+    </>
   );
 });
 

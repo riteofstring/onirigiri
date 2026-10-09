@@ -307,9 +307,16 @@ describe("OnirigiriWorkspace native content motion", () => {
       />
     ));
     const initialPanes = gridPanes(20, 2, 520);
+    const renderAction = vi.fn(
+      ({ action: _action, ...props }: OnirigiriPaneActionButtonProps) => (
+        <button {...props} />
+      ),
+    );
+    const chromeComponents = { PaneActionButton: renderAction };
     const renderWorkspace = (variant: string) =>
       root.render(
         <OnirigiriWorkspace
+          chromeComponents={chromeComponents}
           initialPanes={initialPanes}
           paneDefaults={{
             minWidth: 240,
@@ -341,6 +348,11 @@ describe("OnirigiriWorkspace native content motion", () => {
           ([candidate]) => candidate.paneId === "pane-40",
         ).length;
       const calls = hiddenCalls();
+      const hiddenActions = () =>
+        renderAction.mock.calls.filter(
+          ([props]) => props.action.pane.paneId === "pane-40",
+        ).length;
+      const actionCalls = hiddenActions();
       const totalCalls = renderPlaceholder.mock.calls.length;
       for (let iteration = 0; iteration < 2; iteration++) {
         await act(async () => workspace.toggleOverview());
@@ -349,7 +361,12 @@ describe("OnirigiriWorkspace native content motion", () => {
         expect(pane.hasAttribute("inert")).toBe(true);
       }
       expect(hiddenCalls()).toBe(calls);
+      expect(hiddenActions()).toBe(actionCalls);
       expect(renderPlaceholder.mock.calls.length).toBeGreaterThan(totalCalls);
+      const actions = requiredElement<HTMLElement>(
+        pane,
+        '[data-onirigiri-slot="pane-actions"]',
+      );
       expect(cover.dataset.onirigiriPlaceholderInteractive).toBe("false");
       expect(cover.hasAttribute("inert")).toBe(true);
       const handles = [
@@ -376,6 +393,11 @@ describe("OnirigiriWorkspace native content motion", () => {
         "Resize Updated pane width",
       );
       expect(input.getAttribute("aria-label")).toBe("Preview Updated pane");
+      expect(
+        renderAction.mock.calls
+          .filter(([props]) => props.action.pane.paneId === "pane-40")
+          .at(-1)![0].action.pane.title,
+      ).toBe("Updated pane");
       const oldWidth = pane.style.width;
       await act(async () => workspace.resizePanes("minimum"));
       expect(pane.style.width).not.toBe(oldWidth);
@@ -385,6 +407,7 @@ describe("OnirigiriWorkspace native content motion", () => {
       expect(cover.dataset.onirigiriPlaceholderInteractive).toBe("true");
       expect(cover.hasAttribute("inert")).toBe(false);
       expect(pane.hasAttribute("inert")).toBe(false);
+      expect(actions.getAttribute("aria-hidden")).toBe("false");
       expect(requiredElement(cover, "input")).toBe(input);
       expect(input.value).toBe("Preview draft");
       input.focus();
@@ -405,6 +428,7 @@ describe("OnirigiriWorkspace native content motion", () => {
       await flushAnimationFrames(animationFrames);
       expect(cover.dataset.onirigiriPlaceholderInteractive).toBe("false");
       expect(cover.hasAttribute("inert")).toBe(true);
+      expect(actions.getAttribute("aria-hidden")).toBe("true");
     } finally {
       await act(async () => root.unmount());
       container.remove();

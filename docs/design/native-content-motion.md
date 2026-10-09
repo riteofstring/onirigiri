@@ -684,9 +684,15 @@ the next substantive React update, without a second retained-item cache.
 Invisible resize controls reuse their existing children while only render items
 change. They remain hidden inside an inert pane. Pane metadata, neighbours,
 callbacks, row height, configuration and styling still update; becoming visible
-always supplies current geometry to their event handlers. Content covers also
-reuse unchanged inputs. Their interaction eligibility includes visibility and
-normal presentation, so an invisible custom placeholder stays inert without
+always supplies current geometry to their event handlers. Titlebar action buttons
+depend on pane metadata, maximized state, the current close callback and the store.
+Their own memo boundary preserves custom controls while their container's
+availability changes. Renaming a hidden pane and changing its callbacks, controls
+or styling still update the buttons. Titlebar availability and public application
+phase delivery retain their usual rules.
+
+Content covers also reuse unchanged inputs. Their interaction eligibility includes
+visibility and normal presentation, so an invisible custom placeholder stays inert without
 rerendering merely because the workspace enters overview. Mounted applications
 still receive every public presentation-mode update. Placeholder content, errors,
 pictures and theme changes retain their usual updates and native input identity.
