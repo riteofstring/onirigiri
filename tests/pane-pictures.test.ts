@@ -166,7 +166,7 @@ vi.mock("../src/pictures/pane-picture-canvas", () => ({
     requestPaint() {}
     dispose() {}
     clear() {}
-    setResizing() {}
+    static resizeAll() {}
     hasVideo() {
       return false;
     }
@@ -641,7 +641,7 @@ describe("engine pane pictures", () => {
     expect(f.pictures.getStatus().preloadingPaneId).toBe("b");
   });
 
-  it("finishes a hidden pane picture when its prepared content restores scrolling", async () => {
+  it("finishes a hidden pane picture when its prepared content scrolls itself", async () => {
     const f = adjacentFixture();
     const pending = deferred<CanvasPicture>();
     const acquire = vi.fn<CanvasCapture>(() => pending.promise);
@@ -662,6 +662,7 @@ describe("engine pane pictures", () => {
     const scroller = document.createElement("div");
     f.neighbor.append(scroller);
     scroller.dispatchEvent(new Event("scroll"));
+    expect(f.pictures.getStatus().preloadingPaneId).toBe("b");
     await vi.advanceTimersByTimeAsync(16);
     expect(request.signal.aborted).toBe(false);
     pending.resolve({ image: png(), width: 200, height: 100 });

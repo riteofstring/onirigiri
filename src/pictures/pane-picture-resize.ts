@@ -10,26 +10,38 @@ export class PanePictureResize {
     private readonly content: HTMLElement,
   ) {}
 
-  set(active: boolean): void {
-    if (active === this.active) return;
-    this.active = active;
-    if (active) {
-      if (this.saved.length) return;
+  prepare(active: boolean): (() => void) | null {
+    if (active === this.active) return null;
+    const sizes: { element: HTMLElement; width: number; height: number }[] = [];
+    if (active && !this.saved.length) {
       const picture = this.canvas.parentElement?.querySelector<HTMLElement>(
         ".onirigiri-pane__picture-surface",
       );
       for (const element of [this.canvas, picture]) {
         if (!element) continue;
-        this.saved.push(saveSize(element));
-        element.style.width = `${element.offsetWidth}px`;
-        element.style.height = `${element.offsetHeight}px`;
+        sizes.push({
+          element,
+          width: element.offsetWidth,
+          height: element.offsetHeight,
+        });
       }
-    } else if (this.saved.length) {
-      this.source ??= saveSize(this.content);
+    } else if (!active && this.saved.length) {
       const parent = this.canvas.parentElement!;
-      this.content.style.width = `${parent.clientWidth}px`;
-      this.content.style.height = `${parent.clientHeight}px`;
+      sizes.push({
+        element: this.content,
+        width: parent.clientWidth,
+        height: parent.clientHeight,
+      });
     }
+    return () => {
+      this.active = active;
+      for (const { element, width, height } of sizes) {
+        if (active) this.saved.push(saveSize(element));
+        else this.source ??= saveSize(element);
+        element.style.width = `${width}px`;
+        element.style.height = `${height}px`;
+      }
+    };
   }
 
   painted(): void {

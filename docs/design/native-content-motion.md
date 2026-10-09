@@ -294,6 +294,9 @@ pixels; a larger pane exposes space beyond them. Both the canvas and retained
 image box follow this rule. Source layout stays fixed during the drag. Release
 restores responsive layout and native presentation, without stretching the old
 image while the new layout paints. Both axes use the same lifecycle.
+Resize boundaries measure all participating capture surfaces before applying any
+size changes, then request presentation after all writes. This preserves the
+original dimensions without forcing a separate layout for every pane or axis.
 Resize handles on every edge capture the pointer for the gesture so crossing
 embedded content or leaving the viewport does not interrupt movement or release.
 Left and top handles share this lifecycle; the retained texture stays anchored
@@ -460,9 +463,9 @@ validation still checks content dimensions. Neighbor-only admission
 continues to check the actual viewport margin.
 Continuous presentation waits for input and camera motion to be idle before
 background preparation, including after typing inside a stationary pane.
-Scroll restoration inside the current hidden preparation is not user activity:
-moving content into its capture surface can emit scroll events, and treating
-those events as input would repeatedly cancel that same capture. The picture
+Programmatic scrolling inside the current hidden preparation is not user
+activity. Preparing an application can trigger its own scroll adjustments;
+treating those events as input would repeatedly cancel that same capture. The picture
 service checks the current preloader, pane visibility and registered content
 ownership before ignoring such a scroll. Scrolling elsewhere, actual wheel,
 keyboard and pointer input, and window lifecycle changes still interrupt

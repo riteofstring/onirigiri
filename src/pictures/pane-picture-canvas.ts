@@ -255,10 +255,24 @@ export class PaneCanvasSurface {
   }
 
   setResizing(active: boolean): void {
-    if (this.resizing === active) return;
-    this.resizing = active;
-    this.presentation.set(active);
-    this.requestPaint();
+    PaneCanvasSurface.resizeAll([this], active);
+  }
+
+  static resizeAll(
+    surfaces: readonly PaneCanvasSurface[],
+    active: boolean,
+  ): void {
+    const updates = surfaces
+      .filter((surface) => surface.resizing !== active)
+      .map((surface) => ({
+        surface,
+        apply: surface.presentation.prepare(active),
+      }));
+    for (const { surface, apply } of updates) {
+      surface.resizing = active;
+      apply?.();
+    }
+    for (const { surface } of updates) surface.requestPaint();
   }
 
   hasCurrentFrame(): boolean {

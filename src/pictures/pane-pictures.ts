@@ -560,10 +560,10 @@ export class PanePictures {
   }
 
   private updateResizing(): void {
-    for (const host of this.hosts.values())
-      host.surface.setResizing(
-        !this.isContinuous() && this.interaction.resizing(),
-      );
+    PaneCanvasSurface.resizeAll(
+      [...this.hosts.values()].map((host) => host.surface),
+      !this.isContinuous() && this.interaction.resizing(),
+    );
   }
 
   present = (frame: WorkspacePresentationBoundaryFrame): void => {
