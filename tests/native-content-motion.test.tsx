@@ -97,6 +97,7 @@ it("browser suites intercept every explicit launch before it can open a visible 
       "@playwright/test": {test, expect: stop, defineConfig: (options) => options},
       "node:fs/promises": await import("node:fs/promises"),
       "node:os": await import("node:os"),
+      "node:path": await import("node:path"),
     };
     async function load(path) {
       const source = ts.transpileModule(readFileSync(path, "utf8"), {
