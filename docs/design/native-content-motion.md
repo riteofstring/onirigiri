@@ -95,6 +95,18 @@ remains independent of display visibility, and reentry resumes native content
 and ordinary picture acquisition. This avoids repeated failed copies of a
 hidden subtree on unrelated navigation boundaries.
 
+A ready cold focused pane without a retained picture can prepare its native host
+while normal-mode navigation is still moving. The existing focused-prime check
+requires its content to be fully within the viewport and excludes overview,
+resizing and background preparation. Ordinary automatic DOM presentation reveals
+the original content without a synchronous first-display snapshot. Its runtime
+remains frozen and the existing input shield remains active until motion ends.
+Explicit canvas presentation and continuous activation retain their own paths.
+The admission decision carries through the native reparent so a geometry change
+cannot leave an admitted first frame transparent. Retained picture acquisition
+still runs at rest; priming defers its copy and recording transitions out of
+navigation instead of eliminating that later work.
+
 The presented world-frame boundary requests renderer changes at motion start and
 completion even when the camera stays in overview. Native presentation restores
 original elements; HTML-in-Canvas stays live during eligible motion. Renderer
@@ -642,6 +654,12 @@ native input to work and animation-frame cadence to meet 60 Hz at 1x and 2x.
 Functional and sustained frame-rate checks are both required. The
 [performance budgets](performance-budget.md) govern browser cadence, CPU
 headroom, background acquisition and resize timing.
+
+The Retina offscreen-refresh guard gives initial acquisition and resized
+replacement separate 15-second bounds. Its overall 40-second deadline permits
+both phases and browser setup; the suite's 20-second default can otherwise
+truncate the second phase after a valid first phase. Cadence and CPU budgets
+remain in the performance suite and are unchanged.
 
 ## CPU work during geometry requests
 

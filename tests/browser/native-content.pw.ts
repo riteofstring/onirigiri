@@ -22,6 +22,7 @@ declare global {
       maximumColdDocuments: number;
       warmups: { id: string; start: number; end: number | null }[];
     };
+    __coldDisplayCopies: number;
     __hiddenCaptureProbe: {
       armed: boolean;
       waiting: boolean;
@@ -601,65 +602,130 @@ test("native presentation keeps content scrollbars through motion", async ({
   }
 });
 
-test("a cold focused pane paints its first frame before navigation settles", async ({
-  page,
-}) => {
-  await openNativeFixture(page, false, true, { count: 12, preloadMargin: 0 });
-  await expect(
-    page.locator(
-      '[data-onirigiri-pane-id="pane-1"] [data-onirigiri-content-ready="true"]',
-    ),
-  ).toHaveCount(1);
-  const destination = page.locator('[data-onirigiri-pane-id="pane-7"]');
-  await expect(destination.locator("iframe")).toHaveCount(0);
-  const releaseClock = await holdClock(page);
-  try {
-    await page.evaluate(() =>
-      window.__nativeMotionFixture.handle.current!.focusPane("pane-7"),
+for (const canvas of [false, true]) {
+  test(`a cold focused pane paints its first frame before navigation settles (canvas=${canvas})`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__coldDisplayCopies = 0;
+      const prototype = HTMLCanvasElement.prototype as HTMLCanvasElement & {
+        captureElementImage(element: Element): unknown;
+      };
+      const capture = prototype.captureElementImage;
+      prototype.captureElementImage = function (element) {
+        if (this.closest('[data-onirigiri-pane-id="pane-7"]'))
+          window.__coldDisplayCopies++;
+        return capture.call(this, element);
+      };
+    });
+    await page.goto(
+      `/@fs${repositoryRoot}tests/browser/native-content-guard.html?pictures&count=12&preloadMargin=0${canvas ? "&policy" : ""}`,
+      { waitUntil: "domcontentloaded" },
     );
-    for (let step = 0; step < 90; step++) {
-      await stepClock(page, 1);
-      const bounds = await destination
-        .locator("canvas.onirigiri-pane__live-surface")
-        .boundingBox();
-      if (bounds && bounds.x >= 0 && bounds.x + bounds.width <= 1280) break;
-    }
-    await stepClock(page, 2);
-    await expect(destination).toHaveAttribute("data-moving", "true");
-    const content = destination.locator('[data-onirigiri-slot="pane-content"]');
-    await expect(content).toHaveAttribute(
-      "data-onirigiri-content-ready",
-      "true",
-    );
-    await expect(content).toHaveAttribute("data-runtime-state", "frozen");
-    await expect(content).toHaveAttribute("data-onirigiri-shielded", "true");
     await expect(
-      destination.locator('[data-onirigiri-slot="pane-live-content"]'),
-    ).not.toHaveAttribute("inert");
-    const alpha = await destination
-      .locator("canvas.onirigiri-pane__live-surface")
-      .evaluate(async (canvas: HTMLCanvasElement) => {
-        const blob = await new Promise<Blob>((resolve) =>
-          canvas.toBlob((blob) => resolve(blob!)),
+      page.locator(
+        '[data-onirigiri-pane-id="pane-1"] [data-onirigiri-content-ready="true"]',
+      ),
+    ).toHaveCount(1);
+    const destination = page.locator('[data-onirigiri-pane-id="pane-7"]');
+    await expect(destination.locator("iframe")).toHaveCount(0);
+    if (canvas)
+      await page.evaluate(() =>
+        window.__nativeMotionFixture.setPresentation("pane-7", "canvas"),
+      );
+    const releaseClock = await holdClock(page);
+    try {
+      await page.evaluate(() =>
+        window.__nativeMotionFixture.handle.current!.focusPane("pane-7"),
+      );
+      for (let step = 0; step < 90; step++) {
+        await stepClock(page, 1);
+        const bounds = await destination
+          .locator("canvas.onirigiri-pane__live-surface")
+          .boundingBox();
+        if (bounds && bounds.x >= 0 && bounds.x + bounds.width <= 1280) break;
+      }
+      await stepClock(page, 2);
+      await expect(destination).toHaveAttribute("data-moving", "true");
+      const content = destination.locator(
+        '[data-onirigiri-slot="pane-content"]',
+      );
+      await expect(content).toHaveAttribute(
+        "data-onirigiri-content-ready",
+        "true",
+      );
+      await expect(content).toHaveAttribute(
+        "data-runtime-state",
+        canvas ? "live" : "frozen",
+      );
+      await expect(content).toHaveAttribute("data-onirigiri-shielded", "true");
+      await expect(
+        destination.locator('[data-onirigiri-slot="pane-live-content"]'),
+      ).not.toHaveAttribute("inert");
+      const retained = await destination
+        .locator("iframe")
+        .evaluateHandle((iframe: HTMLIFrameElement) => ({
+          iframe,
+          document: iframe.contentDocument,
+        }));
+      const surface = destination.locator(
+        "canvas.onirigiri-pane__live-surface",
+      );
+      if (canvas) {
+        await expect(surface).not.toHaveAttribute(
+          "data-onirigiri-native-active",
+          "true",
         );
-        const image = await createImageBitmap(blob);
+        expect(
+          await page.evaluate(() => window.__coldDisplayCopies),
+        ).toBeGreaterThan(0);
+      } else {
+        await expect(surface).toHaveAttribute(
+          "data-onirigiri-native-active",
+          "true",
+        );
+        expect(await page.evaluate(() => window.__coldDisplayCopies)).toBe(0);
+      }
+      const frame = await destination.locator("iframe").boundingBox();
+      expect(frame).not.toBeNull();
+      const pixels = await page.screenshot({
+        clip: {
+          x: Math.floor(frame!.x + 20),
+          y: Math.floor(frame!.y + 260),
+          width: 1,
+          height: 1,
+        },
+      });
+      const color = await page.evaluate(async (bytes) => {
+        const bitmap = await createImageBitmap(
+          new Blob([Uint8Array.from(atob(bytes), (c) => c.charCodeAt(0))], {
+            type: "image/png",
+          }),
+        );
         const sample = document.createElement("canvas");
         sample.width = sample.height = 1;
         const context = sample.getContext("2d")!;
-        context.drawImage(image, 0, 0);
-        image.close();
-        return context.getImageData(0, 0, 1, 1).data[3];
-      });
-    expect(alpha).toBe(255);
-    await stepClock(page, 160);
-    await expect(destination).toHaveAttribute("data-moving", "false");
-    await expect(
-      destination.locator('[data-onirigiri-live="true"]'),
-    ).toHaveCount(1);
-  } finally {
-    await releaseClock();
-  }
-});
+        context.drawImage(bitmap, 0, 0);
+        bitmap.close();
+        return [...context.getImageData(0, 0, 1, 1).data];
+      }, pixels.toString("base64"));
+      expect(color).toEqual([8, 59, 75, 255]);
+      await stepClock(page, 160);
+      await expect(destination).toHaveAttribute("data-moving", "false");
+      await expect(
+        destination.locator('[data-onirigiri-live="true"]'),
+      ).toHaveCount(1);
+      expect(
+        await retained.evaluate(
+          ({ iframe, document }) => iframe.contentDocument === document,
+        ),
+      ).toBe(true);
+      await retained.dispose();
+    } finally {
+      await releaseClock();
+    }
+  });
+}
 
 async function visibleContent(page: Page) {
   return page.evaluate(() => {

@@ -128,16 +128,25 @@ export class PaneCanvasSurface {
     this.canvas = canvas as ElementCanvas;
     this.copyBudget = documentLiveCopyBudget(canvas.ownerDocument);
     this.presentation = new PanePictureResize(canvas, content);
+    let primeNative = false;
     this.source = new PanePictureContent(canvas, content, {
-      canPresent: () =>
-        !this.disposed &&
-        this.initialized &&
-        !this.resizing &&
-        !this.captureAbort &&
-        this.nativeRequested() &&
-        (this.nativeOnly ||
+      canPresent: () => {
+        if (
+          this.disposed ||
+          !this.initialized ||
+          this.resizing ||
+          this.captureAbort ||
+          !this.nativeRequested()
+        )
+          return false;
+        primeNative = this.canPrimeNative();
+        return (
+          this.nativeOnly ||
           callbacks.canDraw() ||
-          this.canRestoreNativeContent()),
+          primeNative ||
+          this.canRestoreNativeContent()
+        );
+      },
       changed: () => {
         callbacks.changed?.();
         this.requestPaint();
@@ -147,6 +156,10 @@ export class PaneCanvasSurface {
         this.canvas.clearElementGeometry?.(this.content);
         this.presentation.restore();
         this.source.prepare(false);
+        if (primeNative) {
+          this.source.reveal(false);
+          callbacks.drawn(true, "dom");
+        }
         this.requestPaint();
       },
     });
@@ -204,12 +217,17 @@ export class PaneCanvasSurface {
 
   private requestNativePresentation(): void {
     this.source.prepare(false);
-    if (this.live && this.source.isNative()) {
-      this.source.reveal();
+    const display = this.live || this.canPrimeNative();
+    if (display && this.source.isNative()) {
+      this.source.reveal(this.live);
       this.callbacks.drawn(true, "dom");
     }
-    if (this.live || this.nativeOnly || this.canRestoreNativeContent())
+    if (display || this.nativeOnly || this.canRestoreNativeContent())
       this.source.present();
+  }
+
+  private canPrimeNative(): boolean {
+    return !this.callbacks.continuous() && this.callbacks.canPrime();
   }
 
   private canRestoreNativeContent(): boolean {
@@ -525,7 +543,8 @@ export class PaneCanvasSurface {
       (this.live ||
         this.callbacks.continuous() ||
         this.source.isNative() ||
-        !this.canCapture()) &&
+        !this.canCapture() ||
+        this.canPrimeNative()) &&
       (native ?? this.nativeRequested()) &&
       !this.captureAbort
     );

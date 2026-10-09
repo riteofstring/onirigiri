@@ -1113,6 +1113,7 @@ test.describe("live detail at Retina resolution", () => {
   test("refreshes offscreen texture dimensions after navigation and viewport resizing", async ({
     page,
   }) => {
+    test.setTimeout(40_000);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(
       `/@fs${repositoryRoot}tests/browser/native-content-guard.html?count=12&pictures&allPictures`,

@@ -71,9 +71,9 @@ export class PanePictureContent {
     );
   }
 
-  reveal(): void {
+  reveal(live: boolean): void {
     if (this.host.style.opacity) this.host.style.removeProperty("opacity");
-    if (this.content.dataset.onirigiriLive !== "true")
+    if (live && this.content.dataset.onirigiriLive !== "true")
       this.content.dataset.onirigiriLive = "true";
   }
 
