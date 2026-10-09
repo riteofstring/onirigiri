@@ -460,6 +460,13 @@ validation still checks content dimensions. Neighbor-only admission
 continues to check the actual viewport margin.
 Continuous presentation waits for input and camera motion to be idle before
 background preparation, including after typing inside a stationary pane.
+Scroll restoration inside the current hidden preparation is not user activity:
+moving content into its capture surface can emit scroll events, and treating
+those events as input would repeatedly cancel that same capture. The picture
+service checks the current preloader, pane visibility and registered content
+ownership before ignoring such a scroll. Scrolling elsewhere, actual wheel,
+keyboard and pointer input, and window lifecycle changes still interrupt
+background work. Readiness and content revisions still invalidate stale captures.
 Distance is measured in pane widths and heights using the larger axis, so
 immediate neighbors, including diagonals, precede the next surrounding ring.
 Changing focus reorders queued work; an acquisition already running may finish.

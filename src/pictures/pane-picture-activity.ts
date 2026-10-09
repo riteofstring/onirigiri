@@ -18,6 +18,7 @@ export class PanePictureActivity {
 
   constructor(
     private readonly changed: (presentationChanged: boolean) => void,
+    private readonly preparingContent: (target: EventTarget | null) => boolean,
   ) {}
 
   idle(): boolean {
@@ -61,6 +62,7 @@ export class PanePictureActivity {
   }
 
   private handle = (event: Event): void => {
+    if (event.type === "scroll" && this.preparingContent(event.target)) return;
     const resizing = this.resizing();
     this.recordPointer(event);
     this.quietUntil = Date.now() + 200;

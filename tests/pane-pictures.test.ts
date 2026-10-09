@@ -641,6 +641,78 @@ describe("engine pane pictures", () => {
     expect(f.pictures.getStatus().preloadingPaneId).toBe("b");
   });
 
+  it("finishes a hidden pane picture when its prepared content restores scrolling", async () => {
+    const f = adjacentFixture();
+    const pending = deferred<CanvasPicture>();
+    const acquire = vi.fn<CanvasCapture>(() => pending.promise);
+    canvasMock.capture = acquire;
+    f.pictures.configure({
+      ...f.config,
+      liveContent: true,
+      preloadMarginPanes: 1,
+      items: [
+        ...f.config.items,
+        renderItem({ paneId: "b", visible: false, runtimeState: "hidden" }),
+      ],
+    });
+    f.ready();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(acquire).toHaveBeenCalledOnce();
+    const request = acquire.mock.calls[0]![0] as CanvasRequest;
+    const scroller = document.createElement("div");
+    f.neighbor.append(scroller);
+    scroller.dispatchEvent(new Event("scroll"));
+    await vi.advanceTimersByTimeAsync(16);
+    expect(request.signal.aborted).toBe(false);
+    pending.resolve({ image: png(), width: 200, height: 100 });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("b")?.capture).toMatchObject({
+      bounds: { width: 200, height: 100 },
+    });
+    expect(f.pictures.getStatus().preloadingPaneId).toBeNull();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(acquire).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ["scroll", "content"],
+    ["wheel", "neighbor"],
+    ["keydown", "neighbor"],
+    ["pointerdown", "neighbor"],
+    ["scroll", "window"],
+    ["resize", "window"],
+    ["blur", "window"],
+    ["visibilitychange", "window"],
+  ] as const)(
+    "interrupts a hidden capture for %s on %s",
+    async (event, target) => {
+      const f = adjacentFixture();
+      const pending = deferred<CanvasPicture>();
+      const acquire = vi.fn<CanvasCapture>(() => pending.promise);
+      canvasMock.capture = acquire;
+      f.pictures.configure({
+        ...f.config,
+        liveContent: true,
+        preloadMarginPanes: 1,
+        items: [
+          ...f.config.items,
+          renderItem({ paneId: "b", visible: false, runtimeState: "hidden" }),
+        ],
+      });
+      f.ready();
+      await vi.advanceTimersByTimeAsync(200);
+      expect(acquire).toHaveBeenCalledOnce();
+      const request = acquire.mock.calls[0]![0];
+      (target === "window" ? window : f[target]).dispatchEvent(
+        new Event(event),
+      );
+      expect(request.signal.aborted).toBe(true);
+      pending.resolve({ image: png(), width: 200, height: 100 });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.pictures.get("b")).toBeNull();
+    },
+  );
+
   it("does not preload every hidden application merely because a presentation policy exists", async () => {
     const f = adjacentFixture();
     const configuration = {

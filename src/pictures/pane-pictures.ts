@@ -155,6 +155,7 @@ export class PanePictures {
     !this.overview() && !this.interaction.resizing();
   private readonly interaction = new PanePictureActivity(
     (presentationChanged) => this.noteActivity(presentationChanged),
+    (target) => this.preparingContent(target),
   );
   private timer: ReturnType<typeof setTimeout> | undefined;
   private timerAt = Infinity;
@@ -529,6 +530,16 @@ export class PanePictures {
   activity = (): void => {
     this.noteActivity(true);
   };
+
+  private preparingContent(target: EventTarget | null): boolean {
+    const paneId = this.preloader.paneId;
+    return (
+      paneId !== null &&
+      this.itemsById.get(paneId)?.visible === false &&
+      target instanceof Node &&
+      this.hosts.get(paneId)?.content.contains(target) === true
+    );
+  }
 
   private noteActivity(presentationChanged: boolean): void {
     this.updateResizing();
