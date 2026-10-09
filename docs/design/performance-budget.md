@@ -15,7 +15,13 @@ motion markers or unused timing subsets.
 Browser launches share `tests/browser/chrome-launch.ts`. macOS uses installed
 Chrome. Linux uses the Chrome for Testing headless shell at the pinned stable
 version, installed by `node scripts/install-linux-chrome.mjs` after verifying
-the archive digest, with ANGLE on Vulkan, Dawn's Vulkan adapter and no
+the archive digest. The versioned browser cache lives under
+`~/.cache/onirigiri/chrome-for-testing`, outside disposable checkouts. Baseline
+and candidate checkouts run by the same user share that executable path instead
+of loading browser libraries from private review worktrees. The installer
+extracts beside the destination and publishes the complete directory atomically;
+concurrent installers retain the first completed installation. Review artifacts
+retain their existing permissions. Launches use ANGLE on Vulkan, Dawn's Vulkan adapter and no
 presentation surface. On a headless Linux GPU host, installed Chrome's headless
 mode falls back to software compositing and reports its WebGPU adapter
 intermittently, while the headless shell composites and rasterizes on the GPU.

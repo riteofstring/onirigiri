@@ -3,10 +3,10 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { linuxChrome } from "../tests/browser/chrome-launch.ts";
@@ -29,14 +29,19 @@ if (digest !== linuxChrome.sha256) {
   );
 }
 
-const staging = mkdtempSync(path.join(tmpdir(), "onirigiri-chrome-"));
+const cacheRoot = path.dirname(linuxChrome.directory);
+mkdirSync(cacheRoot, { recursive: true });
+const staging = mkdtempSync(path.join(cacheRoot, ".install-"));
 try {
   const archivePath = path.join(staging, "chrome-headless-shell.zip");
   writeFileSync(archivePath, archive);
   const extracted = path.join(staging, "extracted");
   run("unzip", ["-q", archivePath, "-d", extracted]);
-  mkdirSync(path.dirname(linuxChrome.directory), { recursive: true });
-  run("mv", [extracted, linuxChrome.directory]);
+  try {
+    renameSync(extracted, linuxChrome.directory);
+  } catch (error) {
+    if (!existsSync(linuxChrome.executable)) throw error;
+  }
 } finally {
   rmSync(staging, { recursive: true, force: true });
 }
