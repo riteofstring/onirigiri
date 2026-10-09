@@ -135,7 +135,9 @@ export class PaneCanvasSurface {
         !this.resizing &&
         !this.captureAbort &&
         this.nativeRequested() &&
-        (this.nativeOnly || callbacks.canDraw()),
+        (this.nativeOnly ||
+          callbacks.canDraw() ||
+          this.canRestoreNativeContent()),
       changed: () => {
         callbacks.changed?.();
         this.requestPaint();
@@ -206,7 +208,16 @@ export class PaneCanvasSurface {
       this.source.reveal();
       this.callbacks.drawn(true, "dom");
     }
-    if (this.live || this.nativeOnly) this.source.present();
+    if (this.live || this.nativeOnly || this.canRestoreNativeContent())
+      this.source.present();
+  }
+
+  private canRestoreNativeContent(): boolean {
+    return (
+      this.callbacks.continuous() &&
+      this.callbacks.interactive?.() === true &&
+      this.source.hasNativeHost()
+    );
   }
 
   private canvasPaintRequested(): boolean {

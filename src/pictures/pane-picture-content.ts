@@ -45,6 +45,10 @@ export class PanePictureContent {
     return this.native;
   }
 
+  hasNativeHost(): boolean {
+    return this.host.isConnected;
+  }
+
   present(): void {
     if (this.native || this.frame !== null) return;
     this.frame = this.canvas.ownerDocument.defaultView!.requestAnimationFrame(

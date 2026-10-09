@@ -12,6 +12,7 @@ interface CanvasFixture {
   outside: HTMLInputElement;
   live: boolean;
   visible: boolean;
+  interactive: boolean;
   device: GPUDevice | null;
   motionRenderer: "dom" | "canvas";
   drawn: boolean;
@@ -27,12 +28,15 @@ declare global {
   }
 }
 
-export async function openCanvas(page: Page): Promise<void> {
+export async function openCanvas(
+  page: Page,
+  continuous = false,
+): Promise<void> {
   const framePath = `/@fs${repositoryRoot}tests/browser/native-content-frame.html`;
   await page.goto(framePath);
   await page.addStyleTag({ url: `/@fs${repositoryRoot}src/styles.css` });
   await page.evaluate(
-    async ({ framePath }) => {
+    async ({ framePath, continuous }) => {
       const { createPaneCanvasDevice, PaneCanvasSurface } =
         (await import("../../src/pictures/pane-picture-canvas.ts")) as typeof import("../../src/pictures/pane-picture-canvas");
       document.body.innerHTML = `
@@ -60,6 +64,7 @@ export async function openCanvas(page: Page): Promise<void> {
         document: iframe.contentDocument!,
         live: false,
         visible: true,
+        interactive: false,
         device: null,
         motionRenderer: "dom",
         drawn: false,
@@ -69,8 +74,10 @@ export async function openCanvas(page: Page): Promise<void> {
           canDraw: () => fixture.live,
           canPrime: () => false,
           visible: () => fixture.visible,
-          continuous: () => false,
-          renderer: () => (fixture.live ? fixture.motionRenderer : "canvas"),
+          continuous: () => continuous,
+          interactive: () => fixture.interactive,
+          renderer: () =>
+            fixture.live || continuous ? fixture.motionRenderer : "canvas",
           displayScale: () => 1,
           revision: () => fixture.revision,
           drawn: (drawn) => {
@@ -105,6 +112,7 @@ export async function openCanvas(page: Page): Promise<void> {
     },
     {
       framePath,
+      continuous,
     },
   );
 }

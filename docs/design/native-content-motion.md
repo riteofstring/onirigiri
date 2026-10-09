@@ -78,6 +78,15 @@ The inventory also supplies documents for temporary scrollbar suppression.
 Native live panes do not capture an intermediate or final frame merely because
 they enter or leave the viewport. This avoids the same problematic capture at
 handoff boundaries. Inactive content keeps its native host and resumes in place.
+After a hidden capture, retained continuous content that previously presented
+natively returns to that host while the camera is idle. This moves restoration
+out of the next navigation boundary without initializing never-visible content.
+The restored host remains transparent and covered until live presentation is
+ready. A capture cancelled by motion waits for motion completion before restoring
+unrelated hidden content; incoming live panes retain their usual activation path.
+Explicit canvas and texture policies continue to use their requested surfaces.
+Browser guards cover successful and aborted captures, unchanged iframe and input
+identity, retained scroll offsets and reentry without another content move.
 
 The presented world-frame boundary requests renderer changes at motion start and
 completion even when the camera stays in overview. Native presentation restores

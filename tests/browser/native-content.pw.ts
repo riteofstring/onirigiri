@@ -818,6 +818,118 @@ test("native retained frames remain visible through overview entry and return li
   await page.screenshot({ path: info.outputPath("native-live-restored.png") });
 });
 
+test("restores hidden captured content before reentry with retained scroll and input", async ({
+  page,
+}) => {
+  await page.goto(
+    `/@fs${repositoryRoot}tests/browser/native-content-guard.html?liveContent&auto&allPictures&count=8`,
+  );
+  const pane = page.locator('[data-onirigiri-pane-id="pane-1"]');
+  const content = pane.locator(".onirigiri-pane__live-content");
+  await expect(content).toHaveAttribute("data-onirigiri-live", "true");
+  await pane
+    .frameLocator("iframe")
+    .getByRole("textbox")
+    .fill("Retained after capture");
+  const retained = await content.evaluateHandle((element) => {
+    const iframe = element.querySelector("iframe")!;
+    const scroller = document.createElement("div");
+    scroller.style.cssText =
+      "position:absolute;top:0;left:0;width:100px;height:100px;overflow:auto";
+    const fill = document.createElement("div");
+    fill.style.height = "1200px";
+    scroller.append(fill);
+    element.append(scroller);
+    scroller.scrollTop = 137;
+    return {
+      content: element,
+      iframe,
+      document: iframe.contentDocument!,
+      scroller,
+    };
+  });
+  expect(await retained.evaluate(({ scroller }) => scroller.scrollTop)).toBe(
+    137,
+  );
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.focusPane("pane-8"),
+  );
+  await expect(pane.locator(".onirigiri-pane__content")).toHaveAttribute(
+    "data-runtime-state",
+    "hidden",
+  );
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const capture =
+            window.__nativeMotionFixture.handle.current!.getCaptureStatus();
+          return (
+            capture.preloadingPaneId === null &&
+            capture.inFlightPaneIds.length === 0 &&
+            capture.pictures.some(
+              (picture) =>
+                picture.paneId === "pane-1" && picture.capture !== null,
+            )
+          );
+        }),
+      { timeout: 30_000 },
+    )
+    .toBe(true);
+  await expect
+    .poll(() =>
+      content.evaluate((element) =>
+        element.parentElement!.classList.contains(
+          "onirigiri-pane__native-surface",
+        ),
+      ),
+    )
+    .toBe(true);
+  await expect(content).toHaveCSS("content-visibility", "hidden");
+  const observation = await retained.evaluateHandle((retained) => {
+    const state = { moves: 0 };
+    const observer = new MutationObserver((records) => {
+      for (const record of records)
+        if (
+          [...record.addedNodes, ...record.removedNodes].includes(
+            retained.content,
+          )
+        )
+          state.moves++;
+    });
+    observer.observe(retained.content.closest("[data-onirigiri-pane-id]")!, {
+      childList: true,
+      subtree: true,
+    });
+    return { ...retained, state, observer };
+  });
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.focusPane("pane-1"),
+  );
+  await expect(content).toHaveAttribute("data-onirigiri-live", "true");
+  await expect(pane).toHaveAttribute("data-moving", "false");
+  expect(
+    await observation.evaluate(
+      ({ iframe, document, scroller, state, observer }) => {
+        observer.disconnect();
+        return {
+          moves: state.moves,
+          sameDocument: iframe.contentDocument === document,
+          value: iframe.contentDocument!.querySelector("input")!.value,
+          scrollTop: scroller.scrollTop,
+        };
+      },
+    ),
+  ).toEqual({
+    moves: 0,
+    sameDocument: true,
+    value: "Retained after capture",
+    scrollTop: 137,
+  });
+  await observation.dispose();
+  await retained.dispose();
+});
+
 test("native motion begins with identical iframe pixels at the same camera pose", async ({
   page,
 }, info) => {

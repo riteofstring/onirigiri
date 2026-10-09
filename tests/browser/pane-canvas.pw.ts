@@ -2303,6 +2303,184 @@ test("texture policies freeze fresh visible pixels without supplied pictures and
   }
 });
 
+for (const aborted of [false, true]) {
+  test(`restores retained native content after hidden capture before reentry (aborted=${aborted})`, async ({
+    page,
+  }) => {
+    await openCanvas(page, true);
+    expect(
+      await page.evaluate(async () => {
+        const fixture = window.__paneCanvasFixture;
+        fixture.interactive = true;
+        fixture.surface.requestPaint();
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
+        return (
+          document.getElementById("content")!.parentElement === fixture.canvas
+        );
+      }),
+    ).toBe(true);
+    await page.evaluate(() => {
+      const fixture = window.__paneCanvasFixture;
+      document.getElementById("gpu")!.remove();
+      fixture.pane.style.transform = "none";
+      fixture.live = true;
+      fixture.interactive = true;
+      fixture.surface.requestPaint();
+    });
+    const content = page.locator("#content");
+    await expect(content).toHaveAttribute("data-onirigiri-live", "true");
+    const retained = await page.evaluateHandle(() => {
+      const fixture = window.__paneCanvasFixture;
+      return {
+        content: document.getElementById("content")!,
+        document: fixture.iframe.contentDocument!,
+        input: fixture.document.querySelector("input")!,
+      };
+    });
+    const captured = await page.evaluate(async (aborted) => {
+      const fixture = window.__paneCanvasFixture;
+      fixture.live = false;
+      fixture.visible = false;
+      fixture.interactive = !aborted;
+      fixture.pane.style.transform = "translateX(-2000px)";
+      fixture.surface.requestPaint();
+      const controller = new AbortController();
+      const observer = aborted
+        ? new MutationObserver(() => {
+            if (
+              document.getElementById("content")!.parentElement ===
+              fixture.canvas
+            )
+              controller.abort();
+          })
+        : null;
+      observer?.observe(fixture.pane, { childList: true, subtree: true });
+      const completion = fixture.surface
+        .capture({
+          stage: true,
+          signal: controller.signal,
+          maxRasterBytes: 16 * 1024 * 1024,
+          maxEncodedBytes: 8 * 1024 * 1024,
+        })
+        .then(
+          (picture) => ({ captured: picture.image.size > 0, aborted: false }),
+          () => ({ captured: false, aborted: controller.signal.aborted }),
+        )
+        .finally(() => observer?.disconnect());
+      return completion;
+    }, aborted);
+    expect(captured).toEqual({ captured: !aborted, aborted });
+    if (aborted) {
+      expect(
+        await page.evaluate(async () => {
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          );
+          const fixture = window.__paneCanvasFixture;
+          return (
+            document.getElementById("content")!.parentElement === fixture.canvas
+          );
+        }),
+      ).toBe(true);
+      await page.evaluate(() => {
+        const fixture = window.__paneCanvasFixture;
+        fixture.interactive = true;
+        fixture.surface.requestPaint();
+      });
+    }
+    await expect
+      .poll(() =>
+        content.evaluate((element) =>
+          element.parentElement!.classList.contains(
+            "onirigiri-pane__native-surface",
+          ),
+        ),
+      )
+      .toBe(true);
+    expect(
+      await page.evaluate(() => {
+        const fixture = window.__paneCanvasFixture;
+        const host = document.getElementById("content")!.parentElement!;
+        return {
+          staged: fixture.canvas.hasAttribute("popover"),
+          focus: document.activeElement === fixture.outside,
+          hidden: host.hidden,
+          opacity: getComputedStyle(host).opacity,
+          drawn: fixture.drawn,
+        };
+      }),
+    ).toEqual({
+      staged: false,
+      focus: true,
+      hidden: false,
+      opacity: "0",
+      drawn: false,
+    });
+    const restored = await retained.evaluate(async (retained) => {
+      const fixture = window.__paneCanvasFixture;
+      const parent = retained.content.parentElement;
+      let moves = 0;
+      const observer = new MutationObserver((records) => {
+        for (const record of records)
+          if (
+            [...record.addedNodes, ...record.removedNodes].includes(
+              retained.content,
+            )
+          )
+            moves++;
+      });
+      observer.observe(fixture.pane, { childList: true, subtree: true });
+      fixture.live = true;
+      fixture.visible = true;
+      fixture.pane.style.transform = "none";
+      fixture.surface.requestPaint();
+      const drawn = fixture.drawn;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      observer.disconnect();
+      return {
+        moves,
+        drawn,
+        sameParent: retained.content.parentElement === parent,
+        sameDocument: fixture.iframe.contentDocument === retained.document,
+        sameInput: fixture.document.querySelector("input") === retained.input,
+        value: retained.input.value,
+      };
+    });
+    expect(restored).toEqual({
+      moves: 0,
+      drawn: true,
+      sameParent: true,
+      sameDocument: true,
+      sameInput: true,
+      value: "Keep this edit",
+    });
+    await expect(content).toHaveAttribute("data-onirigiri-live", "true");
+    await page.evaluate(async () => {
+      const fixture = window.__paneCanvasFixture;
+      fixture.live = false;
+      fixture.visible = false;
+      fixture.motionRenderer = "canvas";
+      fixture.surface.requestPaint();
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    });
+    expect(
+      await content.evaluate((element) => ({
+        inCanvas: element.parentElement === window.__paneCanvasFixture.canvas,
+        hidden: document.querySelector<HTMLElement>(
+          ".onirigiri-pane__native-surface",
+        )!.hidden,
+      })),
+    ).toEqual({ inCanvas: true, hidden: true });
+    await retained.dispose();
+  });
+}
+
 test("hidden live surfaces skip final captures and redraw on reentry", async ({
   page,
 }) => {
