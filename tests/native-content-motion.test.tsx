@@ -12,7 +12,10 @@ import { OnirigiriWorkspace } from "../src/workspace/OnirigiriWorkspace";
 import { PanePresentationEngine } from "../src/presentation/pane-presentation-engine";
 import { useOnirigiriPaneInteractive } from "../src/panes/pane-interactivity";
 import type { OnirigiriPaneActionButtonProps } from "../src/styles/onirigiri-styling";
-import type { OnirigiriWorkspaceHandle } from "../src/workspace/onirigiri-workspace-types";
+import type {
+  OnirigiriWorkspaceHandle,
+  OnirigiriWorkspaceProps,
+} from "../src/workspace/onirigiri-workspace-types";
 
 import {
   requiredElement,
@@ -289,6 +292,110 @@ describe("OnirigiriWorkspace native content motion", () => {
       }
     },
   );
+
+  it("reuses hidden covers and controls while keeping their updates and reentry current", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const ref = createRef<OnirigiriWorkspaceHandle>();
+    const renderPlaceholder = vi.fn<
+      NonNullable<OnirigiriWorkspaceProps["renderPanePlaceholder"]>
+    >((pane) => <input aria-label={`Preview ${pane.title}`} />);
+    try {
+      await act(async () =>
+        root.render(
+          <OnirigiriWorkspace
+            initialPanes={gridPanes(20, 2, 520)}
+            paneDefaults={{
+              minWidth: 240,
+              resizeEdges: ["right", "bottom", "left", "top"],
+            }}
+            panePresentation={{ kind: "placeholder" }}
+            preloadMarginPanes={0}
+            ref={ref}
+            renderPane={() => <div>Application</div>}
+            renderPanePlaceholder={renderPlaceholder}
+          />,
+        ),
+      );
+      await flushAnimationFrames(animationFrames);
+      const workspace = requiredWorkspaceHandle(ref.current);
+      const pane = requiredElement<HTMLElement>(
+        container,
+        '[data-onirigiri-pane-id="pane-40"]',
+      );
+      const cover = requiredElement<HTMLElement>(
+        pane,
+        '[data-onirigiri-slot="pane-placeholder"]',
+      );
+      const input = requiredElement<HTMLInputElement>(cover, "input");
+      input.value = "Preview draft";
+      const hiddenCalls = () =>
+        renderPlaceholder.mock.calls.filter(
+          ([candidate]) => candidate.paneId === "pane-40",
+        ).length;
+      const calls = hiddenCalls();
+      const totalCalls = renderPlaceholder.mock.calls.length;
+      for (let iteration = 0; iteration < 2; iteration++) {
+        await act(async () => workspace.toggleOverview());
+        await flushAnimationFrames(animationFrames);
+        expect(pane.dataset.visible).toBe("false");
+        expect(pane.hasAttribute("inert")).toBe(true);
+      }
+      expect(hiddenCalls()).toBe(calls);
+      expect(renderPlaceholder.mock.calls.length).toBeGreaterThan(totalCalls);
+      expect(cover.dataset.onirigiriPlaceholderInteractive).toBe("false");
+      expect(cover.hasAttribute("inert")).toBe(true);
+      const handles = [
+        ...pane.querySelectorAll<HTMLButtonElement>(".onirigiri-pane__resize"),
+      ];
+      expect(handles).toHaveLength(4);
+      expect(handles.every((handle) => handle.hidden)).toBe(true);
+
+      await act(async () => workspace.renamePane("pane-40", "Updated pane"));
+      expect(hiddenCalls()).toBeGreaterThan(calls);
+      const right = requiredElement<HTMLButtonElement>(
+        pane,
+        '[data-resize-edge="right"]',
+      );
+      expect(right.getAttribute("aria-label")).toBe(
+        "Resize Updated pane width",
+      );
+      expect(input.getAttribute("aria-label")).toBe("Preview Updated pane");
+      const oldWidth = pane.style.width;
+      await act(async () => workspace.resizePanes("minimum"));
+      expect(pane.style.width).not.toBe(oldWidth);
+      await flushAnimationFrames(animationFrames);
+      await act(async () => workspace.focusPane("pane-40"));
+      await flushAnimationFrames(animationFrames);
+      expect(cover.dataset.onirigiriPlaceholderInteractive).toBe("true");
+      expect(cover.hasAttribute("inert")).toBe(false);
+      expect(pane.hasAttribute("inert")).toBe(false);
+      expect(requiredElement(cover, "input")).toBe(input);
+      expect(input.value).toBe("Preview draft");
+      input.focus();
+      expect(document.activeElement).toBe(input);
+      expect(right.hidden).toBe(false);
+      const width = Number.parseFloat(pane.style.width);
+      await act(async () =>
+        right.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "ArrowRight",
+            bubbles: true,
+          }),
+        ),
+      );
+      expect(Number.parseFloat(pane.style.width)).toBe(width + 16);
+      await flushAnimationFrames(animationFrames);
+      await act(async () => workspace.toggleOverview());
+      await flushAnimationFrames(animationFrames);
+      expect(cover.dataset.onirigiriPlaceholderInteractive).toBe("false");
+      expect(cover.hasAttribute("inert")).toBe(true);
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  });
 
   it("resizes 100 panes without rebuilding unchanged titlebar actions", async () => {
     const container = document.createElement("div");

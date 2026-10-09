@@ -353,39 +353,52 @@ type PaneResizeHandleProps = Pick<
 
 const paneResizeHandleOrder = ["right", "bottom", "left", "top"] as const;
 
-function PaneResizeHandles({
-  compactLayout,
-  ...props
-}: PaneResizeHandleProps & Pick<OnirigiriPaneViewProps, "compactLayout">) {
-  const configuration = useContext(PaneDefaultsContext);
-  const hidden =
-    !props.item.visible ||
-    paneResizeHandlesUnavailable(props.item, compactLayout) ||
-    (props.item.moving && !props.item.focused);
-  const edges = new Set(
-    resolvePaneDefaults(props.pane, configuration).resizeEdges ??
-      defaultPaneResizeEdges,
-  );
-  return paneResizeHandleOrder
-    .filter((edge) => edges.has(edge))
-    .map((edge) =>
-      edge === "left" || edge === "right" ? (
-        <PaneColumnResizeHandle
-          {...props}
-          edge={edge}
-          hidden={hidden}
-          key={edge}
-        />
-      ) : (
-        <PaneRowResizeHandle
-          {...props}
-          edge={edge}
-          hidden={hidden}
-          key={edge}
-        />
-      ),
+const PaneResizeHandles = memo(
+  function PaneResizeHandles({
+    compactLayout,
+    ...props
+  }: PaneResizeHandleProps & Pick<OnirigiriPaneViewProps, "compactLayout">) {
+    const configuration = useContext(PaneDefaultsContext);
+    const hidden =
+      !props.item.visible ||
+      paneResizeHandlesUnavailable(props.item, compactLayout) ||
+      (props.item.moving && !props.item.focused);
+    const edges = new Set(
+      resolvePaneDefaults(props.pane, configuration).resizeEdges ??
+        defaultPaneResizeEdges,
     );
-}
+    return paneResizeHandleOrder
+      .filter((edge) => edges.has(edge))
+      .map((edge) =>
+        edge === "left" || edge === "right" ? (
+          <PaneColumnResizeHandle
+            {...props}
+            edge={edge}
+            hidden={hidden}
+            key={edge}
+          />
+        ) : (
+          <PaneRowResizeHandle
+            {...props}
+            edge={edge}
+            hidden={hidden}
+            key={edge}
+          />
+        ),
+      );
+  },
+  (previous, next) => {
+    if (previous.item.visible || next.item.visible) return false;
+    for (const field in previous) {
+      const key = field as keyof typeof previous;
+      if (!(key in next)) return false;
+      if (!paneItemPropKeys.has(key) && previous[key] !== next[key])
+        return false;
+    }
+    for (const key in next) if (!(key in previous)) return false;
+    return true;
+  },
+);
 
 function paneResizeHandlesUnavailable(
   item: PaneRenderItem,

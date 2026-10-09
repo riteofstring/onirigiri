@@ -175,8 +175,10 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
           picture={picture}
           pane={pane}
           covered={covered}
+          inputAvailable={
+            visible && pictures.isInteractive() && presentationMode === "normal"
+          }
           presentation={presentation}
-          presentationMode={presentationMode}
           renderPanePlaceholder={renderPanePlaceholder}
           visible={visible}
           error={error}
@@ -218,14 +220,10 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
 
 interface PaneCoverProps extends Pick<
   OnirigiriPaneContentProps,
-  | "pictures"
-  | "picture"
-  | "pane"
-  | "presentationMode"
-  | "renderPanePlaceholder"
-  | "visible"
+  "pictures" | "picture" | "pane" | "renderPanePlaceholder" | "visible"
 > {
   covered: boolean;
+  inputAvailable: boolean;
   presentation: ReturnType<PanePictures["getPresentation"]>;
   error: string | null;
 }
@@ -235,7 +233,7 @@ function usePaneCoverState({
   picture,
   pane,
   presentation,
-  presentationMode,
+  inputAvailable,
   renderPanePlaceholder,
   covered,
   error,
@@ -243,11 +241,7 @@ function usePaneCoverState({
   const showPicture =
     !!picture && presentation.kind !== "placeholder" && !error;
   const placeholderInteractive =
-    covered &&
-    !showPicture &&
-    !!renderPanePlaceholder &&
-    pictures.isInteractive() &&
-    presentationMode === "normal";
+    covered && !showPicture && !!renderPanePlaceholder && inputAvailable;
   useLayoutEffect(() => {
     if (!covered) pictures.presentCover(pane.paneId, null);
     else if (!showPicture) pictures.presentCover(pane.paneId, "placeholder");
@@ -255,7 +249,7 @@ function usePaneCoverState({
   return { showPicture, placeholderInteractive };
 }
 
-function PaneContentCover(props: PaneCoverProps) {
+const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
   const { pictures, picture, pane, covered, visible, error } = props;
   const { showPicture, placeholderInteractive } = usePaneCoverState(props);
   const styling = useOnirigiriStyling();
@@ -290,7 +284,7 @@ function PaneContentCover(props: PaneCoverProps) {
       ) : null}
     </div>
   );
-}
+});
 
 function PaneCoverPlaceholder(
   props: PaneCoverProps & { showPicture: boolean; interactive: boolean },

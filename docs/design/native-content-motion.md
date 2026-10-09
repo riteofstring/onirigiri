@@ -681,6 +681,16 @@ visibility, content, presentation, geometry and callback changes still render.
 Only the pane's own item uses this exception. Its raw item remains current for
 the next substantive React update, without a second retained-item cache.
 
+Invisible resize controls reuse their existing children while only render items
+change. They remain hidden inside an inert pane. Pane metadata, neighbours,
+callbacks, row height, configuration and styling still update; becoming visible
+always supplies current geometry to their event handlers. Content covers also
+reuse unchanged inputs. Their interaction eligibility includes visibility and
+normal presentation, so an invisible custom placeholder stays inert without
+rerendering merely because the workspace enters overview. Mounted applications
+still receive every public presentation-mode update. Placeholder content, errors,
+pictures and theme changes retain their usual updates and native input identity.
+
 Reserved-cell queries check for actual reserved blanks before resolving pane
 geometry. Empty results need no scene copy for world-coordinate conversion.
 Creating or removing a reserved split is reflected by the next query.
