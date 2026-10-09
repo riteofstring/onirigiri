@@ -269,6 +269,48 @@ describe("resize edge handles", () => {
     );
   });
 
+  it("retains resize controls across overview and restores keyboard resizing", async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    let timestamp = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.set(++frameId, callback);
+      return frameId;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+    const settle = async () => {
+      for (let frame = 0; frames.size > 0 && frame < 100; frame++) {
+        const callbacks = [...frames.values()];
+        frames.clear();
+        timestamp += 1000 / 60;
+        await act(async () => {
+          for (const callback of callbacks) callback(timestamp);
+        });
+      }
+      expect(frames.size).toBe(0);
+    };
+    const workspace = await mount();
+    await settle();
+    const right = handle("side", "right");
+    const bottom = handle("side", "bottom");
+
+    await act(async () => workspace.toggleOverview());
+    await settle();
+    expect(handle("side", "right")).toBe(right);
+    expect(handle("side", "bottom")).toBe(bottom);
+    expect(right.hidden).toBe(true);
+    expect(bottom.hidden).toBe(true);
+
+    await act(async () => workspace.toggleOverview());
+    await settle();
+    expect(handle("side", "right")).toBe(right);
+    expect(handle("side", "bottom")).toBe(bottom);
+    expect(right.hidden).toBe(false);
+    expect(bottom.hidden).toBe(false);
+    await pressKey(right, "ArrowRight");
+    expect(columnWidth(workspace, "side")).toBe(416);
+  });
+
   it("chooses edges per workspace, pane type and pane", async () => {
     await mount({
       initialPanes: stackPanes.map((pane) =>

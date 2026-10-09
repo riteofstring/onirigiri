@@ -406,7 +406,12 @@ test("previews the full mobile workspace, optional pane peeks, and bottom naviga
   await expect(
     workspace.locator('.onirigiri-pane[data-runtime-state="live"]'),
   ).toHaveCount(1);
-  await expect(workspace.locator(".onirigiri-pane__resize")).toHaveCount(0);
+  await page.addStyleTag({
+    content: ".onirigiri-pane__resize { display: block; }",
+  });
+  await expect(
+    workspace.locator(".onirigiri-pane__resize:visible"),
+  ).toHaveCount(0);
 
   await page.getByRole("button", { name: "Peek at adjacent panes" }).click();
   await expect(shell).toHaveAttribute("data-mobile-peek", "true");

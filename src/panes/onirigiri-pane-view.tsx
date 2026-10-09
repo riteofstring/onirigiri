@@ -147,20 +147,18 @@ export const OnirigiriPaneView = memo(function OnirigiriPaneView({
         runtimeState={item.runtimeState}
         visible={item.visible}
       />
-      {item.visible ? (
-        <PaneResizeHandles
-          aboveItem={aboveItem}
-          abovePane={abovePane}
-          adjacentItem={adjacentItem}
-          adjacentPane={adjacentPane}
-          beginResize={beginResize}
-          compactLayout={compactLayout}
-          item={item}
-          pane={pane}
-          rowHeight={rowHeight}
-          store={store}
-        />
-      ) : null}
+      <PaneResizeHandles
+        aboveItem={aboveItem}
+        abovePane={abovePane}
+        adjacentItem={adjacentItem}
+        adjacentPane={adjacentPane}
+        beginResize={beginResize}
+        compactLayout={compactLayout}
+        item={item}
+        pane={pane}
+        rowHeight={rowHeight}
+        store={store}
+      />
     </section>
   );
 }, paneViewIsUnchanged);
@@ -345,10 +343,10 @@ function PaneResizeHandles({
   ...props
 }: PaneResizeHandleProps & Pick<OnirigiriPaneViewProps, "compactLayout">) {
   const configuration = useContext(PaneDefaultsContext);
-  if (paneResizeHandlesUnavailable(props.item, compactLayout)) {
-    return null;
-  }
-  const hidden = props.item.moving && !props.item.focused;
+  const hidden =
+    !props.item.visible ||
+    paneResizeHandlesUnavailable(props.item, compactLayout) ||
+    (props.item.moving && !props.item.focused);
   const edges = new Set(
     resolvePaneDefaults(props.pane, configuration).resizeEdges ??
       defaultPaneResizeEdges,

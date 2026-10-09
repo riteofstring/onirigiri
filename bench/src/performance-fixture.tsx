@@ -697,8 +697,8 @@ async function dragResizeHandle(
   );
   const selector =
     iteration % 2 === 0
-      ? '[data-onirigiri-slot="pane-resize-row"]'
-      : '[data-onirigiri-slot="pane-resize-column"]';
+      ? '[data-onirigiri-slot="pane-resize-row"]:not([hidden])'
+      : '[data-onirigiri-slot="pane-resize-column"]:not([hidden])';
   const resizeHandle =
     focusedPane?.querySelector<HTMLElement>(selector) ??
     workspace.querySelector<HTMLElement>(

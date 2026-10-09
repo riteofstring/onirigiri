@@ -566,9 +566,9 @@ describe("OnirigiriWorkspace interactions", () => {
     await act(async () => workspace.toggleOverview());
     advanceFrames(1, 64);
     expect(workspace.getSnapshot().presentationMode).toBe("overview");
-    expect(container.querySelectorAll(".onirigiri-pane__resize")).toHaveLength(
-      0,
-    );
+    expect(
+      container.querySelectorAll(".onirigiri-pane__resize:not([hidden])"),
+    ).toHaveLength(0);
 
     await act(async () => workspace.toggleOverview());
     expect(workspace.getSnapshot().presentationMode).toBe("normal");
@@ -587,11 +587,11 @@ describe("OnirigiriWorkspace interactions", () => {
     expect(
       focusedPane.querySelectorAll(".onirigiri-pane__resize"),
     ).toHaveLength(2);
-    expect(container.querySelectorAll(".onirigiri-pane__resize")).toHaveLength(
-      2,
-    );
     expect(
-      unfocusedPane.querySelectorAll(".onirigiri-pane__resize"),
+      container.querySelectorAll(".onirigiri-pane__resize:not([hidden])"),
+    ).toHaveLength(2);
+    expect(
+      unfocusedPane.querySelectorAll(".onirigiri-pane__resize:not([hidden])"),
     ).toHaveLength(0);
     const rendersAfterExitRequest = renderPane.mock.calls.length;
 
@@ -711,9 +711,13 @@ describe("OnirigiriWorkspace interactions", () => {
     const counter = () =>
       requiredElement<HTMLButtonElement>(paneFive, '[data-counter="pane-5"]');
     const columnResizeHandle = () =>
-      paneFive.querySelectorAll('[data-onirigiri-slot="pane-resize-column"]');
+      paneFive.querySelectorAll(
+        '[data-onirigiri-slot="pane-resize-column"]:not([hidden])',
+      );
     const rowResizeHandle = () =>
-      paneFive.querySelectorAll('[data-onirigiri-slot="pane-resize-row"]');
+      paneFive.querySelectorAll(
+        '[data-onirigiri-slot="pane-resize-row"]:not([hidden])',
+      );
     const paneActions = () =>
       paneFive.querySelectorAll('[data-onirigiri-slot="pane-action"]');
     expect(paneFive.dataset.visible).toBe("true");
@@ -845,9 +849,9 @@ describe("OnirigiriWorkspace interactions", () => {
     expect(firstPane.hasAttribute("inert")).toBe(false);
     expect(secondPane.dataset.runtimeState).toBe("live");
     expect(secondPane.hasAttribute("inert")).toBe(true);
-    expect(container.querySelectorAll(".onirigiri-pane__resize")).toHaveLength(
-      0,
-    );
+    expect(
+      container.querySelectorAll(".onirigiri-pane__resize:not([hidden])"),
+    ).toHaveLength(0);
 
     await act(async () => root.unmount());
     container.remove();

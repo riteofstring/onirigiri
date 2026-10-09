@@ -815,7 +815,7 @@
   }
 
   .onirigiri-pane__resize[hidden] {
-    display: none;
+    display: none !important;
   }
 
   .onirigiri-pane__resize {

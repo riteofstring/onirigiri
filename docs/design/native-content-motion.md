@@ -86,16 +86,19 @@ attributes describe completed presentation for developer badges. Native
 presentation keeps the consumer's scrollbars through motion; only recorded
 content suppresses them.
 
-Motion boundaries never restyle consumer content. Applications can mount
+Input blocking during normal camera motion avoids inherited style changes in
+consumer content. Applications can mount
 thousands of elements per pane, and a style change that reaches every
 descendant costs a full recalculation of each visible pane at the start and end
 of every camera move. Moving panes therefore block pointer input with a shield
 element over the content instead of inherited `pointer-events`, pause CSS
 animations through the Web Animations API instead of a universal descendant
 rule, and keep `inert` for overview, covered content and hidden panes, whose
-states last longer than a move. Pane chrome toggles visibility rather than
-inserting or removing nodes inside the pane, because node insertion makes the
-browser re-evaluate consumer `:has()` selectors across the whole pane.
+states last longer than a move. With unchanged control configuration, pane
+chrome stays attached across visibility and presentation changes. Hidden resize
+handles remain excluded from layout and input even when a consumer slot sets
+their display style. Keeping these nodes avoids structural mutations that make
+the browser re-evaluate consumer `:has()` selectors across the pane tree.
 Frozen normal-mode panes disable pointer events only on titlebars and resize
 handles. Their existing content shield blocks application input without changing
 the inherited pointer behavior of the application subtree.
@@ -211,9 +214,8 @@ arriving panes are prepared from the first frame of the move. Activation changes
 only affected content subscribers. Camera interpolation does not rerender the
 workspace tree. Interaction snapshots are pane-local: hidden content does not
 rerender when the workspace begins or ends a move. Content stays live through
-motion and overview. Suitable content uses HTML-in-Canvas during motion while
-native-only content stays on its original rendering path. Stationary normal and
-overview presentations both restore native content. Inactive content uses
+motion and overview. Automatic presentation keeps visible content native;
+explicit HTML-in-Canvas policies use live copies where supported. Inactive content uses
 `content-visibility: hidden` to skip its rendering while preserving the mounted
 documents; activation and preparation restore rendering. Interaction is independent of
 animation: motion shields input, overview remains inert, and recorded scrollbars stay hidden.
@@ -257,9 +259,7 @@ React subscriptions. Native readiness is published after attachment. Initial
 renderer setup must succeed, but a later GPU loss does not prevent the original
 DOM from returning to its native host.
 
-Live native surfaces receive a compositor hint while visible and noninteractive.
-This isolates animated graphics from neighboring pane raster work during motion
-and overview. Hidden live HTML-in-Canvas panes do not record a final display frame;
+Hidden live HTML-in-Canvas panes do not record a final display frame;
 re-entry records fresh pixels. Explicit background picture acquisition and visible
 frozen presentation keep their own capture lifecycle.
 
@@ -531,8 +531,8 @@ authorized supplied picture. Onirigiri reports this capture boundary instead of 
 snapshot. Cross-origin iframe content renders in the native host at rest, subject to the
 browser's normal embedding policy. Its pixels remain unavailable to the capture
 surface; a supplied picture is needed to represent it while frozen or cold.
-WebGPU and HTML-in-Canvas remain required capabilities for capture and motion,
-including when every pane uses native DOM at rest.
+Element capture requires WebGPU and HTML-in-Canvas. Native presentation and
+camera motion remain available without either capability.
 
 Chrome can record nested accelerated canvases at a different scale from their
 native display ([Chromium tracking issue](https://issues.chromium.org/issues/540532973)).
