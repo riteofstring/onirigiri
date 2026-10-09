@@ -94,7 +94,12 @@ of every camera move. Moving panes therefore block pointer input with a shield
 element over the content instead of inherited `pointer-events`, pause CSS
 animations through the Web Animations API instead of a universal descendant
 rule, and keep `inert` for overview, covered content and hidden panes, whose
-states last longer than a move. With unchanged control configuration, pane
+states last longer than a move. Overview also uses that shield for pointer input
+and its selection cursor, preserving the application's inherited cursor and
+selection styles. Its inert transition still carries a measured style cost.
+The shield sits outside the capture canvas and stays present during overview
+capture. Empty overview space has no grab cursor because the built-in overview
+has no pointer-pan gesture. With unchanged control configuration, pane
 chrome stays attached across visibility and presentation changes. Hidden resize
 handles remain excluded from layout and input even when a consumer slot sets
 their display style. Keeping these nodes avoids structural mutations that make

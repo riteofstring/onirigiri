@@ -426,12 +426,15 @@ for (const continuous of [false, true]) {
       .evaluate((content) => {
         const style = document.createElement("style");
         style.textContent =
-          "@keyframes motion-probe { to { translate: 12px 0; } }";
+          ".onirigiri-workspace { cursor: help; user-select: text; } @keyframes motion-probe { to { translate: 12px 0; } }";
         document.head.append(style);
         const probe = document.createElement("div");
         probe.id = "motion-probe";
         probe.style.cssText =
           "width: 8px; height: 8px; animation: motion-probe 1s linear infinite";
+        const input = document.createElement("input");
+        input.id = "motion-input";
+        probe.append(input);
         const started = new Promise((resolve) =>
           probe.addEventListener("animationstart", resolve, { once: true }),
         );
@@ -443,6 +446,7 @@ for (const continuous of [false, true]) {
       return {
         status: pane.querySelector(".onirigiri-pane__paused-status"),
         resize: pane.querySelector(".onirigiri-pane__resize"),
+        input: pane.querySelector("#motion-input"),
       };
     });
     const motionState = () =>
@@ -467,6 +471,9 @@ for (const continuous of [false, true]) {
           runtime: content.dataset.runtimeState,
           shielded: getComputedStyle(shield).display === "block",
           contentPointerEvents: getComputedStyle(live).pointerEvents,
+          contentCursor: getComputedStyle(live).cursor,
+          contentSelection: getComputedStyle(live).userSelect,
+          inert: live.inert,
           reachesContent: live.contains(document.elementFromPoint(x, y)),
           animation: document.getElementById("motion-probe")!.getAnimations()[0]
             ?.playState,
@@ -483,6 +490,9 @@ for (const continuous of [false, true]) {
         runtime: continuous ? "live" : "frozen",
         shielded: true,
         contentPointerEvents: "auto",
+        contentCursor: "help",
+        contentSelection: "text",
+        inert: false,
         reachesContent: false,
         animation: continuous ? "running" : "paused",
       });
@@ -494,9 +504,38 @@ for (const continuous of [false, true]) {
       shielded: false,
       animation: "running",
     });
+    await page.evaluate(() =>
+      window.__nativeMotionFixture.handle.current!.toggleOverview(),
+    );
+    await expect.poll(motionState).toMatchObject({
+      moving: "false",
+      shielded: true,
+      contentPointerEvents: "auto",
+      contentCursor: "help",
+      contentSelection: "text",
+      inert: true,
+      reachesContent: false,
+      animation: continuous ? "running" : "paused",
+    });
+    await page.locator("#motion-input").focus();
+    await expect(page.locator("#motion-input")).not.toBeFocused();
+    await page
+      .locator(
+        '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__input-shield',
+      )
+      .click();
+    await expect.poll(motionState).toMatchObject({
+      moving: "false",
+      shielded: false,
+      inert: false,
+      animation: "running",
+    });
+    await page.locator("#motion-input").focus();
+    await expect(page.locator("#motion-input")).toBeFocused();
     expect(
       await before.evaluate(
-        ({ status, resize }) =>
+        ({ status, resize, input }) =>
+          input === document.getElementById("motion-input") &&
           status ===
             document.querySelector(
               '[data-onirigiri-pane-id="pane-1"] .onirigiri-pane__paused-status',

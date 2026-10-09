@@ -910,15 +910,6 @@
     }
   }
 
-  .onirigiri-workspace[data-presentation-mode="overview"]
-    .onirigiri-workspace__stage {
-    cursor: grab;
-  }
-
-  .onirigiri-workspace[data-presentation-mode="overview"] .onirigiri-pane {
-    cursor: pointer;
-  }
-
   .onirigiri-workspace[data-presentation-mode="overview"] .onirigiri-pane,
   .onirigiri-workspace.onirigiri-workspace--overview-transition
     .onirigiri-pane {
@@ -932,14 +923,10 @@
   }
 
   .onirigiri-workspace[data-presentation-mode="overview"]
-    .onirigiri-pane__content {
-    pointer-events: none;
+    .onirigiri-pane__input-shield {
+    cursor: pointer;
+    display: block;
     user-select: none;
-  }
-
-  .onirigiri-workspace[data-presentation-mode="overview"]
-    .onirigiri-pane__content[data-onirigiri-overview-capture="true"] {
-    pointer-events: auto;
   }
 
   @media (prefers-reduced-motion: no-preference) {
