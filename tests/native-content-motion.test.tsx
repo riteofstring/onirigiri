@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CooperativeFixtureFrame } from "./browser/cooperative-fixture-frame";
 
 import { OnirigiriWorkspace } from "../src/workspace/OnirigiriWorkspace";
+import { PanePresentationEngine } from "../src/presentation/pane-presentation-engine";
 import { useOnirigiriPaneInteractive } from "../src/panes/pane-interactivity";
 import type { OnirigiriPaneActionButtonProps } from "../src/styles/onirigiri-styling";
 import type { OnirigiriWorkspaceHandle } from "../src/workspace/onirigiri-workspace-types";
@@ -201,6 +202,93 @@ describe("OnirigiriWorkspace native content motion", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
+
+  it.each([false, true])(
+    "keeps hidden shell motion out of React without losing updates (live content: %s)",
+    async (liveContent) => {
+      const boundary = vi.spyOn(
+        PanePresentationEngine.prototype,
+        "updatePaneHostBoundary",
+      );
+      const container = document.createElement("div");
+      document.body.append(container);
+      const root = createRoot(container);
+      const ref = createRef<OnirigiriWorkspaceHandle>();
+      const panes = columnPanes(16, 520);
+      const render = async (revision: string) => {
+        await act(async () => {
+          root.render(
+            <OnirigiriWorkspace
+              initialPanes={panes}
+              liveContent={liveContent}
+              preloadMarginPanes={0}
+              ref={ref}
+              renderPane={(pane) => (
+                <input data-revision={revision} aria-label={pane.title} />
+              )}
+            />,
+          );
+        });
+      };
+      try {
+        await render("initial");
+        const workspace = requiredWorkspaceHandle(ref.current);
+        const hidden = requiredElement<HTMLElement>(
+          container,
+          '[data-onirigiri-pane-id="pane-16"]',
+        );
+        const input = hidden.querySelector("input");
+        if (input) input.value = "retained draft";
+        expect(hidden.dataset.visible).toBe("false");
+        expect(hidden.hasAttribute("inert")).toBe(true);
+        boundary.mockClear();
+        await act(async () => workspace.focusPane("pane-2"));
+        await flushAnimationFrames(animationFrames, 1);
+        expect(hidden.dataset.moving).toBe("true");
+        await flushAnimationFrames(animationFrames);
+        expect(hidden.dataset.moving).toBe("false");
+        expect(
+          boundary.mock.calls.filter(([id]) => id === "pane-16"),
+        ).toHaveLength(0);
+        expect(boundary.mock.calls.some(([id]) => id === "pane-2")).toBe(true);
+
+        await render("updated");
+        await act(async () => workspace.renamePane("pane-16", "Updated title"));
+        expect(hidden.getAttribute("aria-label")).toBe("Updated title");
+        const oldWidth = hidden.style.width;
+        await act(async () => workspace.resizePanes("minimum"));
+        expect(hidden.style.width).not.toBe(oldWidth);
+        await flushAnimationFrames(animationFrames);
+        if (liveContent) {
+          expect(
+            requiredElement<HTMLInputElement>(hidden, "input").dataset.revision,
+          ).toBe("updated");
+        }
+
+        await act(async () => workspace.focusPane("pane-16"));
+        await flushAnimationFrames(animationFrames);
+        expect(hidden.dataset.visible).toBe("true");
+        expect(hidden.dataset.runtimeState).toBe("live");
+        expect(hidden.hasAttribute("inert")).toBe(false);
+        const currentInput = requiredElement<HTMLInputElement>(hidden, "input");
+        expect(currentInput.dataset.revision).toBe("updated");
+        expect(currentInput.getAttribute("aria-label")).toBe("Updated title");
+        if (input) {
+          expect(currentInput).toBe(input);
+          expect(currentInput.value).toBe("retained draft");
+        }
+        expect(
+          requiredElement<HTMLButtonElement>(
+            hidden,
+            '[data-onirigiri-slot="pane-resize-column"]',
+          ).hidden,
+        ).toBe(false);
+      } finally {
+        await act(async () => root.unmount());
+        container.remove();
+      }
+    },
+  );
 
   it("resizes 100 panes without rebuilding unchanged titlebar actions", async () => {
     const container = document.createElement("div");

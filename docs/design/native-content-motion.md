@@ -670,6 +670,13 @@ Pane views also reuse equivalent render-item fields across React boundaries;
 changes to geometry, runtime, controls, callbacks or content still update the
 view. This comparison adds no cross-request geometry cache.
 
+Cold hidden shells also skip React updates when only their moving flag changes
+and both runtime states remain hidden. The presentation scheduler still updates
+their host attributes. Hidden resize controls do not consume that motion change;
+visibility, content, presentation, geometry and callback changes still render.
+Only the pane's own item uses this exception. Its raw item remains current for
+the next substantive React update, without a second retained-item cache.
+
 Reserved-cell queries check for actual reserved blanks before resolving pane
 geometry. Empty results need no scene copy for world-coordinate conversion.
 Creating or removing a reserved split is reflected by the next query.

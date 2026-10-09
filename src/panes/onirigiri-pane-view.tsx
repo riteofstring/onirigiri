@@ -192,7 +192,13 @@ function paneViewFieldsAreUnchanged(
     if (!(key in next)) return false;
     if (paneItemPropKeys.has(key)) {
       const itemKey = key as PaneItemPropKey;
-      if (!paneItemFieldsAreUnchanged(previous[itemKey], next[itemKey]))
+      if (
+        !paneItemFieldsAreUnchanged(
+          previous[itemKey],
+          next[itemKey],
+          itemKey === "item",
+        )
+      )
         return false;
     } else if (previous[key] !== next[key]) return false;
   }
@@ -203,12 +209,21 @@ function paneViewFieldsAreUnchanged(
 function paneItemFieldsAreUnchanged(
   previous: PaneRenderItem | null,
   next: PaneRenderItem | null,
+  ignoreHiddenMotion: boolean,
 ): boolean {
   if (previous === next) return true;
   if (!previous || !next) return false;
+  const hidden =
+    ignoreHiddenMotion &&
+    !previous.visible &&
+    !next.visible &&
+    previous.runtimeState === "hidden" &&
+    next.runtimeState === "hidden";
   for (const field in previous) {
     const key = field as keyof PaneRenderItem;
-    if (!(key in next) || previous[key] !== next[key]) return false;
+    if (!(key in next)) return false;
+    if (key === "moving" && hidden) continue;
+    if (previous[key] !== next[key]) return false;
   }
   for (const key in next) if (!(key in previous)) return false;
   return true;
