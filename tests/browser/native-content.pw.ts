@@ -824,124 +824,153 @@ test("native retained frames remain visible through overview entry and return li
   await page.screenshot({ path: info.outputPath("native-live-restored.png") });
 });
 
-test("hidden frozen panes skip display copies after capture cancellation and recover on reentry", async ({
-  page,
-}) => {
-  await page.addInitScript(() => {
-    const state: Window["__hiddenCaptureProbe"] = (window.__hiddenCaptureProbe =
-      {
-        armed: false,
-        waiting: false,
-        attempts: 0,
-        release() {},
-      });
-    const map = GPUBuffer.prototype.mapAsync;
-    GPUBuffer.prototype.mapAsync = async function (...args) {
-      if (!state.armed) return map.apply(this, args);
-      state.armed = false;
-      await map.apply(this, args);
-      GPUBuffer.prototype.mapAsync = map;
-      state.waiting = true;
-      await new Promise<void>((resolve) => {
-        state.release = resolve;
-      });
-    };
-    const prototype = HTMLCanvasElement.prototype as HTMLCanvasElement & {
-      captureElementImage(element: Element): unknown;
-    };
-    const capture = prototype.captureElementImage;
-    prototype.captureElementImage = function (element) {
-      const pane = this.closest<HTMLElement>(
-        '[data-onirigiri-pane-id="pane-1"]',
-      );
-      if (pane?.dataset.visible === "false") state.attempts++;
-      return capture.call(this, element);
-    };
-  });
-  await page.goto(
-    `/@fs${repositoryRoot}tests/browser/native-content-guard.html?count=8&preloadMargin=0`,
-  );
-  const pane = page.locator('[data-onirigiri-pane-id="pane-1"]');
-  await expect(pane.locator(".onirigiri-pane__live-content")).toHaveAttribute(
-    "data-onirigiri-live",
-    "true",
-  );
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const status =
-          window.__nativeMotionFixture.handle.current!.getCaptureStatus();
-        return (
-          status.inFlightPaneIds.length === 0 &&
-          status.pictures.some((picture) => picture.paneId === "pane-1")
+for (const hidden of [true, false]) {
+  test(`frozen panes respect visibility after capture cancellation and recover on reentry (hidden=${hidden})`, async ({
+    page,
+  }) => {
+    await page.addInitScript((hidden) => {
+      const state: Window["__hiddenCaptureProbe"] =
+        (window.__hiddenCaptureProbe = {
+          armed: false,
+          waiting: false,
+          attempts: 0,
+          release() {},
+        });
+      const map = GPUBuffer.prototype.mapAsync;
+      GPUBuffer.prototype.mapAsync = async function (...args) {
+        if (
+          !state.armed ||
+          !window.__nativeMotionFixture?.handle.current
+            ?.getCaptureStatus()
+            .inFlightPaneIds.includes("pane-1")
+        )
+          return map.apply(this, args);
+        state.armed = false;
+        await map.apply(this, args);
+        GPUBuffer.prototype.mapAsync = map;
+        state.waiting = true;
+        await new Promise<void>((resolve) => {
+          state.release = resolve;
+        });
+      };
+      const prototype = HTMLCanvasElement.prototype as HTMLCanvasElement & {
+        captureElementImage(element: Element): unknown;
+      };
+      const capture = prototype.captureElementImage;
+      prototype.captureElementImage = function (element) {
+        const pane = this.closest<HTMLElement>(
+          '[data-onirigiri-pane-id="pane-1"]',
         );
-      }),
-    )
-    .toBe(true);
-  const retained = await pane.locator("iframe").evaluateHandle((element) => ({
-    iframe: element as HTMLIFrameElement,
-    document: (element as HTMLIFrameElement).contentDocument,
-  }));
-  await pane.locator(".onirigiri-pane__live-content").evaluate((content) => {
-    window.__hiddenCaptureProbe.armed = true;
-    (content as HTMLElement).style.width =
-      `${(content as HTMLElement).offsetWidth - 1}px`;
-    window.__nativeMotionFixture.handle.current!.refreshPanePictures();
-  });
-  await page.waitForFunction(() => window.__hiddenCaptureProbe.waiting);
-  await expect(
-    pane.locator("canvas > .onirigiri-pane__live-content"),
-  ).toHaveCount(1);
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.focusPane("pane-8"),
-  );
-  await expect(pane.locator(".onirigiri-pane__content")).toHaveAttribute(
-    "data-runtime-state",
-    "hidden",
-  );
-  await expect(pane).toHaveAttribute("data-moving", "false");
-  await page.evaluate(() => {
-    window.__hiddenCaptureProbe.attempts = 0;
-    window.__hiddenCaptureProbe.release();
-  });
-  for (const id of ["pane-7", "pane-8"]) {
-    await page.evaluate(
-      (id) => window.__nativeMotionFixture.handle.current!.focusPane(id),
-      id,
+        if (pane?.dataset.visible === String(!hidden)) state.attempts++;
+        return capture.call(this, element);
+      };
+    }, hidden);
+    await page.goto(
+      `/@fs${repositoryRoot}tests/browser/native-content-guard.html?count=8&preloadMargin=0`,
     );
+    const pane = page.locator('[data-onirigiri-pane-id="pane-1"]');
+    await expect(pane.locator(".onirigiri-pane__live-content")).toHaveAttribute(
+      "data-onirigiri-live",
+      "true",
+    );
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const status =
+            window.__nativeMotionFixture.handle.current!.getCaptureStatus();
+          return (
+            status.inFlightPaneIds.length === 0 &&
+            status.pictures.some((picture) => picture.paneId === "pane-1")
+          );
+        }),
+      )
+      .toBe(true);
+    const retained = await pane.locator("iframe").evaluateHandle((element) => ({
+      iframe: element as HTMLIFrameElement,
+      document: (element as HTMLIFrameElement).contentDocument,
+    }));
+    await pane.locator(".onirigiri-pane__live-content").evaluate((content) => {
+      window.__hiddenCaptureProbe.armed = true;
+      (content as HTMLElement).style.width =
+        `${(content as HTMLElement).offsetWidth - 1}px`;
+      window.__nativeMotionFixture.handle.current!.refreshPanePictures();
+    });
+    await page.waitForFunction(() => window.__hiddenCaptureProbe.waiting);
     await expect(
-      page.locator(`[data-onirigiri-pane-id="${id}"]`),
-    ).toHaveAttribute("data-moving", "false");
-  }
-  expect(await page.evaluate(() => window.__hiddenCaptureProbe.attempts)).toBe(
-    0,
-  );
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.focusPane("pane-1"),
-  );
-  await expect(pane.locator(".onirigiri-pane__live-content")).toHaveAttribute(
-    "data-onirigiri-live",
-    "true",
-  );
-  expect(
-    await retained.evaluate(({ iframe, document }) => ({
-      sameDocument: iframe.contentDocument === document,
-      value: iframe.contentDocument!.querySelector("input")!.value,
-    })),
-  ).toEqual({ sameDocument: true, value: "Keep my state" });
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const status =
-          window.__nativeMotionFixture.handle.current!.getCaptureStatus();
-        return status.pictures.some(
-          (picture) => picture.paneId === "pane-1" && picture.capture !== null,
-        );
-      }),
-    )
-    .toBe(true);
-  await retained.dispose();
-});
+      pane.locator("canvas > .onirigiri-pane__live-content"),
+    ).toHaveCount(1);
+    await page.evaluate((hidden) => {
+      const handle = window.__nativeMotionFixture.handle.current!;
+      if (hidden) handle.focusPane("pane-8");
+      else handle.toggleOverview();
+    }, hidden);
+    await expect(pane.locator(".onirigiri-pane__content")).toHaveAttribute(
+      "data-runtime-state",
+      hidden ? "hidden" : "frozen",
+    );
+    await expect(pane).toHaveAttribute("data-moving", "false");
+    await page.evaluate(() => {
+      window.__hiddenCaptureProbe.attempts = 0;
+      window.__hiddenCaptureProbe.release();
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.__nativeMotionFixture.handle
+            .current!.getCaptureStatus()
+            .inFlightPaneIds.includes("pane-1"),
+        ),
+      )
+      .toBe(false);
+    for (const id of hidden ? ["pane-7", "pane-8"] : []) {
+      await page.evaluate(
+        (id) => window.__nativeMotionFixture.handle.current!.focusPane(id),
+        id,
+      );
+      await expect(
+        page.locator(`[data-onirigiri-pane-id="${id}"]`),
+      ).toHaveAttribute("data-moving", "false");
+    }
+    if (hidden)
+      expect(
+        await page.evaluate(() => window.__hiddenCaptureProbe.attempts),
+      ).toBe(0);
+    else {
+      await expect
+        .poll(() => page.evaluate(() => window.__hiddenCaptureProbe.attempts))
+        .toBeGreaterThan(0);
+      await page.evaluate(() =>
+        window.__nativeMotionFixture.handle.current!.toggleOverview(),
+      );
+    }
+    await page.evaluate(() =>
+      window.__nativeMotionFixture.handle.current!.focusPane("pane-1"),
+    );
+    await expect(pane.locator(".onirigiri-pane__live-content")).toHaveAttribute(
+      "data-onirigiri-live",
+      "true",
+    );
+    expect(
+      await retained.evaluate(({ iframe, document }) => ({
+        sameDocument: iframe.contentDocument === document,
+        value: iframe.contentDocument!.querySelector("input")!.value,
+      })),
+    ).toEqual({ sameDocument: true, value: "Keep my state" });
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const status =
+            window.__nativeMotionFixture.handle.current!.getCaptureStatus();
+          return status.pictures.some(
+            (picture) =>
+              picture.paneId === "pane-1" && picture.capture !== null,
+          );
+        }),
+      )
+      .toBe(true);
+    await retained.dispose();
+  });
+}
 
 test("restores hidden captured content before reentry with retained scroll and input", async ({
   page,

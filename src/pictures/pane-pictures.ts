@@ -1434,7 +1434,7 @@ export class PanePictures {
   }
 
   private paneVisible(paneId: PaneId): boolean {
-    return this.frame
+    return this.isContinuous() && this.frame
       ? this.visibleIds.has(paneId)
       : this.itemsById.get(paneId)?.visible === true;
   }
