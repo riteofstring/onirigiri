@@ -474,18 +474,25 @@ for (const continuous of [false, true]) {
           contentCursor: getComputedStyle(live).cursor,
           contentSelection: getComputedStyle(live).userSelect,
           inert: live.inert,
+          ready: content.dataset.onirigiriContentReady,
+          placeholder: content.dataset.onirigiriPlaceholderOnly,
+          renderer: pane.dataset.onirigiriRenderer,
+          presentation: pane.dataset.onirigiriPresentationReason,
           reachesContent: live.contains(document.elementFromPoint(x, y)),
           animation: document.getElementById("motion-probe")!.getAnimations()[0]
             ?.playState,
         };
       });
+    await expect
+      .poll(motionState)
+      .toMatchObject({ ready: "true", inert: false });
     const release = await holdClock(page);
     try {
       await page.evaluate(() =>
         window.__nativeMotionFixture.handle.current!.focusPane("pane-2"),
       );
       await stepClock(page, 3);
-      expect(await motionState()).toEqual({
+      expect(await motionState()).toMatchObject({
         moving: "true",
         runtime: continuous ? "live" : "frozen",
         shielded: true,
