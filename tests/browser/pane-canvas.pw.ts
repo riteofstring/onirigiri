@@ -1,7 +1,12 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { holdPaneFrames } from "./pane-frame-clock";
 import { picturePixels } from "./picture-pixels";
-import { openCanvas } from "./pane-canvas-fixture";
+import {
+  expectLiveColors,
+  nativeContentPixels,
+  openCanvas,
+  redPixelBounds,
+} from "./pane-canvas-fixture";
 import { chromeLaunchOptions } from "./chrome-launch";
 
 const repositoryRoot = new URL("../../", import.meta.url).pathname;
@@ -1015,43 +1020,6 @@ test("live motion adapts to graphics inserted into an existing iframe without re
   await expect(pane).toHaveAttribute("data-onirigiri-renderer", "dom");
 });
 
-async function expectLiveColors(page: Page, paneId: string): Promise<void> {
-  const pane = page.locator(`[data-onirigiri-pane-id="${paneId}"]`);
-  for (const color of ["rgb(200, 40, 60)", "rgb(30, 80, 210)"]) {
-    await pane.locator("iframe").evaluate((frame, color) => {
-      (
-        frame as HTMLIFrameElement
-      ).contentDocument!.documentElement.style.backgroundColor = color;
-    }, color);
-    await expect
-      .poll(async () => {
-        const bounds = (await pane
-          .locator('[data-onirigiri-slot="pane-content"]')
-          .boundingBox())!;
-        const screenshot = await page.screenshot({
-          clip: {
-            x: bounds.x + bounds.width / 2,
-            y: bounds.y + bounds.height * 0.8,
-            width: 1,
-            height: 1,
-          },
-        });
-        return page.evaluate(async (encoded) => {
-          const bitmap = await createImageBitmap(
-            await (await fetch(`data:image/png;base64,${encoded}`)).blob(),
-          );
-          const context = new OffscreenCanvas(1, 1).getContext("2d")!;
-          context.drawImage(bitmap, 0, 0, 1, 1);
-          bitmap.close();
-          return [...context.getImageData(0, 0, 1, 1).data];
-        }, screenshot.toString("base64"));
-      })
-      .toEqual(
-        color.startsWith("rgb(200") ? [200, 40, 60, 255] : [30, 80, 210, 255],
-      );
-  }
-}
-
 test("background caching fills every pane serially beyond the retained DOM budget", async ({
   page,
 }) => {
@@ -1456,64 +1424,35 @@ test.describe("live detail at Retina resolution", () => {
   });
 });
 
-async function redPixelBounds(page: Page) {
-  const screenshot = await page.locator("#pane").screenshot();
-  return page.evaluate(async (encoded) => {
-    const bytes = Uint8Array.from(atob(encoded), (value) =>
-      value.charCodeAt(0),
-    );
-    const bitmap = await createImageBitmap(
-      new Blob([bytes], { type: "image/png" }),
-    );
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const context = canvas.getContext("2d")!;
-    context.drawImage(bitmap, 0, 0);
-    const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -1,
-      maxY = -1;
-    for (let y = 0; y < canvas.height; y++)
-      for (let x = 0; x < canvas.width; x++) {
-        const i = (y * canvas.width + x) * 4;
-        if (data[i]! > 240 && data[i + 1]! < 15 && data[i + 2]! < 15) {
-          minX = Math.min(minX, x);
-          maxX = Math.max(maxX, x);
-          minY = Math.min(minY, y);
-          maxY = Math.max(maxY, y);
-        }
-      }
-    bitmap.close();
-    return {
-      x: minX,
-      y: minY,
-      width: maxX - minX + 1,
-      height: maxY - minY + 1,
-    };
-  }, screenshot.toString("base64"));
-}
-
-async function nativeContentPixels(page: Page): Promise<Buffer> {
-  await page.evaluate(() => {
-    const fixture = window.__paneCanvasFixture;
-    const content = document.querySelector<HTMLElement>("#content")!;
-    const reference = document.createElement("div");
-    reference.id = "native-reference";
-    reference.className = fixture.canvas.className;
-    reference.style.cssText = fixture.canvas.style.cssText;
-    fixture.canvas.after(reference);
-    reference.moveBefore(content, null);
-  });
-  try {
-    return await page.locator("#content").screenshot();
-  } finally {
-    await page.evaluate(() => {
-      const fixture = window.__paneCanvasFixture;
-      fixture.canvas.moveBefore(document.querySelector("#content")!, null);
-      document.querySelector("#native-reference")!.remove();
+test("cross-origin iframe capture fails explicitly and restores staging", async ({
+  page,
+}) => {
+  await openCanvas(page);
+  await page.evaluate(async () => {
+    const iframe = window.__paneCanvasFixture.iframe;
+    const url = new URL(iframe.src);
+    url.hostname = "localhost";
+    await new Promise<void>((resolve) => {
+      iframe.addEventListener("load", () => resolve(), { once: true });
+      iframe.src = url.href;
     });
-  }
-}
+  });
+  const message = await page.evaluate(async () => {
+    try {
+      await window.__paneCanvasFixture.surface.capture({
+        signal: AbortSignal.timeout(5000),
+        stage: true,
+        maxRasterBytes: 128 * 1024 * 1024,
+        maxEncodedBytes: 32 * 1024 * 1024,
+      });
+      return "accepted";
+    } catch (error) {
+      return (error as Error).message;
+    }
+  });
+  expect(message).toContain("cross-origin iframe");
+  await expect(page.locator(":popover-open")).toHaveCount(0);
+});
 
 test.describe("nested canvas pixels in headless Chrome", () => {
   test("preserves text, borders and iframe geometry between live and frozen presentation", async ({
@@ -2457,3 +2396,88 @@ for (const aborted of [false, true]) {
     await retained.dispose();
   });
 }
+
+test("hidden live surfaces skip final captures and redraw on reentry", async ({
+  page,
+}) => {
+  await openCanvas(page);
+  await page.evaluate(() => {
+    const fixture = window.__paneCanvasFixture;
+    fixture.pane.style.transform = "none";
+    const content = document.querySelector<HTMLElement>("#content")!;
+    content.innerHTML = "Live content";
+    fixture.live = true;
+    fixture.motionRenderer = "canvas";
+    fixture.surface.requestPaint();
+  });
+  await expect
+    .poll(() => page.evaluate(() => window.__paneCanvasFixture.drawn))
+    .toBe(true);
+  const before = await page.evaluate(() => {
+    const fixture = window.__paneCanvasFixture;
+    fixture.live = false;
+    fixture.visible = false;
+    fixture.pane.style.transform = "translateX(-2000px)";
+    document.querySelector<HTMLElement>("#content")!.textContent =
+      "Updated while hidden";
+    const version = fixture.surface.frameVersion;
+    fixture.surface.requestPaint();
+    return version;
+  });
+  await page.waitForTimeout(150);
+  expect(
+    await page.evaluate(() => window.__paneCanvasFixture.surface.frameVersion),
+  ).toBe(before);
+  await page.evaluate(() => {
+    const fixture = window.__paneCanvasFixture;
+    fixture.live = true;
+    fixture.visible = true;
+    fixture.pane.style.transform = "none";
+    fixture.surface.requestPaint();
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__paneCanvasFixture.surface.frameVersion),
+    )
+    .toBeGreaterThan(before);
+  await expect(page.locator("#content")).toHaveText("Updated while hidden");
+});
+
+test("native content recovers after a GPU device loss during canvas presentation", async ({
+  page,
+}) => {
+  await openCanvas(page);
+  await page.evaluate(() => {
+    const fixture = window.__paneCanvasFixture;
+    fixture.pane.style.transform = "none";
+    document.querySelector("#gpu")!.remove();
+    fixture.live = true;
+    fixture.motionRenderer = "canvas";
+    fixture.surface.requestPaint();
+  });
+  await expect
+    .poll(() => page.evaluate(() => window.__paneCanvasFixture.drawn))
+    .toBe(true);
+  const original = await page.locator("iframe").elementHandle();
+  await page.evaluate(() => window.__paneCanvasFixture.device!.destroy());
+  await expect
+    .poll(() => page.evaluate(() => window.__paneCanvasFixture.error))
+    .toContain("device lost");
+  await page.evaluate(() => {
+    const fixture = window.__paneCanvasFixture;
+    fixture.motionRenderer = "dom";
+    fixture.surface.requestPaint();
+  });
+  await expect(page.locator("#canvas")).toHaveAttribute(
+    "data-onirigiri-native-active",
+    "true",
+  );
+  expect(
+    await page
+      .locator("iframe")
+      .evaluate((iframe, original) => iframe === original, original),
+  ).toBe(true);
+  await expect(page.frameLocator("iframe").getByRole("textbox")).toHaveValue(
+    "Keep this edit",
+  );
+});
