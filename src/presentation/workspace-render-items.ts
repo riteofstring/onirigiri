@@ -10,6 +10,7 @@ import type {
   Rect,
   ReservedCellRenderItem,
   WorkspaceGridCursorRenderItem,
+  WorkspaceGridCellBox,
   WorkspaceGridOrigin,
   WorkspaceWorldFrame,
   WorkspaceScene,
@@ -122,8 +123,30 @@ interface WorkspaceWorldEndpointFrames {
 export class WorkspaceWorldFrameRenderer {
   private readonly frames = new Map<string, WorkspaceWorldFrame>();
   private endpoints: WorkspaceWorldEndpointFrames | null = null;
+  private geometry: {
+    engine: LayoutEngine;
+    key: string;
+    cursor: WorkspaceGridCellBox;
+  } | null = null;
 
   render(input: WorkspaceRenderItemsInput): WorkspaceWorldFrame {
+    if (!workspaceMotionSceneIsCacheable(input))
+      return workspaceWorldRenderFrame(input);
+    const { cursor } = input.snapshot;
+    const key = `${workspaceMotionSceneKey(input)}|${cursor.column}|${cursor.row}|${cursor.split}`;
+    if (this.geometry?.engine !== input.engine || this.geometry.key !== key) {
+      this.reset();
+      this.geometry = {
+        engine: input.engine,
+        key,
+        cursor: input.engine.gridCellBox(
+          cursor,
+          input.viewport,
+          input.snapshot.maximizedPaneId,
+          workspaceGeometryOrigin(input),
+        ),
+      };
+    }
     const target = input.snapshot.presentationMode === "overview" ? 1 : 0;
     if (Math.abs(input.snapshot.overviewProgress - target) > 0.001) {
       return this.renderOverviewTransition(input);
@@ -133,6 +156,7 @@ export class WorkspaceWorldFrameRenderer {
   }
 
   reset(): void {
+    this.geometry = null;
     this.endpoints = null;
     this.frames.clear();
   }
@@ -143,7 +167,7 @@ export class WorkspaceWorldFrameRenderer {
     if (cached) {
       return cached;
     }
-    const frame = workspaceWorldRenderFrame(input);
+    const frame = workspaceWorldRenderFrame(input, this.geometry!.cursor);
     this.frames.set(key, frame);
     if (this.frames.size > 4) {
       const oldest = this.frames.keys().next().value as string | undefined;
@@ -226,25 +250,27 @@ export function workspaceGridCursorRenderItem({
   };
 }
 
-export function workspaceWorldRenderFrame({
-  engine,
-  geometryOrigin,
-  moving,
-  snapshot,
-  viewport,
-}: WorkspaceRenderItemsInput): WorkspaceWorldFrame {
+export function workspaceWorldRenderFrame(
+  {
+    engine,
+    geometryOrigin,
+    moving,
+    snapshot,
+    viewport,
+  }: WorkspaceRenderItemsInput,
+  canonicalCursor = engine.gridCellBox(
+    snapshot.cursor,
+    viewport,
+    snapshot.maximizedPaneId,
+    workspaceGeometryOrigin({ engine, geometryOrigin, snapshot }),
+  ),
+): WorkspaceWorldFrame {
   const projectedCursor = screenGridCursorRenderItem({
     engine,
     moving,
     snapshot,
     viewport,
   });
-  const canonicalCursor = engine.gridCellBox(
-    snapshot.cursor,
-    viewport,
-    snapshot.maximizedPaneId,
-    workspaceGeometryOrigin({ engine, geometryOrigin, snapshot }),
-  );
   const scale = normalizedScale(projectedCursor.scale);
   const x = projectedCursor.x - canonicalCursor.x * scale;
   const y = projectedCursor.y - canonicalCursor.y * scale;

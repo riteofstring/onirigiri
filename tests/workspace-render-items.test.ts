@@ -6,6 +6,7 @@ import {
   type WorkspaceLayoutSnapshot,
 } from "../src/state/layout-store";
 import type {
+  LayoutEngine,
   PaneRenderItem,
   PaneWorldBox,
   Rect,
@@ -22,6 +23,7 @@ import {
   workspaceReservedCellRenderItems,
   workspaceWorldRenderFrame,
   WorkspaceRenderItemRenderer,
+  WorkspaceWorldFrameRenderer,
   type WorkspaceRenderItemsInput,
 } from "../src/presentation/workspace-render-items";
 import { createWorkspaceScene } from "../src/workspace/workspace-scene";
@@ -30,6 +32,81 @@ import { completePaneShells } from "../src/presentation/workspace-sweep-geometry
 const viewport: Rect = { height: 540, width: 360, x: 0, y: 0 };
 
 describe("workspace world render items", () => {
+  it("reuses cursor geometry through camera frames while keeping the projection current", () => {
+    const { engine, store } = workspace();
+    const snapshot = store.getSnapshot();
+    const inputs = Array.from({ length: 16 }, (_, frame) =>
+      renderInput(
+        engine,
+        { ...snapshot, scrollColumn: frame / 15, scrollRow: frame / 30 },
+        true,
+      ),
+    );
+    const expected = inputs.map((input) => workspaceWorldRenderFrame(input));
+    const geometry = vi.spyOn(engine, "gridCellBox");
+    try {
+      const renderer = new WorkspaceWorldFrameRenderer();
+      expect(inputs.map((input) => renderer.render(input))).toEqual(expected);
+      expect(expected[0]!.x).not.toBe(expected.at(-1)!.x);
+      expect(geometry).toHaveBeenCalledTimes(1);
+      renderer.reset();
+      expect(renderer.render(inputs[0]!)).toEqual(expected[0]);
+      expect(geometry).toHaveBeenCalledTimes(2);
+    } finally {
+      geometry.mockRestore();
+    }
+  });
+
+  it("refreshes cached world frames when cursor, viewport, layout, defaults or engine change", () => {
+    const { engine, store } = workspace();
+    const renderer = new WorkspaceWorldFrameRenderer();
+    const input = renderInput(engine, store.getSnapshot(), false);
+    const first = renderer.render(input);
+    engine.setPaneDefaults({ paneDefaults: { minWidth: 320 } });
+    const resized = renderer.render(input);
+    expect(resized).toEqual(workspaceWorldRenderFrame(input));
+    expect(resized.focalWorldX).not.toBe(first.focalWorldX);
+    const variants: WorkspaceRenderItemsInput[] = [
+      { ...input, viewport: { ...viewport, width: 760, height: 800 } },
+      {
+        ...input,
+        snapshot: {
+          ...input.snapshot,
+          cursor: { column: 2, row: 0, split: 0 },
+        },
+      },
+      { ...input, geometryOrigin: { column: 1, row: 1 } },
+      { ...input, snapshot: { ...input.snapshot, maximizedPaneId: "pane-0" } },
+      { ...input, engine: workspace().engine },
+    ];
+    for (const variant of variants)
+      expect(renderer.render(variant)).toEqual(
+        workspaceWorldRenderFrame(variant),
+      );
+    renderer.render(input);
+    store.resizeColumn("column-0", { unit: "px", value: 330 });
+    const changedLayout = { ...input, snapshot: store.getSnapshot() };
+    expect(renderer.render(changedLayout)).toEqual(
+      workspaceWorldRenderFrame(changedLayout),
+    );
+    const dynamic = new Proxy({} as LayoutEngine, {
+      get(_target, field) {
+        const value = Reflect.get(engine, field);
+        return typeof value === "function" ? value.bind(engine) : value;
+      },
+    });
+    const customInput = {
+      ...input,
+      engine: dynamic,
+      geometryOrigin: { column: 0, row: 0 },
+    };
+    const customFrame = renderer.render(customInput);
+    engine.setPaneDefaults({ paneDefaults: { minWidth: 340 } });
+    const changedCustomFrame = renderer.render(customInput);
+    expect(changedCustomFrame.focalWorldX).not.toBe(customFrame.focalWorldX);
+    expect(changedCustomFrame).toEqual(workspaceWorldRenderFrame(customInput));
+  });
+
   it("completes an existing shell inventory without copying the scene", () => {
     const { engine, store } = workspace();
     const input = {

@@ -18,6 +18,11 @@ while the built-in scene geometry remains unchanged. Layout, viewport and pane
 defaults changes invalidate those caches; custom layout engines keep their
 dynamic geometry behavior. Presentation boundaries write pane geometry without
 reading pane layout, so they never force a synchronous layout of the pane tree.
+World-frame interpolation also reuses the cursor's canonical cell box across
+scroll samples. Its ownership follows the engine, layout and configuration
+revisions, viewport, origin and cursor; changing any of these clears the frame
+and zoom-endpoint caches. Camera interpolation still projects each current
+sample, without resolving unchanged canonical grid geometry again.
 
 The dotted background grid retains its cached paint bounds while they cover
 the moving viewport. Settled presentation releases excess width or height,
