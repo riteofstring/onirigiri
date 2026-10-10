@@ -487,7 +487,7 @@ for (const continuous of [false, true]) {
           presentation: pane.dataset.onirigiriPresentationReason,
           reachesContent: live.contains(document.elementFromPoint(x, y)),
           animation: document.getElementById("motion-probe")!.getAnimations()[0]
-            ?.playState,
+            ?.playbackRate,
         };
       });
     await expect
@@ -508,7 +508,7 @@ for (const continuous of [false, true]) {
         contentSelection: "text",
         inert: false,
         reachesContent: false,
-        animation: continuous ? "running" : "paused",
+        animation: continuous ? 1 : 0,
       });
     } finally {
       await release();
@@ -516,7 +516,7 @@ for (const continuous of [false, true]) {
     await expect.poll(motionState).toMatchObject({
       moving: "false",
       shielded: false,
-      animation: "running",
+      animation: 1,
     });
     await page.evaluate(() =>
       window.__nativeMotionFixture.handle.current!.toggleOverview(),
@@ -529,7 +529,7 @@ for (const continuous of [false, true]) {
       contentSelection: "text",
       inert: true,
       reachesContent: false,
-      animation: continuous ? "running" : "paused",
+      animation: continuous ? 1 : 0,
     });
     await page.locator("#motion-input").focus();
     await expect(page.locator("#motion-input")).not.toBeFocused();
@@ -542,7 +542,7 @@ for (const continuous of [false, true]) {
       moving: "false",
       shielded: false,
       inert: false,
-      animation: "running",
+      animation: 1,
     });
     await page.locator("#motion-input").focus();
     await expect(page.locator("#motion-input")).toBeFocused();

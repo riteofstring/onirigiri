@@ -1,52 +1,86 @@
-const pausedContentAnimations = new WeakMap<HTMLElement, Animation[]>();
-const contentAnimationTargets = new WeakMap<HTMLElement, Set<Element>>();
+const frozenContentAnimations = new WeakMap<
+  HTMLElement,
+  Map<Animation, number>
+>();
+interface AnimationTargets {
+  references: Set<WeakRef<Element>>;
+  tracked: WeakSet<Element>;
+}
+
+const contentAnimationTargets = new WeakMap<HTMLElement, AnimationTargets>();
 
 export function syncContentAnimations(
   liveContent: HTMLElement,
   frozen: boolean,
 ) {
-  const paused = pausedContentAnimations.get(liveContent);
-  if (frozen && !paused) {
-    pausedContentAnimations.set(
+  trackedAnimationTargets(liveContent);
+  const held = frozenContentAnimations.get(liveContent);
+  if (frozen && !held) {
+    frozenContentAnimations.set(
       liveContent,
-      pauseRunningAnimations(liveContent),
+      freezeRunningAnimations(liveContent),
     );
-  } else if (!frozen && paused) {
-    for (const animation of paused)
-      if (animation.playState === "paused") animation.play();
-    pausedContentAnimations.delete(liveContent);
+  } else if (!frozen && held) {
+    for (const [animation, playbackRate] of held)
+      if (animation.playbackRate === 0) animation.playbackRate = playbackRate;
+    frozenContentAnimations.delete(liveContent);
   }
 }
 
-function pauseRunningAnimations(liveContent: HTMLElement): Animation[] {
+function freezeRunningAnimations(
+  liveContent: HTMLElement,
+): Map<Animation, number> {
   const animated = trackedAnimationTargets(liveContent);
   const running = new Set<Animation>();
-  for (const element of animated) {
-    const animations = element.isConnected
-      ? element
-          .getAnimations({ subtree: true })
-          .filter(
-            (animation) =>
-              animation instanceof CSSAnimation &&
-              animation.playState === "running",
-          )
-      : [];
-    if (animations.length === 0) animated.delete(element);
-    for (const animation of animations) running.add(animation);
+  for (const reference of animated.references) {
+    const element = reference.deref();
+    const animations =
+      element && liveContent.contains(element)
+        ? element
+            .getAnimations({ subtree: true })
+            .filter((animation) => animation instanceof CSSAnimation)
+        : [];
+    if (animations.length === 0) {
+      animated.references.delete(reference);
+      if (element) animated.tracked.delete(element);
+    }
+    for (const animation of animations)
+      if (animation.playState === "running") running.add(animation);
   }
-  for (const animation of running) animation.pause();
-  return [...running];
+  const held = new Map<Animation, number>();
+  for (const animation of running) {
+    if (animation.playbackRate === 0) continue;
+    held.set(animation, animation.playbackRate);
+    animation.playbackRate = 0;
+  }
+  return held;
 }
 
-function trackedAnimationTargets(liveContent: HTMLElement): Set<Element> {
+function trackedAnimationTargets(liveContent: HTMLElement): AnimationTargets {
   let animated = contentAnimationTargets.get(liveContent);
   if (!animated) {
-    const elements = new Set<Element>();
+    const elements: AnimationTargets = {
+      references: new Set(),
+      tracked: new WeakSet(),
+    };
+    const track = (element: Element) => {
+      if (elements.tracked.has(element)) return;
+      elements.tracked.add(element);
+      elements.references.add(new WeakRef(element));
+    };
+    for (const animation of liveContent.getAnimations?.({ subtree: true }) ??
+      []) {
+      if (!(animation instanceof CSSAnimation)) continue;
+      const target = (animation.effect as KeyframeEffect | null)?.target;
+      if (target instanceof Element) track(target);
+    }
     liveContent.addEventListener("animationstart", (event) => {
       if (!(event.target instanceof Element)) return;
-      elements.add(event.target);
-      const paused = pausedContentAnimations.get(liveContent);
-      if (paused) paused.push(...pauseRunningAnimations(liveContent));
+      track(event.target);
+      const held = frozenContentAnimations.get(liveContent);
+      if (held)
+        for (const [animation, rate] of freezeRunningAnimations(liveContent))
+          held.set(animation, rate);
     });
     contentAnimationTargets.set(liveContent, elements);
     animated = elements;
