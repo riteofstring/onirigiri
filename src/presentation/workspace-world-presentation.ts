@@ -293,21 +293,11 @@ function writeWorldGrid(
   frame: WorkspaceWorldFrame,
   moving: boolean,
 ): void {
-  const requiredGrid = binding.motionGrid ?? frame.grid;
-  const settledGrid = moving ? null : paddedRect(requiredGrid);
-  const oversized =
-    settledGrid !== null &&
-    (binding.lastGridWidth > settledGrid.width ||
-      binding.lastGridHeight > settledGrid.height);
-  if (
-    !binding.recenterGrid &&
-    !oversized &&
-    !worldGridNeedsRecentering(binding, requiredGrid)
-  ) {
+  const grid = nextWorldGrid(binding, binding.motionGrid ?? frame.grid, moving);
+  if (!grid) {
     return;
   }
   binding.recenterGrid = false;
-  const grid = settledGrid ?? paddedRect(requiredGrid);
   const left = grid.x;
   const top = grid.y;
   const width = grid.width;
@@ -340,6 +330,27 @@ function writeWorldGrid(
       `${(-top).toFixed(2)}px`,
     );
   }
+}
+
+function nextWorldGrid(
+  binding: WorldBinding,
+  requiredGrid: Rect,
+  moving: boolean,
+): Rect | null {
+  if (
+    binding.recenterGrid ||
+    worldGridNeedsRecentering(binding, requiredGrid)
+  ) {
+    return paddedRect(requiredGrid);
+  }
+  if (moving) {
+    return null;
+  }
+  const grid = paddedRect(requiredGrid);
+  return binding.lastGridWidth > grid.width ||
+    binding.lastGridHeight > grid.height
+    ? grid
+    : null;
 }
 
 function worldGridNeedsRecentering(
