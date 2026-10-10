@@ -19,6 +19,12 @@ defaults changes invalidate those caches; custom layout engines keep their
 dynamic geometry behavior. Presentation boundaries write pane geometry without
 reading pane layout, so they never force a synchronous layout of the pane tree.
 
+The dotted background grid retains its cached paint bounds while they cover
+the moving viewport. Settled presentation releases excess width or height,
+including after overview exit or an idle viewport resize. A contained normal
+translation does not recenter the grid at settlement. The grid's position and
+pattern phase change together, keeping the dots registered to world coordinates.
+
 Each workspace owns one GPU device and each content host owns a capture surface.
 Native presentation displays the original subtree without requiring a successful
 capture first. This applies at rest and during live motion and overview.

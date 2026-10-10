@@ -1067,6 +1067,39 @@ describe("WorkspaceFrameScheduler", () => {
     }
   });
 
+  it("returns the background grid to normal size after leaving overview", () => {
+    const harness = createSchedulerHarness();
+    try {
+      harness.scheduler.start();
+      harness.frameHost.flushAll();
+      const normalSize = [
+        harness.worldGrid.style.width,
+        harness.worldGrid.style.height,
+      ] as const;
+      harness.store.toggleOverviewMode();
+      harness.frameHost.flushAll();
+      expect(Number.parseFloat(harness.worldGrid.style.width)).toBeGreaterThan(
+        Number.parseFloat(normalSize[0]),
+      );
+
+      harness.store.toggleOverviewMode();
+      harness.frameHost.flushAll();
+      expect(harness.worldPresentation.hasActiveMotion()).toBe(false);
+      expect([
+        harness.worldGrid.style.width,
+        harness.worldGrid.style.height,
+      ]).toEqual(normalSize);
+      expect(harness.store.moveFocus("right", viewport)).toBe(true);
+      harness.frameHost.flushAll();
+      expect([
+        harness.worldGrid.style.width,
+        harness.worldGrid.style.height,
+      ]).toEqual(normalSize);
+    } finally {
+      harness.scheduler.teardown();
+    }
+  });
+
   it.each(["resize", "reduced motion"] as const)(
     "still snaps an active overview camera on %s",
     (interruption) => {

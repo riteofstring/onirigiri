@@ -78,7 +78,7 @@ export class WorkspaceWorldPresentation {
       binding.lastWillChange = willChange;
       binding.host.style.willChange = willChange;
     }
-    writeWorldGrid(binding, frame);
+    writeWorldGrid(binding, frame, moving || binding.motion !== null);
     return presented;
   }
 
@@ -291,16 +291,23 @@ function frameTransform(frame: WorkspaceWorldFrame): WorldTransform {
 function writeWorldGrid(
   binding: WorldBinding,
   frame: WorkspaceWorldFrame,
+  moving: boolean,
 ): void {
   const requiredGrid = binding.motionGrid ?? frame.grid;
+  const settledGrid = moving ? null : paddedRect(requiredGrid);
+  const oversized =
+    settledGrid !== null &&
+    (binding.lastGridWidth > settledGrid.width ||
+      binding.lastGridHeight > settledGrid.height);
   if (
     !binding.recenterGrid &&
+    !oversized &&
     !worldGridNeedsRecentering(binding, requiredGrid)
   ) {
     return;
   }
   binding.recenterGrid = false;
-  const grid = paddedRect(requiredGrid);
+  const grid = settledGrid ?? paddedRect(requiredGrid);
   const left = grid.x;
   const top = grid.y;
   const width = grid.width;

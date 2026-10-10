@@ -139,6 +139,61 @@ describe("WorkspaceWorldPresentation", () => {
     expect(sweepGrid.width).toBeGreaterThan(settledDestinationGrid.width);
     expect(sweepGrid.height).toBeGreaterThan(settledDestinationGrid.height);
   });
+
+  it("releases excess background grid size after a store-driven zoom settles", () => {
+    const presenter = new WorkspaceWorldPresentation();
+    const world = document.createElement("div");
+    const grid = document.createElement("div");
+    presenter.bindWorldHost(world, grid);
+    const overview = worldFrame({ scale: 0.25, x: 0, y: 0 });
+    const normal = worldFrame({ scale: 1, x: 0, y: 0 });
+    presenter.apply(overview);
+    const overviewGrid = gridPaintRect(grid);
+
+    presenter.apply(normal, true);
+    expect(presenter.hasActiveMotion()).toBe(false);
+    expect(gridPaintRect(grid)).toEqual(overviewGrid);
+    expectRectContains(gridPaintRect(grid), normal.grid);
+    presenter.apply(normal);
+    expect(gridPaintRect(grid).width).toBe(testViewport.width * 1.5);
+    expect(gridPaintRect(grid).height).toBe(testViewport.height * 1.5);
+    expectRectContains(gridPaintRect(grid), normal.grid);
+    expect(gridPatternOrigin(grid)).toEqual([0, 0]);
+  });
+
+  it("shrinks an idle viewport without recentering contained normal motion", () => {
+    const presenter = new WorkspaceWorldPresentation();
+    const world = document.createElement("div");
+    const grid = document.createElement("div");
+    presenter.bindWorldHost(world, grid);
+    const original = worldFrame({ scale: 1, x: 0, y: 0 });
+    presenter.apply(original);
+    const smaller = {
+      ...original,
+      grid: { ...original.grid, width: 800, height: 450 },
+    };
+    presenter.apply(smaller);
+    expect(gridPaintRect(grid).width).toBe(1_200);
+    expect(gridPaintRect(grid).height).toBe(675);
+
+    const translated = {
+      ...smaller,
+      x: -100,
+      y: -20,
+      grid: { ...smaller.grid, x: 100, y: 20 },
+    };
+    const observer = new MutationObserver(() => undefined);
+    observer.observe(grid, { attributes: true });
+    try {
+      presenter.apply(translated, true);
+      presenter.apply(translated);
+      expect(observer.takeRecords()).toEqual([]);
+      expectRectContains(gridPaintRect(grid), translated.grid);
+      expect(gridPatternOrigin(grid)).toEqual([0, 0]);
+    } finally {
+      observer.disconnect();
+    }
+  });
 });
 
 const testViewport = { height: 900, width: 1_600, x: 0, y: 0 };
