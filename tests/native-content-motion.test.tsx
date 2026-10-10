@@ -209,7 +209,7 @@ describe("OnirigiriWorkspace native content motion", () => {
   });
 
   it.each([false, true])(
-    "keeps hidden shell motion out of React without losing updates (live content: %s)",
+    "keeps hidden shell motion and sizing out of React without losing updates (live content: %s)",
     async (liveContent) => {
       const boundary = vi.spyOn(
         PanePresentationEngine.prototype,
@@ -260,10 +260,18 @@ describe("OnirigiriWorkspace native content motion", () => {
         await render("updated");
         await act(async () => workspace.renamePane("pane-16", "Updated title"));
         expect(hidden.getAttribute("aria-label")).toBe("Updated title");
+        await act(async () => workspace.focusPane("pane-2"));
+        await flushAnimationFrames(animationFrames);
+        expect(hidden.dataset.visible).toBe("false");
         const oldWidth = hidden.style.width;
+        boundary.mockClear();
         await act(async () => workspace.resizePanes("minimum"));
+        await flushAnimationFrames(animationFrames, 1);
         expect(hidden.style.width).not.toBe(oldWidth);
         await flushAnimationFrames(animationFrames);
+        expect(
+          boundary.mock.calls.filter(([id]) => id === "pane-16"),
+        ).toHaveLength(0);
         if (liveContent) {
           expect(
             requiredElement<HTMLInputElement>(hidden, "input").dataset.revision,
@@ -282,12 +290,20 @@ describe("OnirigiriWorkspace native content motion", () => {
           expect(currentInput).toBe(input);
           expect(currentInput.value).toBe("retained draft");
         }
-        expect(
-          requiredElement<HTMLButtonElement>(
-            hidden,
-            '[data-onirigiri-slot="pane-resize-column"]',
-          ).hidden,
-        ).toBe(false);
+        const resize = requiredElement<HTMLButtonElement>(
+          hidden,
+          '[data-onirigiri-slot="pane-resize-column"]',
+        );
+        expect(resize.hidden).toBe(false);
+        expect(Number.parseFloat(hidden.style.width)).toBe(96);
+        await act(async () =>
+          resize.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+          ),
+        );
+        await flushAnimationFrames(animationFrames);
+        expect(Number.parseFloat(hidden.style.width)).toBe(180);
+        expect(requiredElement(hidden, "input")).toBe(currentInput);
       } finally {
         await act(async () => root.unmount());
         container.remove();

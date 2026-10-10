@@ -681,21 +681,25 @@ remain in the performance suite and are unchanged.
 An elapsed pane-rearrangement clock rules out active rearrangements without
 scanning host bindings. In-progress rearrangements still inspect mounted and
 pending panes, including cancellation and unmounted ingress.
-Pane views also reuse equivalent render-item fields across React boundaries;
-changes to geometry, runtime, controls, callbacks or content still update the
-view. This comparison adds no cross-request geometry cache.
+Pane views reuse equivalent render-item fields across React boundaries.
+Visible panes continue to update for geometry, runtime, controls, callbacks and
+content changes. Hidden shells also reuse their React output across geometry
+and motion changes when content, pane metadata, neighbouring panes and callbacks
+are unchanged. The presentation engine still writes every hidden host's current
+bounds and attributes before the next frame paints; the lifecycle retains current
+geometry for picture sizing
+and its area budget. No second geometry cache is introduced.
 
-Cold hidden shells also skip React updates when only their moving flag changes
-and both runtime states remain hidden. The presentation scheduler still updates
-their host attributes. Hidden resize controls do not consume that motion change;
-visibility, content, presentation, geometry and callback changes still render.
-Only the pane's own item uses this exception. Its raw item remains current for
-the next substantive React update, without a second retained-item cache.
+Hidden resize controls remain unavailable while their item geometry changes.
+Becoming visible supplies current geometry and neighbour items to their event
+handlers. Focus, maximized state, presentation mode, placeholder mounting,
+content and callback changes still render while hidden. Always-live applications
+retain their DOM and observe the host's updated dimensions.
 
 Invisible resize controls reuse their existing children while only render items
 change. They remain hidden inside an inert pane. Pane metadata, neighbours,
-callbacks, row height, configuration and styling still update; becoming visible
-always supplies current geometry to their event handlers. Titlebar action buttons
+callbacks, configuration and styling still update; becoming visible always
+supplies current geometry and row height to their event handlers. Titlebar action buttons
 depend on pane metadata, maximized state, the current close callback and the store.
 Their own memo boundary preserves custom controls while their container's
 availability changes. Renaming a hidden pane and changing its callbacks, controls

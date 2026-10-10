@@ -219,10 +219,18 @@ function paneItemFieldsAreUnchanged(
     !next.visible &&
     previous.runtimeState === "hidden" &&
     next.runtimeState === "hidden";
+  return equalPaneItemFields(previous, next, hidden);
+}
+
+function equalPaneItemFields(
+  previous: PaneRenderItem,
+  next: PaneRenderItem,
+  ignoreMotion: boolean,
+): boolean {
   for (const field in previous) {
     const key = field as keyof PaneRenderItem;
     if (!(key in next)) return false;
-    if (key === "moving" && hidden) continue;
+    if (key === "moving" && ignoreMotion) continue;
     if (previous[key] !== next[key]) return false;
   }
   for (const key in next) if (!(key in previous)) return false;
@@ -235,13 +243,13 @@ function parkedPaneViewIsUnchanged(
 ): boolean {
   return (
     !previous.item.visible &&
-    previous.item === next.item &&
-    previous.compactLayout === next.compactLayout &&
-    previous.groupSelected === next.groupSelected &&
-    previous.pane === next.pane &&
-    previous.pictures === next.pictures &&
-    previous.renderPane === next.renderPane &&
-    previous.showControls === next.showControls
+    !next.item.visible &&
+    previous.item.runtimeState === "hidden" &&
+    next.item.runtimeState === "hidden" &&
+    hiddenPaneContentItemKeys.every(
+      (key) => previous.item[key] === next.item[key],
+    ) &&
+    parkedPaneViewStablePropKeys.every((key) => previous[key] === next[key])
   );
 }
 
@@ -251,7 +259,7 @@ function frozenMovingPaneViewIsUnchanged(
 ): boolean {
   return (
     previous.item === next.item &&
-    frozenPaneViewStablePropsAreUnchanged(previous, next) &&
+    paneViewStablePropsAreUnchanged(previous, next) &&
     isUnfocusedFrozenMovingPane(previous.item)
   );
 }
@@ -265,21 +273,19 @@ function frozenOverviewExitPaneViewIsUnchanged(
   next: Readonly<OnirigiriPaneViewProps>,
 ): boolean {
   return (
-    frozenPaneViewStablePropsAreUnchanged(previous, next) &&
+    paneViewStablePropsAreUnchanged(previous, next) &&
     isFrozenOverviewExitItemTransition(previous.item, next.item)
   );
 }
 
-function frozenPaneViewStablePropsAreUnchanged(
+function paneViewStablePropsAreUnchanged(
   previous: Readonly<OnirigiriPaneViewProps>,
   next: Readonly<OnirigiriPaneViewProps>,
 ): boolean {
-  return frozenPaneViewStablePropKeys.every(
-    (key) => previous[key] === next[key],
-  );
+  return paneViewStablePropKeys.every((key) => previous[key] === next[key]);
 }
 
-const frozenPaneViewStablePropKeys = [
+const paneViewStablePropKeys = [
   "closePane",
   "compactLayout",
   "groupSelected",
@@ -290,6 +296,22 @@ const frozenPaneViewStablePropKeys = [
   "showControls",
   "store",
 ] as const satisfies readonly (keyof OnirigiriPaneViewProps)[];
+
+const parkedPaneViewStablePropKeys = [
+  ...paneViewStablePropKeys,
+  "abovePane",
+  "adjacentPane",
+  "beginResize",
+  "renderPanePlaceholder",
+] as const satisfies readonly (keyof OnirigiriPaneViewProps)[];
+
+const hiddenPaneContentItemKeys = [
+  "paneId",
+  "focused",
+  "maximized",
+  "placeholderOnly",
+  "presentationMode",
+] as const satisfies readonly (keyof PaneRenderItem)[];
 
 function isFrozenOverviewExitItemTransition(
   previous: Readonly<PaneRenderItem>,
