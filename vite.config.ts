@@ -58,12 +58,13 @@ export default defineConfig({
         resolve: { alias: testLibraryAlias },
         test: {
           environment: "node",
-          exclude: jsdomTestFiles,
+          exclude: [...jsdomTestFiles, "tests/compiler/**"],
           include: ["tests/**/*.test.{ts,tsx}"],
           name: "node",
         },
       },
       "playground/vitest.config.ts",
+      "tests/compiler/vitest.config.mjs",
     ],
   },
 });

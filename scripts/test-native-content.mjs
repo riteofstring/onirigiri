@@ -17,6 +17,7 @@ const commands = {
     "tests/layout-engine-work.test.ts",
     "tests/pane-picture-activation.test.ts",
     "tests/overview-motion-registration.test.ts",
+    "tests/compiler/pane-content.test.tsx",
   ],
   browser: [
     "exec",

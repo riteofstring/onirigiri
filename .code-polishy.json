@@ -722,6 +722,25 @@
       "MIT-0",
       "MPL-2.0",
       "Python-2.0"
+    ],
+    "vulnerabilityAssessments": [
+      {
+        "id": "development-source-maps-2026-10",
+        "ecosystem": "pnpm",
+        "advisory": "GHSA-68fv-2mgg-jv7q",
+        "package": "source-map-js",
+        "affectedVersion": "1.2.1",
+        "scope": "pnpm-lock.yaml",
+        "severity": "high",
+        "status": "not-affected",
+        "basis": "unreachable",
+        "reason": "PostCSS consumes maps from repository-owned CSS and build inputs; no untrusted indexed maps enter the build. css-tree only uses SourceMapGenerator.",
+        "impact": "The indexed-map offset denial of service is not reachable from application or fixture user input. source-map-js is absent from the runtime package.",
+        "evidence": "https://github.com/riteofstring/onirigiri/blob/beta/docs/quality-and-supply-chain-tooling.md",
+        "owner": "Codex",
+        "reviewed": "2026-10-10",
+        "expires": "2026-11-09"
+      }
     ]
   }
 }
