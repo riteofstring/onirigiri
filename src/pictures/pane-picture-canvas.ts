@@ -186,11 +186,7 @@ export class PaneCanvasSurface {
       this.requestNativePresentation(primeNative);
       return;
     }
-    if (!this.prepareCanvasPresentation(native)) return;
-    if (!this.canvasPaintRequested(native ? primeNative : undefined)) return;
-    this.prepareContent();
-    if (typeof this.canvas.requestPaint === "function")
-      this.canvas.requestPaint();
+    this.requestCanvasPresentation(native, primeNative);
   };
 
   private updateVideoPresentation(native?: boolean): void {
@@ -258,12 +254,18 @@ export class PaneCanvasSurface {
     return this.source.capabilities.hasVideo();
   }
 
-  private prepareCanvasPresentation(native?: boolean): boolean {
-    if (!this.source.isNative()) return true;
-    if (this.live && !this.captureAbort && (native ?? this.nativeRequested()))
-      return false;
-    this.freezePending = this.source.freeze() || this.freezePending;
-    return true;
+  private requestCanvasPresentation(
+    native: boolean,
+    primeNative: boolean,
+  ): void {
+    if (this.source.isNative()) {
+      if (this.live && !this.captureAbort && native) return;
+      this.freezePending = this.source.freeze() || this.freezePending;
+    }
+    if (!this.canvasPaintRequested(native ? primeNative : undefined)) return;
+    this.prepareContent();
+    if (typeof this.canvas.requestPaint === "function")
+      this.canvas.requestPaint();
   }
 
   private prepareContent(): boolean {
