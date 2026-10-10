@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `keepHeightWhenSplitting` on `OnirigiriWorkspace` (off by default). With
+  it, splitting a pane up or down divides the pane's current height between
+  the two halves, so a height-limited pane's row keeps its height. Without
+  it, each half takes its share of the full available height as before.
+
+### Fixed
+
+- Keep layouts restorable when a height-preserving split cannot fit both panes'
+  minimum heights, and preserve neighboring panes and reserved cells in the stack.
+
 ## 0.2.0
 
 Changes since 0.1.0. All 0.1.0 exports, props, defaults, styling slots and

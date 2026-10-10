@@ -29,6 +29,7 @@ interface OnirigiriRuntimeOptions extends Pick<
   gridAxes: NonNullable<OnirigiriWorkspaceProps["gridAxes"]>;
   initialLayout: OnirigiriWorkspaceProps["initialLayout"];
   initialPanes: NonNullable<OnirigiriWorkspaceProps["initialPanes"]>;
+  keepHeightWhenSplitting: boolean;
   overviewCardMaxWidthPx: number | undefined;
   overviewCardMinWidthPx: number | undefined;
   paneLimits: OnirigiriWorkspaceProps["paneLimits"];
@@ -53,6 +54,7 @@ function createOnirigiriRuntime({
   gridAxes,
   initialLayout,
   initialPanes,
+  keepHeightWhenSplitting,
   overviewCardMaxWidthPx,
   overviewCardMinWidthPx,
   paneLimits,
@@ -70,6 +72,7 @@ function createOnirigiriRuntime({
   });
   const engine = new WorkspaceLikeLayoutEngine(scene, {
     allowResizedPanesToOverflowViewport,
+    keepHeightWhenSplitting,
     overviewCardMaxWidthPx,
     overviewCardMinWidthPx,
   });

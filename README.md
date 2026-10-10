@@ -333,6 +333,7 @@ Only `renderPane` is required.
 | `paneTypeDefaults`                    | —                       | Defaults keyed by `surfaceKind`                         |
 | `paneLimits`                          | —                       | Maximum number of panes per `surfaceKind`               |
 | `allowResizedPanesToOverflowViewport` | `false`                 | Let resized panes grow wider than the viewport          |
+| `keepHeightWhenSplitting`             | `false`                 | Split a pane up or down within its current height       |
 | `workspaceId`                         | `"onirigiri-workspace"` | Identity stored in layouts                              |
 
 ### Navigation and camera

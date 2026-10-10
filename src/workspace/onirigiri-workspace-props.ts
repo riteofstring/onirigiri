@@ -15,6 +15,7 @@ type DefaultedOnirigiriWorkspaceProp =
   | "gridAxes"
   | "initialLayout"
   | "initialPanes"
+  | "keepHeightWhenSplitting"
   | "minimapAdjustable"
   | "pictureBudgetBytes"
   | "pictureRasterBudgetBytes"
@@ -32,6 +33,7 @@ const defaults: Required<
   Pick<OnirigiriWorkspaceProps, DefaultedOnirigiriWorkspaceProp>
 > = {
   allowResizedPanesToOverflowViewport: false,
+  keepHeightWhenSplitting: false,
   ariaLabel: "Onirigiri workspace",
   cameraModes: defaultWorkspaceCameraModes,
   compactBreakpoint: 640,
