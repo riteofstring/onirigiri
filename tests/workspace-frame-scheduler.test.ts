@@ -1036,6 +1036,75 @@ describe("WorkspaceFrameScheduler", () => {
     harness.scheduler.teardown();
   });
 
+  it("preserves the world surface when normal navigation reverses before settling", () => {
+    const harness = createSchedulerHarness();
+    harness.scheduler.start();
+    harness.frameHost.flushAll();
+    expect(harness.store.moveFocus("right", viewport)).toBe(true);
+    harness.frameHost.flushAll();
+    expect(harness.store.moveFocus("left", viewport)).toBe(true);
+    harness.frameHost.flushAll();
+    const initialTransform = harness.stage.style.transform;
+    expect(harness.store.moveFocus("right", viewport)).toBe(true);
+    harness.frameHost.flushFrames(4);
+    expect(harness.stage.style.willChange).toBe("transform");
+    expect(harness.worldPresentation.hasActiveMotion()).toBe(false);
+
+    const observer = new MutationObserver(() => undefined);
+    observer.observe(harness.stage, { attributes: true });
+    observer.observe(harness.worldGrid, { attributes: true });
+    try {
+      expect(harness.store.moveFocus("left", viewport)).toBe(true);
+      expect(harness.stage.style.willChange).toBe("transform");
+      expect(observer.takeRecords()).toEqual([]);
+      harness.frameHost.flushAll();
+      expect(harness.stage.style.transform).toBe(initialTransform);
+      expect(harness.stage.style.willChange).toBe("");
+      expect(harness.store.getSnapshot().focusedPaneId).toBe("a");
+    } finally {
+      observer.disconnect();
+      harness.scheduler.teardown();
+    }
+  });
+
+  it.each(["resize", "reduced motion"] as const)(
+    "still snaps an active overview camera on %s",
+    (interruption) => {
+      const query = Object.assign(new EventTarget(), { matches: false });
+      const harness = createSchedulerHarness(
+        query as unknown as MediaQueryList,
+      );
+      try {
+        harness.scheduler.start();
+        harness.store.setCameraModes(cameraModes("fixed", "follow"));
+        expect(harness.store.focusPane("c")).toBe(true);
+        harness.frameHost.flushAll();
+        harness.store.toggleOverviewMode();
+        harness.frameHost.flushAll();
+        expect(harness.store.moveFocus("left", viewport)).toBe(true);
+        harness.frameHost.flushFrames(3);
+        expect(harness.worldPresentation.hasActiveMotion()).toBe(true);
+        expect(harness.worldPresentation.activeMotionGrid()).not.toBeNull();
+
+        if (interruption === "resize") {
+          harness.store.resizeColumn("column-b", { unit: "px", value: 420 });
+        } else {
+          query.matches = true;
+          query.dispatchEvent(new Event("change"));
+        }
+
+        expect(harness.worldPresentation.hasActiveMotion()).toBe(false);
+        expect(harness.worldPresentation.activeMotionGrid()).toBeNull();
+        expect(harness.stage.style.willChange).toBe("");
+        harness.frameHost.flushAll();
+        expect(harness.store.getSnapshot().focusedPaneId).toBe("b");
+        expect(harness.frameHost.pendingFrameCount()).toBe(0);
+      } finally {
+        harness.scheduler.teardown();
+      }
+    },
+  );
+
   it("retargets stable overview follow on the displayed world surface", () => {
     const worldPresentation = new WorkspaceWorldPresentation();
     const worldHost = document.createElement("div");

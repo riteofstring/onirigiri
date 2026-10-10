@@ -35,6 +35,14 @@ camera and outline progress identically and the outline stays fixed on screen.
 An explicit outline curve keeps its own timeline instead. Disabling the outline
 removes its element; cursor geometry and announcements are unchanged.
 
+Store-driven navigation resets the overview presenter only when that presenter
+has an active motion to cancel. Resetting an idle presenter would reapply its
+previous frame, recenter the grid and clear the world's movement promotion hint
+between commands and animation frames. Ordinary frame presentation expands the
+grid when its cached bounds no longer cover the viewport. Explicit reduced-motion
+paths still reset presentation synchronously, including when no overview timeline
+is active.
+
 The focus outline animates between selected cells, maximized states and pane
 rearrangements. Other layout changes within the same selection, including column,
 row and split resizing, update its bounds on the same frame as the pane. Such

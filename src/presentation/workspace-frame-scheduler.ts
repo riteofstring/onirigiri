@@ -567,7 +567,9 @@ export class WorkspaceFrameScheduler {
       )
     ) {
       if (!sameOverviewCameraFrame(previous, snapshot)) {
-        this.options.worldPresentation?.snapMotion();
+        if (this.options.worldPresentation?.hasActiveMotion()) {
+          this.options.worldPresentation.snapMotion();
+        }
         this.overviewCameraMotionInitialFramePending = false;
       }
       return;
