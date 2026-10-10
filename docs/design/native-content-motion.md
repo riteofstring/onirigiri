@@ -401,7 +401,10 @@ requests smooth scrolling. Offsets are read before the move writes to the DOM.
 After one scan for content that scrolled before tracking began, only elements
 that have dispatched a scroll event are checked: a capturing listener records
 them, so moving a large application between hosts does not read the offsets of
-every descendant each time.
+every descendant each time. Subtree removals release tracked elements that have
+left the content, even when the native host never moves again. Reparenting within
+the content keeps tracking. This prevents an evicted application's scrollers from
+retaining its detached DOM; pruning reads containment, not layout or offsets.
 
 A capture replays a recorded element image into a private GPU texture, reads its pixels
 into a bounded buffer and encodes a PNG. Encoding runs in one shared worker

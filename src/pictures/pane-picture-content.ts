@@ -19,6 +19,7 @@ export class PanePictureContent {
   private readonly videos = new Map<HTMLVideoElement, PaneVideoSurface>();
   private readonly watchedVideos = new Set<HTMLVideoElement>();
   private readonly scrolled = new Set<Element>();
+  private readonly scrollObserver: MutationObserver;
   private scrolledBeforeTracking = true;
   private videosActive = false;
   private readonly recordScroll = (event: Event): void => {
@@ -39,6 +40,14 @@ export class PanePictureContent {
       capture: true,
       passive: true,
     });
+    this.scrollObserver = new MutationObserver((records) => {
+      if (
+        this.scrolled.size > 0 &&
+        records.some((record) => record.removedNodes.length > 0)
+      )
+        this.pruneScrolled();
+    });
+    this.scrollObserver.observe(content, { childList: true, subtree: true });
   }
 
   isNative(): boolean {
@@ -171,8 +180,10 @@ export class PanePictureContent {
     this.content.removeEventListener("scroll", this.recordScroll, {
       capture: true,
     });
+    this.scrollObserver.disconnect();
     this.capabilities.dispose();
     this.freeze();
+    this.scrolled.clear();
     this.restoreScrollbars();
     this.canvas.removeAttribute("data-onirigiri-recording");
     this.host.remove();
@@ -186,9 +197,7 @@ export class PanePictureContent {
           this.scrolled.add(element);
       }
     }
-    for (const element of this.scrolled) {
-      if (!this.content.contains(element)) this.scrolled.delete(element);
-    }
+    this.pruneScrolled();
     const offsets = [this.content, ...this.scrolled]
       .filter((element) => element.scrollLeft !== 0 || element.scrollTop !== 0)
       .map((element) => ({
@@ -199,6 +208,12 @@ export class PanePictureContent {
     update();
     for (const { element, left, top } of offsets) {
       element.scrollTo({ left, top, behavior: "instant" });
+    }
+  }
+
+  private pruneScrolled(): void {
+    for (const element of this.scrolled) {
+      if (!this.content.contains(element)) this.scrolled.delete(element);
     }
   }
 

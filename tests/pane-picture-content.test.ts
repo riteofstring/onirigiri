@@ -326,7 +326,7 @@ describe("PanePictureContent", () => {
     }
   });
 
-  it("restores scroll offsets across moves, scanning descendants only the first time", () => {
+  it("restores scroll offsets across moves, scanning descendants only the first time", async () => {
     const canvas = document.createElement("canvas");
     const content = document.createElement("div");
     const timeline = document.createElement("div");
@@ -364,6 +364,19 @@ describe("PanePictureContent", () => {
     source.preserveScroll(update);
 
     expect(update).toHaveBeenCalledOnce();
+    expect(scrollTo).toHaveBeenCalledWith({
+      left: 0,
+      top: 480,
+      behavior: "instant",
+    });
+    expect(untouchedReads).not.toHaveBeenCalled();
+
+    const group = document.createElement("div");
+    content.append(group);
+    group.append(timeline);
+    await Promise.resolve();
+    scrollTo.mockClear();
+    source.preserveScroll(() => {});
     expect(scrollTo).toHaveBeenCalledWith({
       left: 0,
       top: 480,
