@@ -152,6 +152,7 @@ export class WorkspaceLayoutStore {
       engine,
       paneLimits: options.paneLimits,
       scene: () => this.toScene(),
+      viewport: () => this.lastViewport,
     });
     this.sizing = new WorkspaceSizingController({
       engine,

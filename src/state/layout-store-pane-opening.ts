@@ -7,6 +7,7 @@ import type {
   PaneId,
   PaneInsertionPlacement,
   PaneLimitPolicy,
+  Rect,
   SurfaceKind,
   WorkspaceScene,
 } from "../types.js";
@@ -17,6 +18,7 @@ interface PaneOpeningHooks {
   engine: WorkspaceLikeLayoutEngine;
   paneLimits: PaneLimitPolicy | undefined;
   scene: () => WorkspaceScene;
+  viewport: () => Rect;
 }
 
 export class WorkspacePaneOpeningController {
@@ -73,7 +75,11 @@ export class WorkspacePaneOpeningController {
 
   split(paneId: PaneId, direction: "up" | "down" | "left" | "right"): PaneId {
     this.assertKnownPane(paneId);
-    const createdPaneId = this.hooks.engine.splitPane(paneId, direction);
+    const createdPaneId = this.hooks.engine.splitPane(
+      paneId,
+      direction,
+      this.hooks.viewport(),
+    );
     this.hooks.commitPane(createdPaneId);
     return createdPaneId;
   }

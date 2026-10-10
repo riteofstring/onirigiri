@@ -103,6 +103,18 @@ does not write again. Other parameters keep their original encoding, and the
 existing history state is retained. Browser access lives in effects, which keeps
 server rendering free of window access.
 
+A vertical split normally leaves both halves flexible, so they share the full
+available height and a height-limited pane's row grows. `keepHeightWhenSplitting`
+measures the source pane in the store's last viewport before the split and
+fixes both halves to that height less the row gap, through the same constrained
+divider sizing as dragging the split. Flexible neighbors, including reserved
+cells, keep their measured heights as explicit sizes so they cannot absorb the
+source's unused height. Existing explicit sizes and preferred heights remain
+unchanged. If the halves' constrained minimums do not fit, the split grows to
+accommodate them and retains positive, restorable cell sizes. The measurement
+happens once, at the split; later viewport changes keep the explicit heights
+like any other resized split.
+
 Pane resize handles operate on one edge. Right and bottom handles keep the
 established anchor: the pane's leading edge stays fixed because the camera is
 anchored to the focused cell's start. Left and top handles reuse the same

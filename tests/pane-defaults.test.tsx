@@ -23,12 +23,15 @@ import { stubOnirigiriWorkspaceBrowserGlobals } from "./onirigiri-workspace-test
 const viewport = { x: 0, y: 0, width: 1200, height: 900 };
 const video = { paneId: "video", surfaceKind: "video", title: "Video" };
 
-function workspace(options: WorkspaceSceneOptions = {}) {
+function workspace(
+  options: WorkspaceSceneOptions = {},
+  engineOptions: ConstructorParameters<typeof OnirigiriLayoutEngine>[1] = {},
+) {
   const { scene, cursor } = createWorkspaceScene({
     panes: [video],
     ...options,
   });
-  const engine = new OnirigiriLayoutEngine(scene);
+  const engine = new OnirigiriLayoutEngine(scene, engineOptions);
   return { engine, store: new OnirigiriLayoutStore(engine, scene, cursor) };
 }
 
@@ -264,6 +267,126 @@ describe("pane type defaults", () => {
     store.resetWorkspaceSizing(tall);
     expect(box(engine, tall).width).toBeLessThanOrEqual(1000);
     expect(box(engine, tall).height).toBeLessThanOrEqual(900);
+  });
+
+  it("splits a height-limited pane down within its original height when asked", () => {
+    const options = {
+      paneDefaults: { maxHeight: 600 },
+      panes: [video, { ...video, paneId: "beside" }],
+    };
+    const growing = workspace(options);
+    growing.store.ensureFocusedPaneVisible(viewport);
+    const grown = growing.store.splitPane("video", "down");
+    expect(box(growing.engine, viewport, grown).height).toBeGreaterThan(300);
+    const { scene, cursor } = createWorkspaceScene(options);
+    const engine = new OnirigiriLayoutEngine(scene, {
+      keepHeightWhenSplitting: true,
+    });
+    const store = new OnirigiriLayoutStore(engine, scene, cursor);
+    store.ensureFocusedPaneVisible(viewport);
+    const before = box(engine);
+    const lower = store.splitPane("video", "down");
+    const upper = box(engine);
+    const created = box(engine, viewport, lower);
+    expect(before.height).toBe(600);
+    expect(upper.y).toBe(before.y);
+    expect(created.y + created.height).toBeCloseTo(before.y + before.height);
+    expect(created.height).toBeCloseTo(upper.height);
+    expect(box(engine, viewport, "beside").height).toBe(600);
+  });
+
+  describe.each(["up", "down"] as const)(
+    "splitting %s within the current height",
+    (direction) => {
+      it.each([
+        {
+          name: "minimum heights that exceed the split space",
+          defaults: { height: 300, minHeight: 300 },
+          height: 300,
+        },
+        {
+          name: "a pane shorter than the row gap",
+          defaults: { maxHeight: 4 },
+          height: 4,
+        },
+      ])("keeps layouts restorable with $name", ({ defaults, height }) => {
+        const { engine, store } = workspace(
+          { paneDefaults: defaults },
+          { keepHeightWhenSplitting: true },
+        );
+        store.ensureFocusedPaneVisible(viewport);
+        const created = store.splitPane("video", direction);
+        expect(box(engine).height).toBe(height);
+        expect(box(engine, viewport, created).height).toBe(height);
+        const beforeRestore = engine.paneWorldBoxes(viewport);
+        const layout = serializeWorkspaceLayout(
+          store.toScene(),
+          store.getSnapshot().cursor,
+        );
+        expect(() => store.restoreLayout(layout)).not.toThrow();
+        expect(engine.paneWorldBoxes(viewport)).toEqual(beforeRestore);
+      });
+
+      it("preserves flexible neighbors and reserved cells in the stack", () => {
+        const { engine, store } = workspace(
+          {
+            panes: [
+              { ...video, paneId: "above", columnId: "stack" },
+              { ...video, columnId: "stack", defaults: { maxHeight: 100 } },
+              { ...video, paneId: "below", columnId: "stack" },
+              { ...video, paneId: "beside" },
+            ],
+          },
+          { keepHeightWhenSplitting: true },
+        );
+        engine.createReservedBlankSplit("video", "up");
+        store.ensureFocusedPaneVisible(viewport);
+        const source = box(engine);
+        const neighbors = ["above", "below", "beside"].map((paneId) =>
+          box(engine, viewport, paneId),
+        );
+        const reservedCursor = { column: 0, row: 0, split: 1 };
+        const reserved = engine.gridCellBox(reservedCursor, viewport);
+        expect(reserved.kind).toBe("reserved");
+        const created = store.splitPane("video", direction);
+        const [upper, lower] =
+          direction === "up" ? [created, "video"] : ["video", created];
+        expect(box(engine, viewport, upper).y).toBe(source.y);
+        const lowerBox = box(engine, viewport, lower);
+        expect(lowerBox.y + lowerBox.height).toBeCloseTo(
+          source.y + source.height,
+        );
+        for (const neighbor of neighbors) {
+          expect(box(engine, viewport, neighbor.paneId)).toEqual(neighbor);
+        }
+        expect(engine.gridCellBox(reservedCursor, viewport)).toEqual(reserved);
+      });
+    },
+  );
+
+  it("retains neighboring desired and preferred heights after splitting", () => {
+    const { engine, store } = workspace(
+      {
+        paneTypeDefaults: { notes: { height: 200 } },
+        panes: [
+          { ...video, columnId: "stack", defaults: { maxHeight: 300 } },
+          { ...video, paneId: "sized", columnId: "stack", heightPx: 1100 },
+          {
+            paneId: "preferred",
+            surfaceKind: "notes",
+            title: "Notes",
+            columnId: "stack",
+          },
+        ],
+      },
+      { keepHeightWhenSplitting: true },
+    );
+    store.ensureFocusedPaneVisible(viewport);
+    store.splitPane("video", "down");
+    engine.setPaneDefaults({ paneTypeDefaults: { notes: { height: 350 } } });
+    const taller = { ...viewport, height: 1400 };
+    expect(box(engine, taller, "sized").height).toBe(1100);
+    expect(box(engine, taller, "preferred").height).toBe(350);
   });
 
   it("lets stacked dividers override preferred aspect-ratio heights", () => {

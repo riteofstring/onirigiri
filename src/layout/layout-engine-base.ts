@@ -3,6 +3,7 @@ import {
   constrainSplitHeights,
   resolvePaneDefaults,
   preferredColumnWidth,
+  preferredPaneHeight,
   validatePaneDefaultsConfiguration,
 } from "./pane-defaults.js";
 import {
@@ -27,6 +28,8 @@ import {
   minimumColumnWidth,
   nextNumericSuffix,
   normalizedColumnWidthSpec,
+  paneCellsForColumn,
+  paneHeightsForColumn,
   type PaneLocation,
   pushColumnItems,
 } from "./layout-engine-helpers.js";
@@ -65,6 +68,7 @@ import type {
 
 interface WorkspaceLayoutEngineOptions {
   allowResizedPanesToOverflowViewport?: boolean;
+  keepHeightWhenSplitting?: boolean;
   overviewCardMaxWidthPx?: number;
   overviewCardMinWidthPx?: number;
 }
@@ -560,6 +564,60 @@ export abstract class WorkspaceLayoutEngineBase {
     }
     const cell = column.cells[location.rowIndex];
     return cell ? cellSizingForCell(cell) : null;
+  }
+
+  protected fixFlexibleColumnHeights(
+    column: WorkspaceColumn,
+    viewport: Rect,
+  ): number[] {
+    const cells = paneCellsForColumn(column, this.paneById);
+    const width = this.columnGeometry(viewport).gridWidthForColumn(
+      columnSlotIndex(column),
+    );
+    const availableHeight = this.availablePaneHeight(viewport.height);
+    const heights = paneHeightsForColumn(
+      cells,
+      availableHeight,
+      this.scene.rowGap * Math.max(0, cells.length - 1),
+      {
+        fullSizePanes: this.compactLayout,
+        sizing: { configuration: this.renderScene(), columnWidth: width },
+      },
+    );
+    column.cells = column.cells.map((cell, index) => {
+      if (cell.heightPx !== undefined) return cell;
+      const pane = cells[index]!.pane;
+      const defaults = pane ? resolvePaneDefaults(pane, this.scene) : {};
+      return preferredPaneHeight(defaults, width, availableHeight) === undefined
+        ? { ...cell, heightPx: heights[index] }
+        : cell;
+    });
+    return heights;
+  }
+
+  protected keepSplitWithinHeight(
+    upperPaneId: PaneId,
+    lowerPaneId: PaneId,
+    height: number,
+    viewport: Rect,
+  ): void {
+    const weight = this.cellSizingForPane(upperPaneId)?.weight ?? 1;
+    const heights = constrainSplitHeights({
+      total: height - this.scene.rowGap,
+      upperWeight: weight,
+      lowerWeight: weight,
+      upper: resolvePaneDefaults(
+        this.paneById.get(upperPaneId) ?? null,
+        this.scene,
+      ),
+      lower: resolvePaneDefaults(
+        this.paneById.get(lowerPaneId) ?? null,
+        this.scene,
+      ),
+      availableHeight: this.availablePaneHeight(viewport.height),
+    });
+    this.setCellSizingForPane(upperPaneId, { heightPx: heights[0], weight });
+    this.setCellSizingForPane(lowerPaneId, { heightPx: heights[1], weight });
   }
 
   protected setCellSizingForPane(

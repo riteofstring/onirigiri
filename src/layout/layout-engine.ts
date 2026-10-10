@@ -797,7 +797,7 @@ export class WorkspaceLikeLayoutEngine
     });
   }
 
-  splitPane(paneId: PaneId, direction: PaneDirection): PaneId {
+  splitPane(paneId: PaneId, direction: PaneDirection, viewport?: Rect): PaneId {
     const source = this.locationForPane(paneId);
     if (!source) {
       return this.openPane({});
@@ -806,10 +806,25 @@ export class WorkspaceLikeLayoutEngine
       const columnId = this.insertAdjacentColumn(source, direction).columnId;
       return this.openPane({ columnId });
     }
+    const column = this.columns[source.columnIndex]!;
+    const heights =
+      viewport && this.options.keepHeightWhenSplitting
+        ? this.fixFlexibleColumnHeights(column, viewport)
+        : undefined;
     const createdPaneId = this.openPane({
-      columnId: this.columns[source.columnIndex]?.columnId,
+      columnId: column.columnId,
     });
     this.insertPaneBesideSource(createdPaneId, source, direction);
+    if (viewport && heights) {
+      const [upper, lower] =
+        direction === "up" ? [createdPaneId, paneId] : [paneId, createdPaneId];
+      this.keepSplitWithinHeight(
+        upper,
+        lower,
+        heights[source.rowIndex]!,
+        viewport,
+      );
+    }
     return createdPaneId;
   }
 
