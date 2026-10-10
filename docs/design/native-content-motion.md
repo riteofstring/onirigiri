@@ -335,6 +335,11 @@ image while the new layout paints. Both axes use the same lifecycle.
 Resize boundaries measure all participating capture surfaces before applying any
 size changes, then request presentation after all writes. This preserves the
 original dimensions without forcing a separate layout for every pane or axis.
+An interrupted background capture leaves its temporary popover and restores
+its original canvas styles synchronously on cancellation, before the resize
+boundary measures and freezes those styles. Later asynchronous capture cleanup
+does not restore them again. This prevents a cancelled capture from erasing
+the active gesture's fixed dimensions or measuring the temporary staging size.
 Resize handles on every edge capture the pointer for the gesture so crossing
 embedded content or leaving the viewport does not interrupt movement or release.
 Left and top handles share this lifecycle; the retained texture stays anchored

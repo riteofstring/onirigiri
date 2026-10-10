@@ -542,7 +542,6 @@ export class PanePictures {
   }
 
   private noteActivity(presentationChanged: boolean): void {
-    this.updateResizing();
     this.updateActivation();
     this.preloader.navigation();
     this.epoch++;
@@ -550,6 +549,7 @@ export class PanePictures {
     this.deferredSupplied.clear();
     if (!this.overview() || !this.preloadAllowed()) this.setOverviewPane(null);
     if (this.active && !this.valid(this.active)) this.cancel();
+    this.updateResizing();
     if (presentationChanged || !this.isContinuous())
       for (const [id, host] of this.hosts) {
         host.surface.requestPaint();

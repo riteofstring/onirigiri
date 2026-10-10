@@ -364,7 +364,10 @@ export class PaneCanvasSurface {
     try {
       const size = this.rasterSize(request.maxRasterBytes);
       texture = this.captureTexture(size);
-      if (request.stage) restore = this.stage();
+      if (request.stage) {
+        restore = this.stage();
+        controller.signal.addEventListener("abort", restore, { once: true });
+      }
       await this.recordCapture(texture, controller.signal, request.stage);
       const image = await readPaneCanvasTexture(
         this.device!,
@@ -377,6 +380,7 @@ export class PaneCanvasSurface {
     } finally {
       request.signal.removeEventListener("abort", abort);
       texture?.destroy();
+      if (restore) controller.signal.removeEventListener("abort", restore);
       restore?.();
       if (request.stage) {
         this.lastImage?.close();
@@ -701,7 +705,10 @@ export class PaneCanvasSurface {
       view.innerHeight / height,
     );
     const inert = canvas.inert;
-    const restore = () =>
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
       this.source.preserveScroll(() => {
         if (canvas.matches(":popover-open")) canvas.hidePopover();
         canvas.removeAttribute("popover");
@@ -713,6 +720,7 @@ export class PaneCanvasSurface {
         );
         canvas.inert = inert;
       });
+    };
     try {
       this.context!.unconfigure();
       this.configure();

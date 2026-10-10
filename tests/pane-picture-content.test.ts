@@ -14,6 +14,127 @@ function scrolledTo(element: Element, top: number) {
 }
 
 describe("PanePictureContent", () => {
+  it("keeps resize dimensions when an aborted staged capture finishes cleaning up", async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let sequence = 0;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.set(++sequence, callback);
+      return sequence;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+      frames.delete(id);
+    });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal("GPUTextureUsage", {
+      COPY_SRC: 1,
+      COPY_DST: 2,
+      TEXTURE_BINDING: 4,
+      RENDER_ATTACHMENT: 16,
+    });
+    const parent = document.createElement("div");
+    const canvas = document.createElement("canvas");
+    const content = document.createElement("div");
+    const input = document.createElement("input");
+    input.value = "Retained draft";
+    content.append(input);
+    canvas.append(content);
+    parent.append(canvas);
+    document.body.append(parent);
+    canvas.style.setProperty("--consumer-color", "red");
+    for (const element of [canvas, content, parent]) {
+      Object.defineProperties(element, {
+        offsetWidth: { get: () => 480 },
+        offsetHeight: { get: () => 354 },
+        clientWidth: { get: () => 480 },
+        clientHeight: { get: () => 354 },
+      });
+    }
+    let popover = false;
+    canvas.showPopover = () => {
+      popover = true;
+    };
+    canvas.hidePopover = () => {
+      popover = false;
+    };
+    const matches = canvas.matches.bind(canvas);
+    vi.spyOn(canvas, "matches").mockImplementation((selector) =>
+      selector === ":popover-open" ? popover : matches(selector),
+    );
+    vi.spyOn(canvas, "getContext").mockReturnValue({
+      configure: vi.fn(),
+      unconfigure: vi.fn(),
+    } as unknown as GPUCanvasContext);
+    const destroy = vi.fn();
+    const device = {
+      lost: new Promise(() => {}),
+      limits: { maxTextureDimension2D: 8192 },
+      createTexture: () => ({ width: 480, height: 354, destroy }),
+    } as unknown as GPUDevice;
+    let live = false;
+    const surface = new PaneCanvasSurface(
+      canvas,
+      content,
+      Promise.resolve(device),
+      {
+        continuous: () => false,
+        canDraw: () => live,
+        canPrime: () => false,
+        visible: () => true,
+        renderer: () => "dom",
+        displayScale: () => 1,
+        revision: () => 0,
+        drawn: () => {},
+        failed: (error) => {
+          throw error;
+        },
+      },
+    );
+    try {
+      await Promise.resolve();
+      const controller = new AbortController();
+      const pending = surface.capture({
+        signal: controller.signal,
+        stage: true,
+        maxRasterBytes: 4 * 1024 * 1024,
+        maxEncodedBytes: 4 * 1024 * 1024,
+      });
+      expect(popover).toBe(true);
+      const reason = new Error("Resize started");
+      controller.abort(reason);
+      surface.setResizing(true);
+      await expect(pending).rejects.toBe(reason);
+      expect(popover).toBe(false);
+      expect(canvas.style.width).toBe("480px");
+      expect(canvas.style.height).toBe("354px");
+      expect(canvas.style.position).toBe("");
+      expect(canvas.style.getPropertyValue("--consumer-color")).toBe("red");
+      expect(destroy).toHaveBeenCalledOnce();
+
+      surface.setResizing(false);
+      live = true;
+      surface.requestPaint();
+      const pendingFrames = [...frames.values()];
+      frames.clear();
+      for (const callback of pendingFrames) callback(16);
+      expect(canvas.style.width).toBe("");
+      expect(canvas.style.height).toBe("");
+      expect(content.parentElement).not.toBe(canvas);
+      expect(content.querySelector("input")).toBe(input);
+      expect(input.value).toBe("Retained draft");
+    } finally {
+      surface.dispose();
+      parent.remove();
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("checks focused priming once per paint and rechecks before the native handoff", async () => {
     const frames = new Map<number, FrameRequestCallback>();
     let frameId = 0;
