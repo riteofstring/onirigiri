@@ -242,6 +242,14 @@ remain asynchronous. Background acquisition prepares offscreen pictures once;
 those pictures can bridge the first paint without replacing the retained DOM.
 Disabling the option resumes ordinary mounting and retention rules.
 
+Pane-content rendering reads the continuous policy from its subscribed external
+store snapshot. Reading the mutable picture service directly in JSX can leave
+the initial value cached when a consumer compiles library source with React
+Compiler. The compiler regression transforms this component with the real
+compiler and checks initial configuration, policy changes and retained drafts.
+Packaged-consumer performance comparisons build the library first and consume
+its emitted JavaScript and CSS, matching the public package boundary.
+
 Live content can move native focus and scroll selections into view. The
 workspace, stage and pane boxes therefore clip with `overflow: clip` rather than
 `hidden`: they are not scroll containers, so focusing a composer or caret near a

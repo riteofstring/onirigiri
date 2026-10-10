@@ -83,6 +83,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
     preloading,
     mounted,
     contentRuntime,
+    continuous,
     presentation,
     covered,
     interactive,
@@ -111,7 +112,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
       data-onirigiri-preloading={String(preloading)}
       data-onirigiri-slot="pane-content"
       data-runtime-state={contentRuntime}
-      data-onirigiri-continuous={String(pictures.isContinuous())}
+      data-onirigiri-continuous={String(continuous)}
       style={contentSlot.style}
     >
       <span
@@ -440,6 +441,7 @@ function usePaneContentState({
     preloading,
     mounted,
     contentRuntime,
+    continuous: (warming & 16) !== 0,
     presentation,
     covered,
     interactive,
