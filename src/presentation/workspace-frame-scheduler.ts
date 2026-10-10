@@ -326,24 +326,34 @@ export class WorkspaceFrameScheduler {
       presentedWorldFrame,
       viewport,
     );
-    const focusChanged =
-      this.lastPresentationBoundaryFrame?.snapshot.focusedPaneId !==
-      snapshot.focusedPaneId;
-    this.lastPresentationBoundaryFrame = {
-      items,
-      reservedCells: workspaceReservedCellRenderItems(renderInput),
-      snapshot,
-      world: presentedWorldFrame,
-    };
-    this.lastRenderedItems = items;
-    this.options.onPresentation?.(this.lastPresentationBoundaryFrame);
-    this.publishFocusedPaneFrame(
-      items,
-      presentedWorldFrame,
+    this.publishPresentation(
+      {
+        items,
+        reservedCells: workspaceReservedCellRenderItems(renderInput),
+        snapshot,
+        world: presentedWorldFrame,
+      },
       motion.moving,
-      focusChanged,
     );
     return writes;
+  }
+
+  private publishPresentation(
+    frame: WorkspacePresentationBoundaryFrame,
+    moving: boolean,
+  ): void {
+    const focusChanged =
+      this.lastPresentationBoundaryFrame?.snapshot.focusedPaneId !==
+      frame.snapshot.focusedPaneId;
+    this.lastPresentationBoundaryFrame = frame;
+    this.lastRenderedItems = frame.items;
+    this.options.onPresentation?.(frame);
+    this.publishFocusedPaneFrame(
+      frame.items,
+      frame.world,
+      moving,
+      focusChanged,
+    );
   }
 
   private publishFocusedPaneFrame(
