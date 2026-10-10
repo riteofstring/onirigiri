@@ -130,22 +130,24 @@ export class WorkspaceWorldFrameRenderer {
   } | null = null;
 
   render(input: WorkspaceRenderItemsInput): WorkspaceWorldFrame {
-    if (!workspaceMotionSceneIsCacheable(input))
-      return workspaceWorldRenderFrame(input);
-    const { cursor } = input.snapshot;
-    const key = `${workspaceMotionSceneKey(input)}|${cursor.column}|${cursor.row}|${cursor.split}`;
-    if (this.geometry?.engine !== input.engine || this.geometry.key !== key) {
+    if (!workspaceMotionSceneIsCacheable(input)) {
       this.reset();
-      this.geometry = {
-        engine: input.engine,
-        key,
-        cursor: input.engine.gridCellBox(
-          cursor,
-          input.viewport,
-          input.snapshot.maximizedPaneId,
-          workspaceGeometryOrigin(input),
-        ),
-      };
+    } else {
+      const { cursor } = input.snapshot;
+      const key = `${workspaceMotionSceneKey(input)}|${cursor.column}|${cursor.row}|${cursor.split}`;
+      if (this.geometry?.engine !== input.engine || this.geometry.key !== key) {
+        this.reset();
+        this.geometry = {
+          engine: input.engine,
+          key,
+          cursor: input.engine.gridCellBox(
+            cursor,
+            input.viewport,
+            input.snapshot.maximizedPaneId,
+            workspaceGeometryOrigin(input),
+          ),
+        };
+      }
     }
     const target = input.snapshot.presentationMode === "overview" ? 1 : 0;
     if (Math.abs(input.snapshot.overviewProgress - target) > 0.001) {
@@ -162,12 +164,13 @@ export class WorkspaceWorldFrameRenderer {
   }
 
   private cachedFrame(input: WorkspaceRenderItemsInput): WorkspaceWorldFrame {
+    if (!this.geometry) return workspaceWorldRenderFrame(input);
     const key = workspaceWorldFrameKey(input);
     const cached = this.frames.get(key);
     if (cached) {
       return cached;
     }
-    const frame = workspaceWorldRenderFrame(input, this.geometry!.cursor);
+    const frame = workspaceWorldRenderFrame(input, this.geometry.cursor);
     this.frames.set(key, frame);
     if (this.frames.size > 4) {
       const oldest = this.frames.keys().next().value as string | undefined;

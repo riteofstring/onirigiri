@@ -23,6 +23,8 @@ scroll samples. Its ownership follows the engine, layout and configuration
 revisions, viewport, origin and cursor; changing any of these clears the frame
 and zoom-endpoint caches. Camera interpolation still projects each current
 sample, without resolving unchanged canonical grid geometry again.
+Custom engines retain the same normal/overview interpolation, with fresh
+endpoint geometry on each request.
 
 The dotted background grid retains its cached paint bounds while they cover
 the moving viewport. Settled presentation releases excess width or height,

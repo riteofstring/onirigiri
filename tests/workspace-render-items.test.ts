@@ -107,6 +107,41 @@ describe("workspace world render items", () => {
     expect(changedCustomFrame).toEqual(workspaceWorldRenderFrame(customInput));
   });
 
+  it("preserves custom-engine overview interpolation and refreshes dynamic endpoints", () => {
+    const { engine, store } = workspace();
+    const dynamic = new Proxy({} as LayoutEngine, {
+      get(_target, field) {
+        const value = Reflect.get(engine, field);
+        return typeof value === "function" ? value.bind(engine) : value;
+      },
+    });
+    const renderer = new WorkspaceWorldFrameRenderer();
+    for (const presentationMode of ["overview", "normal"] as const) {
+      for (const overviewProgress of [0.25, 0.5, 0.75]) {
+        const input: WorkspaceRenderItemsInput = {
+          ...renderInput(engine, store.getSnapshot(), true),
+          geometryOrigin: { column: 0, row: 0 },
+          snapshot: {
+            ...store.getSnapshot(),
+            presentationMode,
+            overviewProgress,
+            scrollColumn: 1.5,
+            scrollRow: 0.25,
+          },
+        };
+        const expected = new WorkspaceWorldFrameRenderer().render(input);
+        expect(renderer.render({ ...input, engine: dynamic })).toEqual(
+          expected,
+        );
+        engine.setPaneDefaults({ paneDefaults: { minWidth: 400 } });
+        const changed = new WorkspaceWorldFrameRenderer().render(input);
+        expect(changed.focalWorldX).not.toBe(expected.focalWorldX);
+        expect(renderer.render({ ...input, engine: dynamic })).toEqual(changed);
+        engine.setPaneDefaults({ paneDefaults: { minWidth: 280 } });
+      }
+    }
+  });
+
   it("completes an existing shell inventory without copying the scene", () => {
     const { engine, store } = workspace();
     const input = {
