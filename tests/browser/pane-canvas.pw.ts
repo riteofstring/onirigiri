@@ -1569,10 +1569,11 @@ test.describe("nested canvas pixels in headless Chrome", () => {
           "font:13px sans-serif;background:white;color:black";
         const markup =
           '<header style="display:flex;justify-content:space-between;border-bottom:1px solid;padding:13px"><label>Field notes</label><span>152 characters</span></header><div style="padding:13px"><span style="border:1px solid;padding:3px">Navigation</span><p>A spatial interface should keep the same layout when motion settles.</p><textarea style="display:block;width:90%;height:48px;font:inherit">Keep this edit</textarea></div>';
-        content.replaceChildren();
+        for (const child of [...content.children])
+          if (child !== fixture.iframe) child.remove();
         const direct = document.createElement("section");
         direct.innerHTML = markup;
-        content.append(direct, fixture.iframe);
+        content.prepend(direct);
         fixture.iframe.style.height = "300px";
         fixture.document.body.style.cssText =
           "margin:0;font:13px sans-serif;background:white;color:black";
@@ -1590,6 +1591,8 @@ test.describe("nested canvas pixels in headless Chrome", () => {
         page.evaluate(() => {
           const fixture = window.__paneCanvasFixture;
           const content = document.querySelector<HTMLElement>("#content")!;
+          if (fixture.iframe.contentDocument !== fixture.document)
+            throw new Error("The retained iframe document changed");
           return [content, fixture.document.body].map((root) => {
             const origin = root.getBoundingClientRect();
             return [root, ...root.querySelectorAll("*")].map((node) => {
@@ -1667,6 +1670,9 @@ test.describe("nested canvas pixels in headless Chrome", () => {
         expect(await page.locator("#content textarea").inputValue()).toBe(
           "Keep this edit",
         );
+        await expect(
+          page.locator("#content iframe").contentFrame().locator("textarea"),
+        ).toHaveValue("Keep this edit");
       }
       expect(
         await page.evaluate(() => window.__paneCanvasFixture.error),
