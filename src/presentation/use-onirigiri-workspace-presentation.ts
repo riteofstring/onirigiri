@@ -18,7 +18,9 @@ interface OnirigiriWorkspacePresentationOptions {
   cursorRef: { current: HTMLDivElement | null };
   focusHighlightEnabled: boolean;
   focusedPaneFrameRef: {
-    current: ((frame: WorkspaceFocusedPaneFrame | null) => void) | undefined;
+    current:
+      | ((frame: WorkspaceFocusedPaneFrame | null, moving: boolean) => void)
+      | undefined;
   };
   motionRef: { current: WorkspaceFrameMotionOptions };
   runtime: OnirigiriRuntime;
@@ -141,7 +143,8 @@ export function useOnirigiriWorkspacePresentation(
       motionProvider: () => motionRef.current,
       onBoundary: (snapshot, boundary, frame) =>
         boundaryPublisher.publish(snapshot, boundary, frame),
-      onFocusedPaneFrame: (frame) => focusedPaneFrameRef.current?.(frame),
+      onFocusedPaneFrame: (frame, moving) =>
+        focusedPaneFrameRef.current?.(frame, moving),
       onPresentation: pictures.present,
       presentation: runtime.presentation,
       reducedMotionQuery,

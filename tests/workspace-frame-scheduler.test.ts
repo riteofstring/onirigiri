@@ -608,7 +608,11 @@ describe("WorkspaceFrameScheduler", () => {
     harness.scheduler.start();
     harness.frameHost.flushOne(0);
     const resting = expectReportedFrameDisplayed();
-    expect(resting).toMatchObject({ paneId: "source", scale: 1 });
+    expect(resting).toMatchObject({
+      paneId: "source",
+      scale: 1,
+      moving: false,
+    });
 
     expect(harness.store.focusPane("lower")).toBe(true);
     const motionYs: number[] = [];
@@ -620,6 +624,8 @@ describe("WorkspaceFrameScheduler", () => {
       }
     }
     expect(new Set(motionYs).size).toBeGreaterThan(2);
+    expect(harness.focusedPaneFrames.some((frame) => frame?.moving)).toBe(true);
+    expect(harness.focusedPaneFrames.at(-1)?.moving).toBe(false);
     const reportedDuringMove = harness.focusedPaneFrames.length;
     harness.scheduler.requestFrame();
     harness.frameHost.flushAll();
@@ -630,6 +636,113 @@ describe("WorkspaceFrameScheduler", () => {
     const overview = expectReportedFrameDisplayed();
     expect(overview.paneId).toBe("lower");
     expect(overview.scale).toBeLessThan(1);
+    expect(overview.moving).toBe(false);
+    harness.scheduler.teardown();
+  });
+
+  it("keeps the focused frame moving through a retarget and reports its final rest", () => {
+    const harness = createTwoDimensionalSchedulerHarness();
+    harness.scheduler.start();
+    harness.frameHost.flushOne(0);
+    harness.store.focusPane("lower");
+    harness.frameHost.flushFrames(3);
+    expect(harness.focusedPaneFrames.at(-1)).toMatchObject({
+      paneId: "lower",
+      moving: true,
+    });
+
+    const beforeRetarget = harness.focusedPaneFrames.length;
+    harness.store.focusPane("right");
+    harness.frameHost.flushFrames(3);
+    expect(harness.focusedPaneFrames.slice(beforeRetarget)).not.toHaveLength(0);
+    expect(
+      harness.focusedPaneFrames
+        .slice(beforeRetarget)
+        .every((frame) => frame?.moving),
+    ).toBe(true);
+    harness.frameHost.flushAll();
+    expect(harness.focusedPaneFrames.at(-1)).toMatchObject({
+      paneId: "right",
+      moving: false,
+    });
+    harness.scheduler.teardown();
+  });
+
+  it("reports a resting destination immediately with reduced motion", () => {
+    const query = {
+      addEventListener: vi.fn(),
+      matches: true,
+      removeEventListener: vi.fn(),
+    } as unknown as MediaQueryList;
+    const harness = createTwoDimensionalSchedulerHarness(query);
+    harness.scheduler.start();
+    harness.frameHost.flushOne(0);
+    harness.store.focusPane("lower");
+    harness.frameHost.flushAll();
+    expect(harness.focusedPaneFrames.at(-1)).toMatchObject({
+      paneId: "lower",
+      moving: false,
+    });
+    expect(harness.focusedPaneFrames.every((frame) => !frame?.moving)).toBe(
+      true,
+    );
+    harness.scheduler.teardown();
+  });
+
+  it("reports motion and settlement while the destination host is missing", () => {
+    const harness = createTwoDimensionalSchedulerHarness();
+    harness.scheduler.start();
+    harness.frameHost.flushOne(0);
+    harness.store.focusPane("right");
+    harness.frameHost.flushFrames(3);
+    const host = requiredHost(harness.hosts, "lower");
+    harness.presentation.registerPaneHost("lower", host)();
+    harness.store.focusPane("lower");
+    harness.frameHost.flushFrames(3);
+    expect(harness.focusedPaneMotion.at(-1)).toEqual({
+      frame: null,
+      moving: true,
+    });
+    harness.frameHost.flushAll();
+    expect(harness.focusedPaneMotion.at(-1)).toEqual({
+      frame: null,
+      moving: false,
+    });
+    harness.presentation.registerPaneHost("lower", host);
+    harness.scheduler.requestFrame();
+    harness.frameHost.flushAll();
+    expect(harness.focusedPaneMotion.at(-1)).toMatchObject({
+      frame: { paneId: "lower" },
+      moving: false,
+    });
+    harness.scheduler.teardown();
+  });
+
+  it("reports hostless focus changes even when reduced motion keeps geometry null", () => {
+    const query = {
+      addEventListener: vi.fn(),
+      matches: true,
+      removeEventListener: vi.fn(),
+    } as unknown as MediaQueryList;
+    const harness = createTwoDimensionalSchedulerHarness(query);
+    for (const paneId of ["source", "right", "lower"]) {
+      harness.presentation.registerPaneHost(
+        paneId,
+        requiredHost(harness.hosts, paneId),
+      )();
+    }
+    harness.scheduler.start();
+    harness.frameHost.flushOne(0);
+    expect(harness.focusedPaneMotion).toEqual([{ frame: null, moving: false }]);
+    harness.store.focusPane("lower");
+    harness.frameHost.flushAll();
+    expect(harness.focusedPaneMotion).toHaveLength(2);
+    harness.store.focusPane("right");
+    harness.frameHost.flushAll();
+    expect(harness.focusedPaneMotion).toHaveLength(3);
+    harness.scheduler.requestFrame();
+    harness.frameHost.flushAll();
+    expect(harness.focusedPaneMotion).toHaveLength(3);
     harness.scheduler.teardown();
   });
 

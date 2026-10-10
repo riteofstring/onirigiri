@@ -154,7 +154,10 @@ export interface OnirigiriWorkspaceProps extends PaneDefaultsConfiguration {
   initialPanes?: readonly OnirigiriPaneDefinition[];
   minimapAdjustable?: boolean;
   minimapPlacement?: Partial<OnirigiriMinimapPlacement>;
-  onFocusedPaneFrame?: (frame: WorkspaceFocusedPaneFrame | null) => void;
+  onFocusedPaneFrame?: (
+    frame: WorkspaceFocusedPaneFrame | null,
+    moving: boolean,
+  ) => void;
   onLayoutChange?: (
     layout: OnirigiriLayout,
     metadata: OnirigiriLayoutChangeMetadata,

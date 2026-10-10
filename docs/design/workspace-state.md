@@ -19,6 +19,12 @@ Neither frame interpolation nor those camera adjustments emit command events.
 The frame scheduler owns presentation boundaries, so React does not rerender the
 pane tree on each interpolated frame.
 
+Focused-pane frame notifications include the presentation's motion state, even
+when the final geometry is unchanged. Hosts that bridge expensive view mounts
+with retained pictures can wait for actual settlement instead of guessing the
+camera's duration. The notification does not schedule or pause consumer content;
+continuous presentation and content without a picture keep their existing policy.
+
 Every new focus or camera destination publishes a request boundary, including
 commands issued during an unfinished move. That boundary prepares content and
 retained-picture outputs for the new camera sweep. Existing pane shells alone

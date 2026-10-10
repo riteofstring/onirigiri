@@ -78,7 +78,10 @@ interface WorkspaceFrameSchedulerOptions {
     boundary: WorkspaceFrameBoundary,
     frame: WorkspacePresentationBoundaryFrame | null,
   ) => void;
-  onFocusedPaneFrame?: (frame: WorkspaceFocusedPaneFrame | null) => void;
+  onFocusedPaneFrame?: (
+    frame: WorkspaceFocusedPaneFrame | null,
+    moving: boolean,
+  ) => void;
   onFrame?: (sample: WorkspaceFrameSample) => void;
   onPresentation?: (frame: WorkspacePresentationBoundaryFrame) => void;
   presentation: PanePresentationEngine;
@@ -323,6 +326,9 @@ export class WorkspaceFrameScheduler {
       presentedWorldFrame,
       viewport,
     );
+    const focusChanged =
+      this.lastPresentationBoundaryFrame?.snapshot.focusedPaneId !==
+      snapshot.focusedPaneId;
     this.lastPresentationBoundaryFrame = {
       items,
       reservedCells: workspaceReservedCellRenderItems(renderInput),
@@ -331,13 +337,20 @@ export class WorkspaceFrameScheduler {
     };
     this.lastRenderedItems = items;
     this.options.onPresentation?.(this.lastPresentationBoundaryFrame);
-    this.publishFocusedPaneFrame(items, presentedWorldFrame);
+    this.publishFocusedPaneFrame(
+      items,
+      presentedWorldFrame,
+      motion.moving,
+      focusChanged,
+    );
     return writes;
   }
 
   private publishFocusedPaneFrame(
     items: readonly PaneRenderItem[],
     world: WorkspaceWorldFrame,
+    moving: boolean,
+    focusChanged: boolean,
   ): void {
     const publish = this.options.onFocusedPaneFrame;
     if (!publish) {
@@ -358,11 +371,15 @@ export class WorkspaceFrameScheduler {
             y: world.y + geometry.y * world.scale,
           }
         : null;
-    if (sameFocusedPaneFrame(this.lastFocusedPaneFrame, frame)) {
+    if (
+      !focusChanged &&
+      sameFocusedPaneFrame(this.lastFocusedPaneFrame, frame) &&
+      this.lastPresentedMoving === moving
+    ) {
       return;
     }
     this.lastFocusedPaneFrame = frame;
-    publish(frame);
+    publish(frame, moving);
   }
 
   private completeFrame(

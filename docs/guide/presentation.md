@@ -62,6 +62,9 @@ stage (`data-onirigiri-slot="stage"`): `x` and `y` locate its top-left corner,
 combined factor. Onirigiri calls it during the same animation frame that moves
 the pane, only when the frame changes, and with `null` when no pane has focus.
 It reads no layout; the values come from the geometry Onirigiri writes.
+The second argument, `moving`, reports whether presentation is still animating, including a final
+`false` notification when it rests, even when no pane box is available. A host can use that boundary to prepare an
+expensive view after navigation while a saved picture covers its pane.
 
 ### Always-live mode
 

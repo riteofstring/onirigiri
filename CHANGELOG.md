@@ -7,6 +7,8 @@ saved-layout formats still work; layouts saved by 0.1.0 restore unchanged.
 
 ### Added
 
+- The `moving` argument of `onFocusedPaneFrame` reports the actual presentation
+  boundary so hosts can defer expensive work until navigation rests.
 - `paneLink` on `OnirigiriWorkspace` (off by default). With it, `?pane=<id>`
   opens the workspace on that pane wherever it sits, the URL follows focus
   once it settles (keeping other query parameters and the hash, with
