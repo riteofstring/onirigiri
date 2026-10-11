@@ -14,6 +14,7 @@ import {
   totalmem,
 } from "node:os";
 import { parseArgs } from "node:util";
+import { chromeLaunchOptions } from "../tests/browser/chrome-launch.ts";
 
 const { values } = parseArgs({
   options: {
@@ -89,9 +90,8 @@ await new Promise((ready) => server.listen(0, "127.0.0.1", ready));
 let browser;
 try {
   browser = await chromium.launch({
-    channel: "chrome",
+    ...chromeLaunchOptions,
     headless: true,
-    args: ["--enable-blink-features=CanvasDrawElement"],
   });
   result.browser = browser.version();
   const session = await browser.newBrowserCDPSession();
