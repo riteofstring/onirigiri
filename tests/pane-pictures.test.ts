@@ -1436,6 +1436,50 @@ describe("engine pane pictures", () => {
     expect(captured).not.toHaveBeenCalled();
   });
 
+  it("refreshes restored stale seed coverage during overview", async () => {
+    const f = fixture(capture);
+    canvasMock.uncapturable.add(f.content);
+    const source = {};
+    f.readiness.update(source, true, 1);
+    const seed = png();
+    f.config.resolver = (pane) =>
+      pane.paneId === "a" ? { image: seed, replaceable: true } : null;
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")?.image).toBe(seed);
+    f.readiness.update(source, true, 2);
+    f.config.items = [];
+    f.config.budgetBytes = 0;
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toBeNull();
+
+    f.config.budgetBytes = 1000;
+    f.config.items = [
+      renderItem({ paneId: "a", visible: true, presentationMode: "overview" }),
+    ];
+    f.config.captureMissingOverviewPictures = true;
+    f.overview(true);
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")?.image).toBe(seed);
+    expect(capture).not.toHaveBeenCalled();
+
+    canvasMock.uncapturable.delete(f.content);
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
+    const replacement = f.pictures.get("a");
+    expect(capture).toHaveBeenCalledOnce();
+    expect(replacement?.capture).toBeTruthy();
+    expect(replacement?.image).not.toBe(seed);
+    f.pictures.finishOverviewCapture("a", replacement);
+    expect(f.pictures.getStatus().overviewPaneId).toBeNull();
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toBe(replacement);
+    expect(capture).toHaveBeenCalledOnce();
+  });
+
   it("shares supplied and captured ownership, preserves withdrawn sources, and releases removed panes", async () => {
     const f = fixture();
     const image = png();

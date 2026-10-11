@@ -1133,7 +1133,12 @@ export class PanePictures {
     });
     if (accepted) {
       this.accepted++;
-      this.stalePictures.delete(id);
+      if (
+        source.replaceable &&
+        this.retiredSeeds.get(id)?.deref() === source.image
+      )
+        this.stalePictures.add(id);
+      else this.stalePictures.delete(id);
     } else this.rejected++;
     this.publish();
     return accepted;

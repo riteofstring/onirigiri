@@ -375,7 +375,9 @@ picture. Withdrawing a seed releases even its retained stale coverage;
 offering a replacement keeps the old pixels until the new image is prepared. If
 the cache evicts the complete entry, its current supplied seed can restore
 coverage, including a retired seed. Restoration revalidates the pane, resolver
-and Blob through decoding and acceptance. Accepted captures are reported with their PNG so the application owns
+and Blob through decoding and acceptance. A restored retired seed remains stale
+coverage so overview and background acquisition can replace it. A new supplied
+Blob or accepted capture clears that stale state. Accepted captures are reported with their PNG so the application owns
 persistence; the engine keeps no storage of its own.
 The engine owns acceptance, compressed originals, prepared GPU textures and
 presentation. Immutable PNG originals survive live-DOM eviction without a
