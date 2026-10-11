@@ -466,6 +466,12 @@ same pane wrapper with `moveBefore`, reusing staging geometry, scroll preservati
 iframe validation and recording-density correction. It copies a fresh image into
 a private texture and returns a PNG through the existing acceptance boundary.
 It never transfers the live renderer's retained image or draws into its output.
+Worker staging reads the original canvas dimensions before inserting or moving
+content. One scroll-preservation boundary covers preparation, insertion, movement
+and popover presentation; one covers restoration and removal. The shared staging
+helper accepts those dimensions and delegates preservation to that outer boundary,
+avoiding intermediate layout reads on a newly moved subtree. Native freezing keeps
+its existing state transition and preservation behavior.
 
 Cancellation restores the original content and staging styles synchronously,
 then terminates the optional worker before releasing its request. A later

@@ -3,10 +3,10 @@ export function stagePaneCanvas(
   preserveScroll: (update: () => void) => void,
   recordingScale: () => number,
   beforeShow: () => void,
+  size = { width: canvas.offsetWidth, height: canvas.offsetHeight },
 ): () => void {
   const style = canvas.getAttribute("style");
-  const width = canvas.offsetWidth;
-  const height = canvas.offsetHeight;
+  const { width, height } = size;
   const view = canvas.ownerDocument.defaultView!;
   const scale = Math.min(1, view.innerWidth / width, view.innerHeight / height);
   const inert = canvas.inert;

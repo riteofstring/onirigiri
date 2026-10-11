@@ -365,9 +365,10 @@ export class PaneCanvasSurface {
     request.signal.addEventListener("abort", abort, { once: true });
     this.captureAbort = controller;
     try {
-      const worker = request.stage
-        ? await request.background?.client.prepare(controller.signal)
-        : null;
+      const worker =
+        request.stage && request.background
+          ? await request.background.client.prepare(controller.signal)
+          : null;
       controller.signal.throwIfAborted();
       const size = this.rasterSize(request.maxRasterBytes, worker?.limit);
       const image = worker
@@ -807,32 +808,39 @@ export class PaneCanvasSurface {
   }
 
   private stageWorker(canvas: HTMLCanvasElement): () => void {
+    const size = {
+      width: this.canvas.offsetWidth,
+      height: this.canvas.offsetHeight,
+    };
     this.freezePending = this.source.freeze() || this.freezePending;
-    this.prepareContent();
-    canvas.className = this.canvas.className;
-    canvas.style.cssText = this.canvas.style.cssText;
-    canvas.setAttribute("layoutsubtree", "");
-    canvas.setAttribute("data-onirigiri-recording", "");
-    this.canvas.after(canvas);
     let restoreStage: (() => void) | undefined;
     let restored = false;
     const restore = () => {
       if (restored) return;
       restored = true;
-      this.source.preserveScroll(() =>
-        this.canvas.moveBefore(this.content, null),
-      );
-      restoreStage?.();
-      canvas.remove();
+      this.source.preserveScroll(() => {
+        this.canvas.moveBefore(this.content, null);
+        restoreStage?.();
+        canvas.remove();
+      });
     };
     try {
-      this.source.preserveScroll(() => canvas.moveBefore(this.content, null));
-      restoreStage = stagePaneCanvas(
-        canvas,
-        (update) => this.source.preserveScroll(update),
-        () => this.recordingScale,
-        () => this.callbacks.drawn(false),
-      );
+      this.source.preserveScroll(() => {
+        this.prepareContent();
+        canvas.className = this.canvas.className;
+        canvas.style.cssText = this.canvas.style.cssText;
+        canvas.setAttribute("layoutsubtree", "");
+        canvas.setAttribute("data-onirigiri-recording", "");
+        this.canvas.after(canvas);
+        canvas.moveBefore(this.content, null);
+        restoreStage = stagePaneCanvas(
+          canvas,
+          (update) => update(),
+          () => this.recordingScale,
+          () => this.callbacks.drawn(false),
+          size,
+        );
+      });
       return restore;
     } catch (error) {
       restore();
