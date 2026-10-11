@@ -4,6 +4,8 @@ import {
 } from "./pane-picture-canvas-readback.js";
 import { PanePictureResize } from "./pane-picture-resize.js";
 import { PanePictureContent } from "./pane-picture-content.js";
+import { stagePaneCanvas } from "./pane-picture-canvas-stage.js";
+import type { PanePictureCaptureClient } from "./pane-picture-capture-client.js";
 import {
   documentLiveCopyBudget,
   type LiveCopyBudget,
@@ -49,6 +51,7 @@ interface PaneCanvasSnapshotRequest {
   stage: boolean;
   maxRasterBytes: number;
   maxEncodedBytes: number;
+  background?: { client: PanePictureCaptureClient; id: string };
 }
 
 interface PaneCanvasCallbacks {
@@ -332,6 +335,7 @@ export class PaneCanvasSurface {
 
   dispose(): void {
     this.disposed = true;
+    this.captureAbort?.abort();
     this.source.dispose();
     this.canvas.clearElementGeometry?.(this.content);
     delete this.content.dataset.onirigiriLive;
@@ -339,7 +343,6 @@ export class PaneCanvasSurface {
     this.lastImage?.close();
     this.lastImage = null;
     this.copyBudget.forget(this);
-    this.captureAbort?.abort();
     this.resize.disconnect();
     this.canvas.removeEventListener("paint", this.paint);
     this.source.preserveScroll(() =>
@@ -361,29 +364,26 @@ export class PaneCanvasSurface {
     const abort = () => controller.abort(request.signal.reason);
     request.signal.addEventListener("abort", abort, { once: true });
     this.captureAbort = controller;
-    let restore: (() => void) | undefined;
-    let texture: GPUTexture | undefined;
     try {
-      const size = this.rasterSize(request.maxRasterBytes);
-      texture = this.captureTexture(size);
-      if (request.stage) {
-        restore = this.stage();
-        controller.signal.addEventListener("abort", restore, { once: true });
-      }
-      await this.recordCapture(texture, controller.signal, request.stage);
-      const image = await readPaneCanvasTexture(
-        this.device!,
-        texture,
-        controller.signal,
-      );
+      const worker = request.stage
+        ? await request.background?.client.prepare(controller.signal)
+        : null;
+      controller.signal.throwIfAborted();
+      const size = this.rasterSize(request.maxRasterBytes, worker?.limit);
+      const image = worker
+        ? await this.captureInWorker(
+            worker.canvas,
+            request.background!,
+            size,
+            controller.signal,
+          )
+        : await this.captureOnMain(size, controller.signal, request.stage);
+      controller.signal.throwIfAborted();
       if (image.size > request.maxEncodedBytes)
         throw new Error("Pane canvas exceeds the encoded picture budget");
       return { image, ...size };
     } finally {
       request.signal.removeEventListener("abort", abort);
-      texture?.destroy();
-      if (restore) controller.signal.removeEventListener("abort", restore);
-      restore?.();
       if (request.stage) {
         this.lastImage?.close();
         this.lastImage = null;
@@ -391,6 +391,57 @@ export class PaneCanvasSurface {
       }
       this.captureAbort = null;
       this.requestPaint();
+    }
+  }
+
+  private async captureInWorker(
+    canvas: HTMLCanvasElement,
+    background: NonNullable<PaneCanvasSnapshotRequest["background"]>,
+    size: { width: number; height: number },
+    signal: AbortSignal,
+  ): Promise<Blob> {
+    const restore = this.stageWorker(canvas);
+    signal.addEventListener("abort", restore, { once: true });
+    try {
+      await this.settleStage(signal);
+      const recorded = await this.recordWorkerImage(
+        canvas as ElementCanvas,
+        signal,
+      );
+      try {
+        return await background.client.capture(
+          background.id,
+          recorded,
+          size,
+          signal,
+        );
+      } finally {
+        recorded.close();
+      }
+    } finally {
+      signal.removeEventListener("abort", restore);
+      restore();
+    }
+  }
+
+  private async captureOnMain(
+    size: { width: number; height: number },
+    signal: AbortSignal,
+    stage: boolean,
+  ): Promise<Blob> {
+    const texture = this.captureTexture(size);
+    let restore: (() => void) | undefined;
+    try {
+      if (stage) {
+        restore = this.stage();
+        signal.addEventListener("abort", restore, { once: true });
+      }
+      await this.recordCapture(texture, signal, stage);
+      return await readPaneCanvasTexture(this.device!, texture, signal);
+    } finally {
+      texture.destroy();
+      if (restore) signal.removeEventListener("abort", restore);
+      restore?.();
     }
   }
 
@@ -475,13 +526,16 @@ export class PaneCanvasSurface {
     });
   }
 
-  private rasterSize(budget: number): { width: number; height: number } {
+  private rasterSize(
+    budget: number,
+    limit = this.device!.limits.maxTextureDimension2D,
+  ): { width: number; height: number } {
     return paneCanvasRasterSize(
       this.content.offsetWidth,
       this.content.offsetHeight,
       this.canvas.ownerDocument.defaultView!.devicePixelRatio,
       budget,
-      this.device!.limits.maxTextureDimension2D,
+      Math.min(limit, this.device!.limits.maxTextureDimension2D),
     );
   }
 
@@ -584,23 +638,12 @@ export class PaneCanvasSurface {
       this.requestPaint();
       return false;
     }
-    for (const frame of this.content.getElementsByTagName("iframe")) {
-      if (!frame.contentDocument)
-        throw new Error(
-          "This pane contains a cross-origin iframe. Use content hosted on this origin or supply a pane picture.",
-        );
-    }
     const changed = !this.hasCurrentFrame() || this.freezePending;
+    const image = this.recordImage(this.canvas);
     this.lastImage?.close();
-    this.lastImage = this.canvas.captureElementImage(this.content);
-    const width = this.content.offsetWidth;
-    if (Math.abs(this.lastImage.width - width) > 1) {
-      this.recordingScale *= this.lastImage.width / width;
-      this.applyRecordingScale();
-      this.lastImage.close();
-      this.lastImage = null;
+    this.lastImage = image;
+    if (!this.lastImage) {
       this.imageSize = null;
-      this.requestPaint();
       return false;
     }
     if (changed) this.imageVersion++;
@@ -612,12 +655,67 @@ export class PaneCanvasSurface {
     return true;
   }
 
-  private applyRecordingScale(): void {
+  private recordImage(canvas: ElementCanvas): ElementImage | null {
+    for (const frame of this.content.getElementsByTagName("iframe")) {
+      if (!frame.contentDocument)
+        throw new Error(
+          "This pane contains a cross-origin iframe. Use content hosted on this origin or supply a pane picture.",
+        );
+    }
+    const image = canvas.captureElementImage(this.content);
+    const width = this.content.offsetWidth;
+    if (Math.abs(image.width - width) <= 1) return image;
+    this.recordingScale *= image.width / width;
+    this.applyRecordingScale(canvas);
+    image.close();
+    if (canvas === this.canvas) this.requestPaint();
+    else canvas.requestPaint();
+    return null;
+  }
+
+  private applyRecordingScale(canvas: ElementCanvas = this.canvas): void {
     this.source.preserveScroll(() => {
       this.canvas.style.setProperty(
         "--_onirigiri-capture-scale",
         String(this.recordingScale),
       );
+      if (canvas !== this.canvas)
+        canvas.style.setProperty(
+          "--_onirigiri-capture-scale",
+          String(this.recordingScale),
+        );
+    });
+  }
+
+  private recordWorkerImage(
+    canvas: ElementCanvas,
+    signal: AbortSignal,
+  ): Promise<ElementImage> {
+    signal.throwIfAborted();
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        canvas.removeEventListener("paint", paint);
+        signal.removeEventListener("abort", abort);
+      };
+      const abort = () => {
+        cleanup();
+        reject(signal.reason);
+      };
+      const paint = () => {
+        try {
+          signal.throwIfAborted();
+          const image = this.recordImage(canvas);
+          if (!image) return;
+          cleanup();
+          resolve(image);
+        } catch (error) {
+          cleanup();
+          reject(error);
+        }
+      };
+      canvas.addEventListener("paint", paint);
+      signal.addEventListener("abort", abort, { once: true });
+      canvas.requestPaint();
     });
   }
 
@@ -696,57 +794,45 @@ export class PaneCanvasSurface {
   }
 
   private stage(): () => void {
-    const canvas = this.canvas;
-    const style = canvas.getAttribute("style");
-    const width = canvas.offsetWidth;
-    const height = canvas.offsetHeight;
-    const view = canvas.ownerDocument.defaultView!;
-    const scale = Math.min(
-      1,
-      view.innerWidth / width,
-      view.innerHeight / height,
+    return stagePaneCanvas(
+      this.canvas,
+      (update) => this.source.preserveScroll(update),
+      () => this.recordingScale,
+      () => {
+        this.context!.unconfigure();
+        this.configure();
+        this.callbacks.drawn(false);
+      },
     );
-    const inert = canvas.inert;
+  }
+
+  private stageWorker(canvas: HTMLCanvasElement): () => void {
+    this.freezePending = this.source.freeze() || this.freezePending;
+    this.prepareContent();
+    canvas.className = this.canvas.className;
+    canvas.style.cssText = this.canvas.style.cssText;
+    canvas.setAttribute("layoutsubtree", "");
+    canvas.setAttribute("data-onirigiri-recording", "");
+    this.canvas.after(canvas);
+    let restoreStage: (() => void) | undefined;
     let restored = false;
     const restore = () => {
       if (restored) return;
       restored = true;
-      this.source.preserveScroll(() => {
-        if (canvas.matches(":popover-open")) canvas.hidePopover();
-        canvas.removeAttribute("popover");
-        if (style === null) canvas.removeAttribute("style");
-        else canvas.setAttribute("style", style);
-        canvas.style.setProperty(
-          "--_onirigiri-capture-scale",
-          String(this.recordingScale),
-        );
-        canvas.inert = inert;
-      });
+      this.source.preserveScroll(() =>
+        this.canvas.moveBefore(this.content, null),
+      );
+      restoreStage?.();
+      canvas.remove();
     };
     try {
-      this.context!.unconfigure();
-      this.configure();
-      this.callbacks.drawn(false);
-      canvas.inert = true;
-      canvas.setAttribute("popover", "manual");
-      Object.assign(canvas.style, {
-        position: "fixed",
-        left: "0",
-        top: "0",
-        right: "auto",
-        bottom: "auto",
-        width: `${width}px`,
-        height: `${height}px`,
-        margin: "0",
-        padding: "0",
-        border: "0",
-        background: "transparent",
-        opacity: "1",
-        pointerEvents: "none",
-        transformOrigin: "0 0",
-        transform: `scale(${scale})`,
-      });
-      canvas.showPopover();
+      this.source.preserveScroll(() => canvas.moveBefore(this.content, null));
+      restoreStage = stagePaneCanvas(
+        canvas,
+        (update) => this.source.preserveScroll(update),
+        () => this.recordingScale,
+        () => this.callbacks.drawn(false),
+      );
       return restore;
     } catch (error) {
       restore();

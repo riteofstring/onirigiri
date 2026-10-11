@@ -10,6 +10,7 @@
     "entryPoints": [
       "src/index.ts",
       "src/onirigiri.ts",
+      "src/pictures/pane-picture-capture-worker.ts",
       "bench/src/main.tsx",
       "bench/vite.config.ts",
       "fixtures/packed-consumer/src/main.tsx",
@@ -157,6 +158,10 @@
           "src/pictures/pane-picture-texture.ts",
           "tests/browser/picture-pixels.ts",
           "src/pictures/pane-picture-canvas.ts",
+          "src/pictures/pane-picture-canvas-stage.ts",
+          "src/pictures/pane-picture-capture-client.ts",
+          "src/pictures/pane-picture-capture-worker.ts",
+          "tests/pane-picture-capture-client.test.ts",
           "src/pictures/pane-picture-canvas-readback.ts",
           "src/pictures/pane-picture-activation.ts",
           "src/pictures/pane-picture-content.ts",

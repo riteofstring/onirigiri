@@ -450,6 +450,30 @@ identity. Completion and cancellation restore the ordinary canvas presentation.
 Zero opacity can suppress accelerated descendant recording, so staging uses
 transparent pixels with opacity one and disabled pointer input.
 
+Speculative offscreen acquisition can move its synchronous element-image copy
+into one lazy worker owned by the workspace. Its script ships beside the library
+and resolves relative to the importing module, including when an application
+is hosted below a URL prefix. The worker owns a reusable auxiliary
+canvas and its associated GPU context; the initialized live canvas and its GPU
+device remain on the main thread. Visible acquisition and presentation retain
+their existing path. The auxiliary canvas borrows the original content under the
+same pane wrapper with `moveBefore`, reusing staging geometry, scroll preservation,
+iframe validation and recording-density correction. It copies a fresh image into
+a private texture and returns a PNG through the existing acceptance boundary.
+It never transfers the live renderer's retained image or draws into its output.
+
+Cancellation restores the original content and staging styles synchronously,
+then terminates the optional worker before releasing its request. A later
+background attempt may initialize a fresh owner. Surface disposal aborts that
+lease before disposing native presentation. Workspace disposal terminates the
+owner. Unsupported initialization, including a blocked worker script, selects
+ordinary capture before moving content. A runtime worker failure rejects its
+capture and retires the optional backend; later eligible attempts use ordinary
+capture without discarding retained pictures or disabling native presentation.
+Old worker messages cannot complete a newer owner's request. Existing source
+validation, serial admission, deadlines and raster/encoded limits remain in
+force. Worker support does not imply pixel support for excluded content types.
+
 Only one capture/readback owns the acquisition slot at a time. Ready visible
 content takes priority over speculative initialization. Surface identity,
 readiness revision, local dimensions, connectivity and cancellation are checked

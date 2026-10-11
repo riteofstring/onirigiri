@@ -41,6 +41,7 @@ import {
   type CachedPanePicture,
 } from "./pane-picture-cache.js";
 import { preparePanePictureTexture } from "./pane-picture-texture.js";
+import { PanePictureCaptureClient } from "./pane-picture-capture-client.js";
 
 interface ContentHost {
   content: HTMLElement;
@@ -80,6 +81,7 @@ const maxEncodedBytes = 32 * 1024 * 1024;
 const maxRasterBytes = 128 * 1024 * 1024;
 
 export class PanePictures {
+  private captureWorker: PanePictureCaptureClient | null = null;
   private readonly pictures = new PanePictureCache(
     async (image, size, valid) => {
       const document = this.root!.ownerDocument;
@@ -319,6 +321,8 @@ export class PanePictures {
       this.activation.dispose();
       this.cancel();
       for (const host of this.hosts.values()) host.surface.dispose();
+      this.captureWorker?.dispose();
+      this.captureWorker = null;
       void this.device?.then((device) => device.destroy()).catch(() => {});
       this.device = null;
       this.deviceReady = false;
@@ -876,16 +880,29 @@ export class PanePictures {
     );
   }
 
+  private captureRequest(batch: Batch) {
+    const pane = batch.panes[0]!;
+    return {
+      signal: batch.abort.signal,
+      stage: batch.preload || this.isOverviewCapture(pane.paneId),
+      maxEncodedBytes,
+      maxRasterBytes,
+      background: batch.preload
+        ? {
+            client: (this.captureWorker ??= new PanePictureCaptureClient(
+              pane.content.ownerDocument,
+            )),
+            id: batch.id,
+          }
+        : undefined,
+    };
+  }
+
   private async capture(batch: Batch): Promise<boolean> {
     try {
       if (!this.valid(batch)) return false;
       const pane = batch.panes[0]!;
-      const result = await pane.surface.capture({
-        signal: batch.abort.signal,
-        stage: batch.preload || this.isOverviewCapture(pane.paneId),
-        maxEncodedBytes,
-        maxRasterBytes,
-      });
+      const result = await pane.surface.capture(this.captureRequest(batch));
       if (!this.valid(batch)) return false;
       const accepted = await this.accept(
         pane.paneId,

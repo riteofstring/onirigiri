@@ -42,6 +42,7 @@ export async function readPaneCanvasTexture(
   device: GPUDevice,
   texture: GPUTexture,
   signal: AbortSignal,
+  encode = encodeCanvasPixels,
 ): Promise<Blob> {
   signal.throwIfAborted();
   const stride = Math.ceil((texture.width * 4) / 256) * 256;
@@ -69,12 +70,7 @@ export async function readPaneCanvasTexture(
       );
     }
     buffer.unmap();
-    return await encodeCanvasPixels(
-      rgba,
-      texture.width,
-      texture.height,
-      signal,
-    );
+    return await encode(rgba, texture.width, texture.height, signal);
   } finally {
     signal.removeEventListener("abort", abort);
     buffer.destroy();
@@ -96,7 +92,7 @@ async function encodeCanvasPixels(
   return encodeOnCurrentThread(rgba, width, height, signal);
 }
 
-async function encodeOnCurrentThread(
+export async function encodeOnCurrentThread(
   rgba: Uint8ClampedArray<ArrayBuffer>,
   width: number,
   height: number,

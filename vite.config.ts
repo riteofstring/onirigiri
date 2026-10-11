@@ -26,6 +26,7 @@ const jsdomTestFiles = [
 ];
 
 export default defineConfig({
+  base: "./",
   build: {
     lib: {
       cssFileName: "onirigiri",
