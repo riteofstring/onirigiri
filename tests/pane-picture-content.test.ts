@@ -14,6 +14,152 @@ function scrolledTo(element: Element, top: number) {
 }
 
 describe("PanePictureContent", () => {
+  it("keeps native input live while shared display preparation outlasts an aborted capture", async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.set(++frameId, callback);
+      return frameId;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+      frames.delete(id);
+    });
+    const flushFrames = () => {
+      const pending = [...frames.values()];
+      frames.clear();
+      for (const callback of pending) callback(16);
+    };
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal("GPUTextureUsage", {
+      COPY_SRC: 1,
+      COPY_DST: 2,
+      TEXTURE_BINDING: 4,
+      RENDER_ATTACHMENT: 16,
+    });
+    const parent = document.createElement("div");
+    const canvas = document.createElement("canvas");
+    const content = document.createElement("div");
+    const input = document.createElement("input");
+    input.value = "Retained draft";
+    content.append(input);
+    canvas.append(content);
+    parent.append(canvas);
+    document.body.append(parent);
+    Object.defineProperties(content, {
+      offsetWidth: { value: 480 },
+      offsetHeight: { value: 354 },
+    });
+    vi.spyOn(canvas, "getContext").mockReturnValue({
+      configure: vi.fn(),
+      unconfigure: vi.fn(),
+    } as unknown as GPUCanvasContext);
+    let complete!: (pipeline: GPURenderPipeline) => void;
+    const compilation = new Promise<GPURenderPipeline>((resolve) => {
+      complete = resolve;
+    });
+    const compile = vi.fn(() => compilation);
+    const destroy = vi.fn();
+    const device = {
+      lost: new Promise(() => {}),
+      limits: { maxTextureDimension2D: 8192 },
+      createShaderModule: () => ({}),
+      createRenderPipelineAsync: compile,
+      createTexture: () => ({ width: 480, height: 354, destroy }),
+    } as unknown as GPUDevice;
+    const surface = new PaneCanvasSurface(
+      canvas,
+      content,
+      Promise.resolve(device),
+      {
+        continuous: () => false,
+        canDraw: () => true,
+        canPrime: () => false,
+        visible: () => true,
+        interactive: () => true,
+        renderer: () => "dom",
+        displayScale: () => 1,
+        revision: () => 0,
+        drawn: () => {},
+        failed: (error) => {
+          throw error;
+        },
+      },
+    );
+    const controllers = [new AbortController(), new AbortController()];
+    const captures: Promise<unknown>[] = [];
+    const rejected: unknown[] = [];
+    try {
+      await Promise.resolve();
+      flushFrames();
+      const host = content.parentElement!;
+      expect(host).not.toBe(canvas);
+      input.focus();
+      for (const [index, controller] of controllers.entries()) {
+        const capture = surface.capture({
+          signal: controller.signal,
+          stage: false,
+          maxRasterBytes: 4 * 1024 * 1024,
+          maxEncodedBytes: 4 * 1024 * 1024,
+        });
+        captures.push(capture);
+        void capture.catch((error: unknown) => {
+          rejected[index] = error;
+        });
+      }
+      surface.requestPaint();
+      flushFrames();
+      expect(content.parentElement).toBe(host);
+      expect(host.hidden).toBe(false);
+      expect(host.style.opacity).toBe("");
+      expect(content.dataset.onirigiriLive).toBe("true");
+      expect(document.activeElement).toBe(input);
+      expect(input.value).toBe("Retained draft");
+      input.value = "Typed while preparing";
+      const firstReason = new Error("Navigation cancelled capture");
+      controllers[0]!.abort(firstReason);
+      await vi.waitFor(() => expect(rejected[0]).toBe(firstReason));
+      surface.requestPaint();
+      flushFrames();
+      expect(rejected[1]).toBeUndefined();
+      expect(content.parentElement).toBe(host);
+      expect(host.hidden).toBe(false);
+      expect(host.style.opacity).toBe("");
+      expect(host.querySelector("input")).toBe(input);
+      expect(document.activeElement).toBe(input);
+      expect(compile).toHaveBeenCalledOnce();
+
+      complete({} as GPURenderPipeline);
+      await vi.waitFor(() => expect(content.parentElement).toBe(canvas));
+      expect(host.hidden).toBe(true);
+      expect(input.value).toBe("Typed while preparing");
+      expect(compile).toHaveBeenCalledOnce();
+      const secondReason = new Error("Capture interrupted during recording");
+      controllers[1]!.abort(secondReason);
+      await expect(captures[1]).rejects.toBe(secondReason);
+      flushFrames();
+      expect(content.parentElement).toBe(host);
+      expect(host.hidden).toBe(false);
+      expect(host.style.opacity).toBe("");
+      expect(host.querySelector("input")).toBe(input);
+      expect(input.value).toBe("Typed while preparing");
+      expect(destroy).toHaveBeenCalledOnce();
+    } finally {
+      for (const controller of controllers) controller.abort();
+      complete({} as GPURenderPipeline);
+      await Promise.allSettled(captures);
+      surface.dispose();
+      parent.remove();
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("keeps resize dimensions when an aborted staged capture finishes cleaning up", async () => {
     const frames = new Map<number, FrameRequestCallback>();
     let sequence = 0;

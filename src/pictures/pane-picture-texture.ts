@@ -4,6 +4,92 @@ declare const GPUTextureUsage: {
   readonly RENDER_ATTACHMENT: number;
 };
 
+const captureDisplays = new WeakMap<
+  GPUDevice,
+  Promise<GPURenderPipeline | undefined>
+>();
+
+export function preparePaneCaptureDisplay(
+  device: GPUDevice,
+  signal: AbortSignal,
+): Promise<GPURenderPipeline | undefined> {
+  signal.throwIfAborted();
+  let pipeline = captureDisplays.get(device);
+  if (!pipeline) {
+    const module = device.createShaderModule({
+      code: `
+@group(0) @binding(0) var pixels: texture_2d<f32>;
+
+@vertex fn vertex(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {
+  let corners = array(vec2f(-1, -1), vec2f(3, -1), vec2f(-1, 3));
+  return vec4f(corners[index], 0, 1);
+}
+
+@fragment fn fragment(@builtin(position) position: vec4f) -> @location(0) vec4f {
+  let color = textureLoad(pixels, vec2i(position.xy), 0);
+  return vec4f(color.rgb * color.a, color.a);
+}`,
+    });
+    pipeline = device
+      .createRenderPipelineAsync({
+        layout: "auto",
+        vertex: { module, entryPoint: "vertex" },
+        fragment: {
+          module,
+          entryPoint: "fragment",
+          targets: [{ format: "rgba8unorm" }],
+        },
+      })
+      .catch(() => undefined);
+    captureDisplays.set(device, pipeline);
+  }
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener("abort", abort, { once: true });
+    void pipeline.then(
+      (prepared) => {
+        signal.removeEventListener("abort", abort);
+        if (signal.aborted) reject(signal.reason);
+        else resolve(prepared);
+      },
+      (error: unknown) => {
+        signal.removeEventListener("abort", abort);
+        reject(error);
+      },
+    );
+  });
+}
+
+export function displayPaneCapture(
+  device: GPUDevice,
+  pipeline: GPURenderPipeline,
+  source: GPUTexture,
+  destination: GPUTexture,
+): void {
+  const encoder = device.createCommandEncoder();
+  const pass = encoder.beginRenderPass({
+    colorAttachments: [
+      {
+        view: destination.createView(),
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+      },
+    ],
+  });
+  pass.setPipeline(pipeline);
+  pass.setBindGroup(
+    0,
+    device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: source.createView() }],
+    }),
+  );
+  pass.draw(3);
+  pass.end();
+  device.queue.submit([encoder.finish()]);
+}
+
 export interface PanePictureTexture {
   readonly width: number;
   readonly height: number;

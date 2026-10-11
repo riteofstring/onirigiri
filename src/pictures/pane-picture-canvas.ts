@@ -5,6 +5,10 @@ import {
 import { PanePictureResize } from "./pane-picture-resize.js";
 import { PanePictureContent } from "./pane-picture-content.js";
 import { stagePaneCanvas } from "./pane-picture-canvas-stage.js";
+import {
+  displayPaneCapture,
+  preparePaneCaptureDisplay,
+} from "./pane-picture-texture.js";
 import type { PanePictureCaptureClient } from "./pane-picture-capture-client.js";
 import {
   documentLiveCopyBudget,
@@ -360,6 +364,12 @@ export class PaneCanvasSurface {
   }> {
     request.signal.throwIfAborted();
     this.assertCapturable();
+    const display =
+      this.live && !request.stage && !this.hasCurrentFrame()
+        ? await preparePaneCaptureDisplay(this.device!, request.signal)
+        : undefined;
+    request.signal.throwIfAborted();
+    this.assertCapturable();
     const controller = new AbortController();
     const abort = () => controller.abort(request.signal.reason);
     request.signal.addEventListener("abort", abort, { once: true });
@@ -378,7 +388,12 @@ export class PaneCanvasSurface {
             size,
             controller.signal,
           )
-        : await this.captureOnMain(size, controller.signal, request.stage);
+        : await this.captureOnMain(
+            size,
+            controller.signal,
+            request.stage,
+            display,
+          );
       controller.signal.throwIfAborted();
       if (image.size > request.maxEncodedBytes)
         throw new Error("Pane canvas exceeds the encoded picture budget");
@@ -429,6 +444,7 @@ export class PaneCanvasSurface {
     size: { width: number; height: number },
     signal: AbortSignal,
     stage: boolean,
+    display: GPURenderPipeline | undefined,
   ): Promise<Blob> {
     const texture = this.captureTexture(size);
     let restore: (() => void) | undefined;
@@ -437,7 +453,7 @@ export class PaneCanvasSurface {
         restore = this.stage();
         signal.addEventListener("abort", restore, { once: true });
       }
-      await this.recordCapture(texture, signal, stage);
+      await this.recordCapture(texture, signal, stage, display);
       return await readPaneCanvasTexture(this.device!, texture, signal);
     } finally {
       texture.destroy();
@@ -457,13 +473,14 @@ export class PaneCanvasSurface {
     texture: GPUTexture,
     signal: AbortSignal,
     stage: boolean,
+    display: GPURenderPipeline | undefined,
   ): Promise<void> {
     if (!stage && this.hasCurrentFrame()) {
       this.copyImage(this.lastImage!, texture, false);
       return;
     }
     if (stage) await this.settleStage(signal);
-    await this.capturePaint(texture, signal, stage);
+    await this.capturePaint(texture, signal, stage, display);
   }
 
   private settleStage(signal: AbortSignal): Promise<void> {
@@ -751,6 +768,7 @@ export class PaneCanvasSurface {
     texture: GPUTexture,
     signal: AbortSignal,
     staged: boolean,
+    display: GPURenderPipeline | undefined,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const cleanup = () => {
@@ -771,11 +789,14 @@ export class PaneCanvasSurface {
               this.canvas.width = size.width;
             if (this.canvas.height !== size.height)
               this.canvas.height = size.height;
-            this.copyImage(
-              this.lastImage!,
-              this.context!.getCurrentTexture(),
-              true,
-            );
+            const destination = this.context!.getCurrentTexture();
+            if (
+              display &&
+              texture.width === destination.width &&
+              texture.height === destination.height
+            )
+              displayPaneCapture(this.device!, display, texture, destination);
+            else this.copyImage(this.lastImage!, destination, true);
             this.canvas.updateElementGeometry?.(this.content);
             this.presentation.painted();
             this.freezePending = false;

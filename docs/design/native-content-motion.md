@@ -387,6 +387,16 @@ originals and destroy their GPU textures.
 Display copies use premultiplied alpha to match the WebGPU canvas configuration.
 Private readback copies use straight alpha to match PNG ImageData encoding.
 Transparent gradients and overlays retain their color in both presentations.
+When a fresh capture also updates a live canvas at the same raster size, a GPU
+pass premultiplies the existing straight-alpha texture for display. This avoids
+reading the same element image back a second time while leaving PNG pixels on
+their original path. The pass uses exact texel loads without filtering or
+blending. Its pipeline is shared per device and prepared asynchronously before
+recording takes ownership of the source; live DOM remains available during that
+preparation. A smaller capture budget or a changed live size keeps the separate
+full-resolution display copy instead of stretching the saved picture.
+If compilation fails, that device keeps the existing display-copy path. Cancelling
+one request releases its wait without cancelling compilation shared by other panes.
 
 Scrollbar thumbs and tracks are transparent only in recorded content. Chromium
 can paint otherwise-hidden native overlay scrollbars into element images, making

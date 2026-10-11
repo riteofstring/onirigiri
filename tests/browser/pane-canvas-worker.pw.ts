@@ -6,6 +6,163 @@ test.use({
   launchOptions: chromeLaunchOptions,
 });
 
+for (const dpr of [1, 2]) {
+  test.describe(`capture display at pixel ratio ${dpr}`, () => {
+    test.use({ deviceScaleFactor: dpr });
+
+    for (const reduced of [false, true]) {
+      test(`keeps fresh translucent live pixels while PNG encoding waits${reduced ? " with a reduced capture" : " with one element copy"}`, async ({
+        page,
+      }) => {
+        await openCanvas(page);
+        await page.evaluate(() => {
+          const fixture = window.__paneCanvasFixture;
+          const content = document.querySelector<HTMLElement>("#content")!;
+          content.replaceChildren();
+          content.style.background = "transparent";
+          content.style.display = "flex";
+          for (const alpha of [0.5, 0.05]) {
+            const stripe = document.createElement("div");
+            stripe.style.cssText = `width:50%;height:100%;background:rgba(200,100,50,${alpha})`;
+            content.append(stripe);
+          }
+          fixture.pane.style.transform = "none";
+          fixture.live = true;
+          fixture.surface.requestPaint();
+        });
+        await expect(page.locator("#content")).toHaveAttribute(
+          "data-onirigiri-live",
+          "true",
+        );
+        const capture = await page.evaluateHandle((reduced) => {
+          const fixture = window.__paneCanvasFixture;
+          const queue = fixture.device!.queue as GPUQueue & {
+            copyElementImageToTexture(...args: unknown[]): void;
+          };
+          const copy = queue.copyElementImageToTexture;
+          const post = Worker.prototype.postMessage;
+          let copies = 0;
+          let release!: () => void;
+          let encoding!: () => void;
+          let failed!: (error: unknown) => void;
+          const started = new Promise<void>((resolve, reject) => {
+            encoding = resolve;
+            failed = reject;
+          });
+          const gate = new Promise<void>((resolve) => (release = resolve));
+          queue.copyElementImageToTexture = function (...args) {
+            copies++;
+            return copy.apply(this, args);
+          };
+          Worker.prototype.postMessage = function (
+            this: Worker,
+            ...message: Parameters<Worker["postMessage"]>
+          ) {
+            encoding();
+            void gate.then(() => post.apply(this, message));
+          } as Worker["postMessage"];
+          fixture.pane.style.width = "700px";
+          fixture.pane.style.height = "260px";
+          fixture.revision++;
+          const currentBeforeCapture = fixture.surface.hasCurrentFrame();
+          const options = {
+            stage: false,
+            signal: AbortSignal.timeout(10_000),
+            maxRasterBytes: reduced ? 4096 : 16 * 1024 * 1024,
+            maxEncodedBytes: 8 * 1024 * 1024,
+          };
+          const completion = fixture.surface.capture(options).finally(() => {
+            queue.copyElementImageToTexture = copy;
+            Worker.prototype.postMessage = post;
+          });
+          void completion.catch(failed);
+          const pixels = async (image: Blob) => {
+            const bitmap = await createImageBitmap(image);
+            const reader = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const context = reader.getContext("2d")!;
+            const sample = () =>
+              [0.25, 0.75].map((x) => [
+                ...context.getImageData(
+                  Math.floor(reader.width * x),
+                  Math.floor(reader.height / 2),
+                  1,
+                  1,
+                ).data,
+              ]);
+            context.drawImage(bitmap, 0, 0);
+            const raw = sample();
+            context.fillStyle = "white";
+            context.fillRect(0, 0, reader.width, reader.height);
+            context.drawImage(bitmap, 0, 0);
+            const composite = sample();
+            bitmap.close();
+            return {
+              raw,
+              composite,
+              width: reader.width,
+              height: reader.height,
+            };
+          };
+          const live = async () => {
+            const image = await new Promise<Blob>((resolve) =>
+              fixture.canvas.toBlob((blob) => resolve(blob!)),
+            );
+            return pixels(image);
+          };
+          const finish = async () => {
+            release();
+            const retained = await completion;
+            const reference = await fixture.surface.capture(options);
+            return {
+              retained: await pixels(retained.image),
+              reference: await pixels(reference.image),
+            };
+          };
+          return {
+            started,
+            live,
+            finish,
+            release,
+            currentBeforeCapture,
+            copies: () => copies,
+          };
+        }, reduced);
+        try {
+          await capture.evaluate((capture) => capture.started);
+          expect(
+            await capture.evaluate((capture) => capture.currentBeforeCapture),
+          ).toBe(false);
+          expect(await capture.evaluate((capture) => capture.copies())).toBe(
+            reduced ? 2 : 1,
+          );
+          const live = await capture.evaluate((capture) => capture.live());
+          expect([live.width, live.height]).toEqual([700 * dpr, 260 * dpr]);
+          const { retained, reference } = await capture.evaluate((capture) =>
+            capture.finish(),
+          );
+          expect(retained.raw).toEqual(reference.raw);
+          expect(retained.width < live.width).toBe(reduced);
+          for (const image of [live, retained])
+            for (const [stripe, expected] of [
+              [227, 177, 152, 255],
+              [252, 247, 245, 255],
+            ].entries())
+              for (const [channel, value] of expected.entries())
+                expect(
+                  Math.abs(image.composite[stripe]![channel]! - value),
+                ).toBeLessThanOrEqual(2);
+          expect(
+            await page.evaluate(() => window.__paneCanvasFixture.error),
+          ).toBeNull();
+        } finally {
+          await capture.evaluate((capture) => capture.release());
+          await capture.dispose();
+        }
+      });
+    }
+  });
+}
+
 for (const workerDpr of [1, 2]) {
   test.describe(`background worker at pixel ratio ${workerDpr}`, () => {
     test.use({ deviceScaleFactor: workerDpr });
