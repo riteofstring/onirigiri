@@ -1060,6 +1060,31 @@ describe("engine pane pictures", () => {
     expect(gaps[2]).toBeLessThan(gaps[1]!);
   });
 
+  it("backs off after late acquisition callbacks despite regular frame timestamps", async () => {
+    const cadence = frameCadence(16);
+    const queue = preloadQueue(async (paneId) => {
+      if (paneId === "first") cadence(16, 9);
+      await new Promise((resolve) => setTimeout(resolve, 33));
+      cadence(16, 7);
+    });
+    for (let step = 0; step < 200 && queue.completed.size === 0; step++)
+      await vi.advanceTimersByTimeAsync(1);
+    expect([...queue.completed]).toEqual(["first"]);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(queue.warmups.map(({ paneId }) => paneId)).toEqual(["first"]);
+    await vi.advanceTimersByTimeAsync(600);
+    expect([...queue.completed]).toEqual([
+      "first",
+      "second",
+      "third",
+      "fourth",
+    ]);
+    expect(
+      queue.warmups[1]!.start - queue.warmups[0]!.end,
+    ).toBeGreaterThanOrEqual(250);
+    expect(queue.maximumActive()).toBe(1);
+  });
+
   it("bounds background recovery after repeated early stalls and sustained healthy frames", async () => {
     const cadence = frameCadence(16);
     const queue = preloadQueue(async () => {
