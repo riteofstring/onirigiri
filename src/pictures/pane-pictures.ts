@@ -1017,8 +1017,8 @@ export class PanePictures {
   }
 
   private seedSettled(id: PaneId, image: Blob): boolean {
-    if (this.retiredSeeds.get(id)?.deref() === image) return true;
     const current = this.pictures.get(id);
+    if (current && this.retiredSeeds.get(id)?.deref() === image) return true;
     if (current?.capture) {
       this.retiredSeeds.set(id, new WeakRef(image));
       return true;

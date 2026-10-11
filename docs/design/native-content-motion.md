@@ -370,10 +370,12 @@ an application restore pictures saved from an earlier session without freezing
 them. A content revision marks an accepted seed or capture stale while retaining
 its pixels until a replacement is prepared. Stale pictures provide coverage but
 do not suppress acquisition. A capture always takes precedence, and a seed that
-was replaced or retired after a revision change is not accepted
-again for that pane. Withdrawing a seed releases even its retained stale coverage;
-offering a replacement keeps the old pixels until the new image is prepared. A seed
-the cache evicted can be offered again. Accepted captures are reported with their PNG so the application owns
+was replaced or retired after a revision change cannot overwrite a resident
+picture. Withdrawing a seed releases even its retained stale coverage;
+offering a replacement keeps the old pixels until the new image is prepared. If
+the cache evicts the complete entry, its current supplied seed can restore
+coverage, including a retired seed. Restoration revalidates the pane, resolver
+and Blob through decoding and acceptance. Accepted captures are reported with their PNG so the application owns
 persistence; the engine keeps no storage of its own.
 The engine owns acceptance, compressed originals, prepared GPU textures and
 presentation. Immutable PNG originals survive live-DOM eviction without a

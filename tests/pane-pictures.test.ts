@@ -1369,6 +1369,60 @@ describe("engine pane pictures", () => {
     expect(capture).not.toHaveBeenCalled();
   });
 
+  it.each(["unchanged", "withdrawn", "replaced"] as const)(
+    "restores an evicted retired seed only while its source remains current (%s)",
+    async (sourceChange) => {
+      const f = fixture(capture);
+      canvasMock.uncapturable.add(f.content);
+      const source = {};
+      f.readiness.update(source, true, 1);
+      const seed = png();
+      let image: Blob | null = seed;
+      f.config.resolver = (pane) =>
+        pane.paneId === "a" && image ? { image, replaceable: true } : null;
+      f.pictures.configure(f.config);
+      await vi.advanceTimersByTimeAsync(300);
+      expect(f.pictures.get("a")?.image).toBe(seed);
+      const accepted = f.pictures.getStatus().accepted;
+      f.readiness.update(source, true, 2);
+      f.pictures.activity();
+      await vi.advanceTimersByTimeAsync(300);
+      expect(f.pictures.get("a")?.image).toBe(seed);
+      expect(f.pictures.getStatus().accepted).toBe(accepted);
+
+      const items = f.config.items;
+      f.config.items = [];
+      f.config.budgetBytes = 0;
+      f.pictures.configure(f.config);
+      await vi.advanceTimersByTimeAsync(300);
+      expect(f.pictures.get("a")).toBeNull();
+      expect(f.pictures.getStatus().pictureBytes).toBe(0);
+
+      const decoded = deferred<ImageBitmap>();
+      const decode = vi.spyOn(window, "createImageBitmap");
+      decode.mockClear();
+      decode.mockImplementationOnce(() => decoded.promise);
+      f.config.items = items;
+      f.config.budgetBytes = 1000;
+      f.pictures.configure(f.config);
+      f.pictures.activity();
+      await vi.advanceTimersByTimeAsync(300);
+      expect(decode).toHaveBeenCalledOnce();
+      expect(f.pictures.get("a")).toBeNull();
+      if (sourceChange === "withdrawn") image = null;
+      if (sourceChange === "replaced") image = png(300, 100);
+      decoded.resolve({
+        width: 200,
+        height: 100,
+        close: vi.fn(),
+      } as unknown as ImageBitmap);
+      await vi.advanceTimersByTimeAsync(300);
+      expect(f.pictures.get("a")?.image ?? null).toBe(image);
+      expect(f.pictures.getStatus().accepted).toBe(accepted + (image ? 1 : 0));
+      expect(capture).not.toHaveBeenCalled();
+    },
+  );
+
   it("does not capture over a supplied picture that is not replaceable", async () => {
     const f = fixture(capture);
     const image = png();
