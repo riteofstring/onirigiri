@@ -30,6 +30,16 @@ export function syncContentAnimations(
 function freezeRunningAnimations(
   liveContent: HTMLElement,
 ): Map<Animation, number> {
+  const held = new Map<Animation, number>();
+  for (const animation of runningContentAnimations(liveContent)) {
+    if (animation.playbackRate === 0) continue;
+    held.set(animation, animation.playbackRate);
+    animation.playbackRate = 0;
+  }
+  return held;
+}
+
+function runningContentAnimations(liveContent: HTMLElement): Set<Animation> {
   const animated = trackedAnimationTargets(liveContent);
   const running = new Set<Animation>();
   for (const reference of animated.references) {
@@ -47,13 +57,7 @@ function freezeRunningAnimations(
     for (const animation of animations)
       if (animation.playState === "running") running.add(animation);
   }
-  const held = new Map<Animation, number>();
-  for (const animation of running) {
-    if (animation.playbackRate === 0) continue;
-    held.set(animation, animation.playbackRate);
-    animation.playbackRate = 0;
-  }
-  return held;
+  return running;
 }
 
 function trackedAnimationTargets(liveContent: HTMLElement): AnimationTargets {
