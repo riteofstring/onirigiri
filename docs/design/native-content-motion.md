@@ -390,10 +390,15 @@ Transparent gradients and overlays retain their color in both presentations.
 
 Scrollbar thumbs and tracks are transparent only in recorded content. Chromium
 can paint otherwise-hidden native overlay scrollbars into element images, making
-them flash during panning. Changing their color preserves overflow behavior,
-scroll positions and reserved scrollbar space. Ordinary DOM uses capture-scoped
-CSS; same-origin iframe documents receive owned temporary styles, including
-nested frames. Recording waits for a new paint when a document first receives
+them flash during panning. Standard scrollbar colors preserve overflow behavior
+and scroll positions. Consumers with custom WebKit scrollbar sizing must retain
+the same sizing mechanism during recording: Chromium can let a non-auto
+`scrollbar-color` override that sizing and change the reserved gutter. Such
+content needs capture-scoped styles that keep `scrollbar-color: auto` and make
+its custom thumbs and tracks transparent. The default color rule alone does not
+guarantee matching geometry for arbitrary custom scrollbars. Ordinary DOM uses
+capture-scoped CSS; same-origin iframe documents receive owned temporary styles,
+including nested frames. Recording waits for a new paint when a document first receives
 these styles. Live presentation and disposal remove the owned iframe styles,
 restoring the consumer's scrollbar appearance and normal interaction.
 Native and frozen presentation use matching density normalization. Matching

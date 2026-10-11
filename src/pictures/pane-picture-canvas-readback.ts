@@ -117,12 +117,15 @@ async function encodeOnCurrentThread(
 }
 
 const pngEncoderSource = `onmessage = async ({ data: { id, rgba, width, height } }) => {
+  let canvas;
   try {
-    const canvas = new OffscreenCanvas(width, height);
+    canvas = new OffscreenCanvas(width, height);
     canvas.getContext("2d").putImageData(new ImageData(rgba, width, height), 0, 0);
     postMessage({ id, image: await canvas.convertToBlob({ type: "image/png" }) });
   } catch (error) {
     postMessage({ id, error: String(error) });
+  } finally {
+    if (canvas) canvas.width = canvas.height = 0;
   }
 };`;
 
