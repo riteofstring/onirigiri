@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+import { normalizePath } from "vite";
 import { defineConfig } from "vitest/config";
 
 const testLibraryAlias = {
@@ -26,7 +28,28 @@ const jsdomTestFiles = [
 ];
 
 export default defineConfig({
-  base: "./",
+  plugins: [
+    {
+      name: "inline-pane-capture-worker",
+      apply: "build",
+      enforce: "pre",
+      transform(_code, id) {
+        const factory = normalizePath(
+          fileURLToPath(
+            new URL(
+              "./src/pictures/pane-picture-capture-worker-factory.ts",
+              import.meta.url,
+            ),
+          ),
+        );
+        if (normalizePath(id) !== factory) return;
+        return {
+          code: 'import CaptureWorker from "./pane-picture-capture-worker.ts?worker&inline"; export const createPaneCaptureWorker = () => new CaptureWorker();',
+          map: null,
+        };
+      },
+    },
+  ],
   build: {
     lib: {
       cssFileName: "onirigiri",

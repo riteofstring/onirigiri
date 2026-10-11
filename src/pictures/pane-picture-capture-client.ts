@@ -1,3 +1,4 @@
+import { createPaneCaptureWorker } from "./pane-picture-capture-worker-factory.js";
 import type {
   PaneCaptureImage,
   PaneCaptureReply,
@@ -56,10 +57,7 @@ export class PanePictureCaptureClient {
     const view = this.document.defaultView as
       (Window & typeof globalThis) | null;
     if (!view || view.Worker !== globalThis.Worker) return undefined;
-    return new Worker(
-      new URL("./pane-picture-capture-worker.ts", import.meta.url),
-      { type: "module" },
-    );
+    return createPaneCaptureWorker();
   }
 
   private listen(current: Worker): void {

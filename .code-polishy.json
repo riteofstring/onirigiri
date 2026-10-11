@@ -160,6 +160,8 @@
           "src/pictures/pane-picture-canvas.ts",
           "src/pictures/pane-picture-canvas-stage.ts",
           "src/pictures/pane-picture-capture-client.ts",
+          "src/pictures/pane-picture-capture-worker-factory.ts",
+          "vite.config.ts",
           "src/pictures/pane-picture-capture-worker.ts",
           "tests/pane-picture-capture-client.test.ts",
           "src/pictures/pane-picture-canvas-readback.ts",

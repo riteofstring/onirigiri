@@ -451,9 +451,14 @@ Zero opacity can suppress accelerated descendant recording, so staging uses
 transparent pixels with opacity one and disabled pointer input.
 
 Speculative offscreen acquisition can move its synchronous element-image copy
-into one lazy worker owned by the workspace. Its script ships beside the library
-and resolves relative to the importing module, including when an application
-is hosted below a URL prefix. The worker owns a reusable auxiliary
+into one lazy worker owned by the workspace. A small factory references the typed
+worker module directly during source development. The library build transforms
+only that factory to Vite's `?worker&inline` import, embedding the same worker
+implementation with Vite's worker URL lifecycle. A separate asset resolved against
+the library module would break when consumer development prebundling moves that
+module into `.vite/deps`. Embedding avoids consumer configuration and preserves
+operation below URL prefixes. Policies that prohibit embedded workers retain the
+ordinary initialization fallback. The worker owns a reusable auxiliary
 canvas and its associated GPU context; the initialized live canvas and its GPU
 device remain on the main thread. Visible acquisition and presentation retain
 their existing path. The auxiliary canvas borrows the original content under the
