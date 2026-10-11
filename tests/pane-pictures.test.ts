@@ -765,18 +765,23 @@ describe("engine pane pictures", () => {
 
   function frameCadence(initial: number) {
     let interval = initial;
+    let lateness = 0;
     const start = Date.now();
     vi.spyOn(window.performance, "now").mockImplementation(
       () => Date.now() - start,
     );
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) =>
-      window.setTimeout(() => callback(window.performance.now()), interval),
+      window.setTimeout(
+        () => callback(window.performance.now() - lateness),
+        interval,
+      ),
     );
     vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) =>
       window.clearTimeout(id),
     );
-    return (next: number) => {
+    return (next: number, callbackLateness = 0) => {
       interval = next;
+      lateness = callbackLateness;
     };
   }
 
@@ -815,7 +820,10 @@ describe("engine pane pictures", () => {
     },
   );
 
-  function preloadQueue(work: (paneId: string) => Promise<void>) {
+  function preloadQueue(
+    work: (paneId: string) => Promise<void>,
+    resting: () => boolean = () => true,
+  ) {
     const candidates = ["first", "second", "third", "fourth"].map((paneId) => {
       const content = document.createElement("div");
       document.body.append(content);
@@ -845,7 +853,7 @@ describe("engine pane pictures", () => {
         );
       },
       () => true,
-      () => true,
+      resting,
       async (paneId) => {
         await work(paneId);
         completed.add(paneId);
@@ -1051,6 +1059,76 @@ describe("engine pane pictures", () => {
     expect(gaps[1]).toBeLessThan(gaps[0]!);
     expect(gaps[2]).toBeLessThan(gaps[1]!);
   });
+
+  it("bounds background recovery after repeated early stalls and sustained healthy frames", async () => {
+    const cadence = frameCadence(16);
+    const queue = preloadQueue(async () => {
+      cadence(50);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      cadence(16);
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect([...queue.completed]).toEqual([
+      "first",
+      "second",
+      "third",
+      "fourth",
+    ]);
+    expect(queue.maximumActive()).toBe(1);
+    for (let index = 1; index < queue.warmups.length; index++) {
+      const gap = queue.warmups[index]!.start - queue.warmups[index - 1]!.end;
+      expect(gap).toBeGreaterThanOrEqual(250);
+      expect(gap).toBeLessThan(300);
+    }
+  });
+
+  it.each(["slow frame", "late callback", "leaving rest"])(
+    "restarts sustained background recovery after %s",
+    async (interruption) => {
+      const cadence = frameCadence(16);
+      let resting = false;
+      const queue = preloadQueue(
+        async () => {
+          cadence(50);
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          cadence(16);
+          await new Promise((resolve) => setTimeout(resolve, 80));
+        },
+        () => resting,
+      );
+      for (let step = 0; step < 200 && queue.completed.size < 3; step++)
+        await vi.advanceTimersByTimeAsync(16);
+      expect(queue.completed.size).toBe(3);
+      expect(
+        queue.warmups[2]!.start - queue.warmups[1]!.end,
+      ).toBeGreaterThanOrEqual(500);
+      resting = true;
+      await vi.advanceTimersByTimeAsync(160);
+      if (interruption === "slow frame") cadence(100);
+      else if (interruption === "late callback") cadence(16, 9);
+      else resting = false;
+      await vi.advanceTimersByTimeAsync(120);
+      cadence(16);
+      resting = true;
+      await vi.advanceTimersByTimeAsync(200);
+      expect(queue.warmups.map(({ paneId }) => paneId)).toEqual([
+        "first",
+        "second",
+        "third",
+      ]);
+      await vi.advanceTimersByTimeAsync(200);
+      expect(queue.warmups.map(({ paneId }) => paneId)).toEqual([
+        "first",
+        "second",
+        "third",
+        "fourth",
+      ]);
+      await vi.advanceTimersByTimeAsync(300);
+      expect(queue.completed.size).toBe(4);
+      expect(queue.maximumActive()).toBe(1);
+    },
+  );
 
   it("defers neighboring warming during navigation and warms once motion settles", async () => {
     frameCadence(16);

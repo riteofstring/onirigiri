@@ -24,6 +24,7 @@ interface QueuedPreload {
   frame: number;
   previous: number | null;
   healthyFrames: number;
+  healthySince: number | null;
   interval: number;
 }
 
@@ -109,6 +110,7 @@ export class PaneContentPreloader {
       frame: 0,
       previous: this.lastHealthyFrame,
       healthyFrames: this.lastHealthyFrame === null ? 0 : 1,
+      healthySince: null,
       interval: 40,
     };
     this.lastHealthyFrame = null;
@@ -125,6 +127,14 @@ export class PaneContentPreloader {
       return;
     }
     this.recordFrame(queued, timestamp);
+    if (
+      this.recoveryDelay > 250 &&
+      queued.healthySince !== null &&
+      timestamp - queued.healthySince >= 250
+    ) {
+      this.recoveryDelay = 250;
+      this.nextAdmission = Date.now();
+    }
     if (queued.healthyFrames >= 2 && Date.now() >= this.nextAdmission) {
       this.queued = null;
       this.begin(queued, timestamp);
@@ -138,14 +148,20 @@ export class PaneContentPreloader {
 
   private recordFrame(queued: QueuedPreload, timestamp: number): void {
     const view = queued.candidate.content.ownerDocument.defaultView!;
+    const resting = this.resting();
     const healthy =
       queued.previous !== null &&
       timestamp > queued.previous &&
-      timestamp - queued.previous <= (this.resting() ? 40 : 20) &&
+      timestamp - queued.previous <= (resting ? 40 : 20) &&
       view.performance.now() - timestamp <= 8;
-    queued.healthyFrames = healthy ? queued.healthyFrames + 1 : 0;
-    if (healthy)
+    if (healthy) {
+      queued.healthyFrames++;
+      queued.healthySince = resting ? (queued.healthySince ?? timestamp) : null;
       queued.interval = Math.min(queued.interval, timestamp - queued.previous!);
+    } else {
+      queued.healthyFrames = 0;
+      queued.healthySince = null;
+    }
     queued.previous = timestamp;
   }
 

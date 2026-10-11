@@ -570,6 +570,14 @@ or busy frames defer admission, including at rest. Frame timing is also monitore
 throughout mounting, readiness and capture against the admission cadence. Healthy
 work needs no fixed pause; a missed frame introduces a recovery pause that grows
 under repeated load, up to two seconds, and halves after healthy acquisitions.
+At rest, 250 ms of uninterrupted timely queued frames also establishes recovery:
+it caps carried delay at 250 ms and admits the next pane without waiting for the
+remaining longer deadline. An early mounting or readback stall therefore cannot
+keep adding seconds of idle delay after the browser has recovered. Any slow or
+late callback, or leaving rest, restarts that observation window. The initial
+recovery pause and all motion, eligibility and serial capture checks remain in
+force. Recovery uses elapsed frame timestamps, not a frame count scaled by a
+previous cadence.
 The queue remains serial even when the browser has spare capacity. These checks
 cannot predict arbitrary consumer initialization cost. Geometry, identity and connectivity are
 revalidated. A serial warmup can temporarily mount one extra subtree beyond the
