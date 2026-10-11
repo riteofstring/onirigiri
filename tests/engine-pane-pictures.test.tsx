@@ -10,6 +10,66 @@ import type { OnirigiriWorkspaceHandle } from "../src/workspace/onirigiri-worksp
 import { stubOnirigiriWorkspaceBrowserGlobals } from "./onirigiri-workspace-test-support";
 
 const canvasMock = vi.hoisted(() => ({ capture: vi.fn() }));
+
+interface CaptureRequest {
+  signal: AbortSignal;
+  background?: {
+    id: string;
+    client: {
+      prepare(signal: AbortSignal): Promise<unknown>;
+      capture(
+        id: string,
+        image: { width: number; close(): void },
+        size: { width: number; height: number },
+        signal: AbortSignal,
+      ): Promise<Blob>;
+    };
+  };
+}
+
+interface WorkerCapture {
+  type: "capture";
+  id: string;
+  width: number;
+  height: number;
+  image: object;
+}
+
+class CaptureWorker {
+  static instances: CaptureWorker[] = [];
+  onmessage: ((event: { data: object }) => void) | null = null;
+  readonly captures: WorkerCapture[] = [];
+  readonly transfers: unknown[][] = [];
+  terminate = vi.fn();
+
+  constructor() {
+    CaptureWorker.instances.push(this);
+  }
+
+  postMessage(
+    message: { type: "prepare" } | WorkerCapture,
+    transfer: unknown[],
+  ) {
+    if (message.type === "prepare")
+      this.onmessage?.({ data: { type: "prepared", limit: 8192 } });
+    else {
+      this.captures.push(message);
+      this.transfers.push(transfer);
+    }
+  }
+
+  complete(index: number) {
+    const capture = this.captures[index]!;
+    this.onmessage?.({
+      data: {
+        type: "captured",
+        id: capture.id,
+        image: png(capture.width, capture.height),
+      },
+    });
+  }
+}
+
 vi.mock("../src/pictures/pane-picture-texture", () => ({
   preparePanePictureTexture: vi.fn(
     async (_document, _device, _image, size) => ({
@@ -65,11 +125,14 @@ vi.mock("../src/pictures/pane-picture-canvas", () => ({
     hasCurrentFrame() {
       return true;
     }
-    capture() {
-      return canvasMock.capture({
-        width: this.content.offsetWidth,
-        height: this.content.offsetHeight,
-      });
+    capture(request: CaptureRequest) {
+      return canvasMock.capture(
+        {
+          width: this.content.offsetWidth,
+          height: this.content.offsetHeight,
+        },
+        request,
+      );
     }
   },
 }));
@@ -233,6 +296,130 @@ function png(width: number, height: number): Blob {
   view.setUint32(20, height);
   return new NodeBlob([bytes], { type: "image/png" }) as Blob;
 }
+
+async function captureWorkspace() {
+  CaptureWorker.instances = [];
+  vi.stubGlobal("Worker", CaptureWorker);
+  const createElement = document.createElement.bind(document);
+  vi.spyOn(document, "createElement").mockImplementation((tagName, options) => {
+    const element = createElement(tagName, options);
+    if (element instanceof HTMLCanvasElement)
+      element.transferControlToOffscreen = () => ({}) as OffscreenCanvas;
+    return element;
+  });
+  canvasMock.capture.mockImplementation(
+    async (
+      size: { width: number; height: number },
+      request: CaptureRequest,
+    ) => {
+      let image = png(size.width, size.height);
+      const background = request.background;
+      if (background && (await background.client.prepare(request.signal)))
+        image = await background.client.capture(
+          background.id,
+          { width: size.width, close() {} },
+          size,
+          request.signal,
+        );
+      return { ...size, image };
+    },
+  );
+  const handle = createRef<OnirigiriWorkspaceHandle>();
+  const captured = vi.fn();
+  const seed = { image: png(10, 10) };
+  const panes = Array.from({ length: 16 }, (_, index) => ({
+    paneId: `pane-${index}`,
+    columnId: `column-${index}`,
+    slotIndex: index,
+    columnWidth: { unit: "px" as const, value: 520 },
+    surfaceKind: "custom",
+    title: `Pane ${index}`,
+  }));
+  const render = async (preload: boolean) =>
+    act(async () =>
+      root.render(
+        <OnirigiriWorkspace
+          ref={handle}
+          initialPanes={panes}
+          preloadMarginPanes={0}
+          preloadAllPanePictures={preload}
+          getPanePicture={(pane) =>
+            ["pane-0", "pane-14", "pane-15"].includes(pane.paneId) ? null : seed
+          }
+          onPanePictureCaptured={captured}
+          renderPane={() => <input defaultValue="Retained content" />}
+        />,
+      ),
+    );
+  await render(false);
+  await advanceFrames(400);
+  return { handle, captured, start: () => render(true) };
+}
+
+it("owns one reusable worker for accepted background pictures and releases it with the workspace", async () => {
+  const { handle, captured, start } = await captureWorkspace();
+  expect(captured.mock.calls.map(([pane]) => pane.paneId)).toEqual(["pane-0"]);
+  expect(CaptureWorker.instances).toHaveLength(0);
+  await start();
+  await advanceFrames(400);
+  expect(CaptureWorker.instances).toHaveLength(1);
+  const worker = CaptureWorker.instances[0]!;
+  expect(worker.captures).toHaveLength(1);
+  await act(async () => worker.complete(0));
+  await advanceFrames(400);
+  expect(worker.captures).toHaveLength(2);
+  await act(async () => worker.complete(1));
+  await advanceFrames(100);
+  expect(CaptureWorker.instances).toHaveLength(1);
+  expect(captured.mock.calls.map(([pane]) => pane.paneId)).toEqual([
+    "pane-0",
+    "pane-14",
+    "pane-15",
+  ]);
+  for (const [index, capture] of worker.captures.entries()) {
+    expect(worker.transfers[index]).toEqual([capture.image]);
+    expect(handle.current!.getCaptureStatus().pictures).toContainEqual(
+      expect.objectContaining({
+        capture: expect.objectContaining({ id: capture.id }),
+      }),
+    );
+  }
+  expect(worker.terminate).not.toHaveBeenCalled();
+  await act(async () => root.render(null));
+  expect(worker.terminate).toHaveBeenCalledOnce();
+});
+
+it("cancels background worker ownership on navigation and ignores replies after workspace disposal", async () => {
+  const { handle, captured, start } = await captureWorkspace();
+  await start();
+  await advanceFrames(400);
+  expect(CaptureWorker.instances).toHaveLength(1);
+  const old = CaptureWorker.instances[0]!;
+  expect(old.captures).toHaveLength(1);
+  await act(async () => handle.current!.focusPane("pane-1"));
+  await advanceFrames(16);
+  expect(old.terminate).toHaveBeenCalledOnce();
+  await advanceFrames(800);
+  expect(CaptureWorker.instances).toHaveLength(2);
+  const current = CaptureWorker.instances[1]!;
+  expect(current.captures).toHaveLength(1);
+  await act(async () => old.complete(0));
+  expect(captured.mock.calls.map(([pane]) => pane.paneId)).toEqual(["pane-0"]);
+  await act(async () => current.complete(0));
+  await advanceFrames(400);
+  expect(captured.mock.calls.map(([pane]) => pane.paneId)).toEqual([
+    "pane-0",
+    "pane-14",
+  ]);
+  expect(current.captures).toHaveLength(2);
+  await act(async () => root.render(null));
+  expect(current.terminate).toHaveBeenCalledOnce();
+  await act(async () => current.complete(1));
+  expect(captured.mock.calls.map(([pane]) => pane.paneId)).toEqual([
+    "pane-0",
+    "pane-14",
+  ]);
+});
 
 it("temporarily adds only the warming pane beyond the retained content budget before readiness", async () => {
   const handle = createRef<OnirigiriWorkspaceHandle>();
