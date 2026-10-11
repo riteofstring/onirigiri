@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+const repositoryRoot = new URL("../../", import.meta.url).pathname;
+
 test.use({ trace: "off" });
 
 test("native live panes avoid capture stalls during navigation and overview", async ({
@@ -34,8 +36,15 @@ test("native live panes avoid capture stalls during navigation and overview", as
     return samples.sort((a, b) => a - b)[Math.floor(samples.length / 2)]!;
   });
   const maximumMean = Math.min(1000 / 60, refreshInterval) + 0.1;
+  const fixturePath =
+    info.project.name === "chrome"
+      ? `/@fs${repositoryRoot}tests/browser/native-content-guard.html`
+      : "/native-content-guard.html";
   await page.goto(
-    "/native-content-guard.html?grid&count=100&liveContent&auto&preloadMargin=0",
+    `${fixturePath}?grid&count=100&liveContent&auto&preloadMargin=0`,
+  );
+  await page.waitForFunction(() =>
+    Boolean(window.__nativeMotionFixture?.handle.current),
   );
   const reactBundleTypes = await page.evaluate(
     () =>
