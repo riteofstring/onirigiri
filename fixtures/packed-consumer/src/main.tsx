@@ -6,6 +6,7 @@ import {
   defineOnirigiriClassNames,
   defineOnirigiriStyles,
   defineOnirigiriTheme,
+  type OnirigiriCaptureStatus,
   type OnirigiriChromeButtonProps,
   type OnirigiriPaneDefinition,
 } from "@riteofstring/onirigiri";
@@ -127,6 +128,57 @@ function ConsumerApp() {
   );
 }
 
+const capturePanes = Array.from({ length: 6 }, (_, index) => ({
+  paneId: `packed-capture-${index}`,
+  columnId: `packed-column-${index}`,
+  columnWidth: { unit: "px", value: 300 },
+  title: `Capture ${index}`,
+  surfaceKind: "document",
+})) satisfies OnirigiriPaneDefinition[];
+
+function renderCapturePane(pane: OnirigiriPaneDefinition) {
+  return (
+    <div style={{ height: "100%", background: "rgb(17, 83, 137)" }}>
+      <ConsumerContent ready title={pane.title} />
+    </div>
+  );
+}
+
+function CaptureApp() {
+  const [preload, setPreload] = useState(false);
+  const [status, setStatus] = useState<OnirigiriCaptureStatus | null>(null);
+  return (
+    <main className="consumer-shell" data-production={import.meta.env.PROD}>
+      <header>
+        <button type="button" onClick={() => setPreload(true)}>
+          Capture all panes
+        </button>
+        <output
+          aria-label="Captured panes"
+          data-capture-ids={JSON.stringify(
+            status?.pictures.map((picture) => picture.capture?.id) ?? [],
+          )}
+        >
+          {status?.pictures.length ?? 0}
+        </output>
+      </header>
+      <div className="consumer-workspace">
+        <OnirigiriWorkspace
+          initialPanes={capturePanes}
+          preloadAllPanePictures={preload}
+          preloadMarginPanes={0}
+          onCaptureStatusChange={setStatus}
+          renderPane={renderCapturePane}
+          showControls={false}
+          showMinimap={false}
+          showOverviewControl={false}
+          shortcutScope="workspace"
+        />
+      </div>
+    </main>
+  );
+}
+
 const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Packed consumer root element is missing");
@@ -134,6 +186,10 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <ConsumerApp />
+    {new URLSearchParams(location.search).has("capture") ? (
+      <CaptureApp />
+    ) : (
+      <ConsumerApp />
+    )}
   </StrictMode>,
 );

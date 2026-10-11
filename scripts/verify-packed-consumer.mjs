@@ -1,5 +1,5 @@
 import { chromium, expect } from "@playwright/test";
-import { preview } from "vite";
+import { createServer, preview } from "vite";
 import {
   cpSync,
   existsSync,
@@ -156,21 +156,32 @@ function assertBuiltConsumer(consumerRoot) {
   }
 }
 
-async function verifyConsumerInBrowser(consumerRoot) {
-  await requireHardwareWebGpu();
-  const server = await preview({
-    root: consumerRoot,
-    configFile: false,
-    preview: { port: 0, host: "127.0.0.1" },
-  });
-  const browser = await chromium.launch({
-    ...chromeLaunchOptions,
-    headless: true,
-  });
+async function verifyConsumerInBrowser(consumerRoot, mode) {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = mode;
+  let server;
+  let browser;
   try {
+    const config = { root: consumerRoot, configFile: false, mode };
+    const addressOptions = { port: 0, host: "127.0.0.1" };
+    if (mode === "development") {
+      server = await createServer({
+        ...config,
+        optimizeDeps: { include: ["@riteofstring/onirigiri"] },
+        server: addressOptions,
+      });
+      await server.listen();
+    } else {
+      server = await preview({ ...config, preview: addressOptions });
+    }
+    browser = await chromium.launch({
+      ...chromeLaunchOptions,
+      headless: true,
+    });
     const page = await browser.newPage();
     const address = server.httpServer.address();
-    await page.goto(`http://127.0.0.1:${address.port}`);
+    const origin = `http://127.0.0.1:${address.port}`;
+    await page.goto(origin);
     const pane = page.locator('[data-onirigiri-pane-id="packed-document"]');
     await expect(pane).toHaveAttribute("data-onirigiri-picture-ready", "true");
     const note = page.getByRole("textbox", { name: "Packed document note" });
@@ -188,11 +199,170 @@ async function verifyConsumerInBrowser(consumerRoot) {
     await expect(
       pane.getByRole("button", { name: "Maximize pane", exact: true }),
     ).toBeEnabled();
-    await page.screenshot({ path: path.join(consumerRoot, "consumer.png") });
+    await page.screenshot({
+      path: path.join(consumerRoot, `consumer-${mode}.png`),
+    });
+    await page.close();
+    await verifyBackgroundCapture(browser, origin, mode);
   } finally {
-    await browser.close();
-    await new Promise((resolve) => server.httpServer.close(resolve));
+    try {
+      try {
+        await browser?.close();
+      } finally {
+        if (server?.close) await server.close();
+        else if (server) {
+          await new Promise((resolve) => server.httpServer.close(resolve));
+        }
+      }
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+    }
   }
+}
+
+function observeCaptureWorker() {
+  const evidence = { sent: [], received: [], errors: [], pending: 0 };
+  window.__captureWorker = evidence;
+  const workers = new WeakMap();
+  let nextWorker = 0;
+  const postMessage = Worker.prototype.postMessage;
+  Worker.prototype.postMessage = function (message, transfer) {
+    if (!["prepare", "capture"].includes(message?.type)) {
+      return Reflect.apply(postMessage, this, arguments);
+    }
+    if (!workers.has(this)) {
+      const worker = ++nextWorker;
+      workers.set(this, worker);
+      this.addEventListener("error", (event) =>
+        evidence.errors.push(event.message),
+      );
+      this.addEventListener("messageerror", () =>
+        evidence.errors.push("messageerror"),
+      );
+      this.addEventListener("message", async ({ data }) => {
+        const reply = { worker, type: data.type, id: data.id };
+        evidence.received.push(reply);
+        if (data.type === "failed") evidence.errors.push(data.message);
+        if (data.type !== "captured") return;
+        reply.bytes = data.image.size;
+        reply.mime = data.image.type;
+        evidence.pending++;
+        let bitmap;
+        try {
+          bitmap = await createImageBitmap(data.image);
+          reply.width = bitmap.width;
+          reply.height = bitmap.height;
+          const context = new OffscreenCanvas(1, 1).getContext("2d");
+          context.drawImage(
+            bitmap,
+            Math.floor(bitmap.width / 2),
+            Math.floor(bitmap.height * 0.8),
+            1,
+            1,
+            0,
+            0,
+            1,
+            1,
+          );
+          reply.pixel = [...context.getImageData(0, 0, 1, 1).data];
+        } catch (error) {
+          evidence.errors.push(String(error));
+        } finally {
+          bitmap?.close();
+          evidence.pending--;
+        }
+      });
+    }
+    const transfers = Array.isArray(transfer)
+      ? transfer
+      : (transfer?.transfer ?? []);
+    evidence.sent.push({
+      worker: workers.get(this),
+      type: message.type,
+      id: message.id,
+      width: message.width,
+      height: message.height,
+      transfers: transfers.map((value) => value.constructor.name),
+      transferredImage: transfers[0] === message.image,
+    });
+    return Reflect.apply(postMessage, this, arguments);
+  };
+}
+
+async function verifyBackgroundCapture(browser, origin, mode) {
+  const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
+  const scripts = [];
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("response", (response) => {
+    if (response.request().resourceType() === "script")
+      scripts.push(response.url());
+  });
+  await page.addInitScript(observeCaptureWorker);
+  await page.goto(`${origin}/?capture`);
+  await expect(page.locator("main")).toHaveAttribute(
+    "data-production",
+    String(mode === "production"),
+  );
+  if (mode === "development") {
+    expect(
+      scripts.some((url) =>
+        /\/\.vite\/deps\/.*riteofstring_onirigiri/u.test(url),
+      ),
+    ).toBe(true);
+  }
+  await page.getByRole("button", { name: "Capture all panes" }).click();
+  const status = page.getByRole("status", { name: "Captured panes" });
+  await expect(status).toHaveText("6", { timeout: 30_000 });
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const evidence = window.__captureWorker;
+        return (
+          evidence.pending === 0 &&
+          evidence.sent.filter((message) => message.type === "capture")
+            .length ===
+            evidence.received.filter((message) => message.type === "captured")
+              .length
+        );
+      }),
+    )
+    .toBe(true);
+  const evidence = await page.evaluate(() => window.__captureWorker);
+  expect(errors).toEqual([]);
+  expect(evidence.errors).toEqual([]);
+  expect(evidence.received.some((reply) => reply.type === "prepared")).toBe(
+    true,
+  );
+  const requests = evidence.sent.filter(
+    (message) => message.type === "capture",
+  );
+  const replies = evidence.received.filter(
+    (message) => message.type === "captured",
+  );
+  expect(requests.length).toBeGreaterThanOrEqual(3);
+  expect(replies).toHaveLength(requests.length);
+  const acceptedIds = JSON.parse(await status.getAttribute("data-capture-ids"));
+  for (const request of requests) {
+    expect(request.transfers).toEqual(["ElementImage"]);
+    expect(request.transferredImage).toBe(true);
+    const reply = replies.find(
+      (value) => value.worker === request.worker && value.id === request.id,
+    );
+    expect(reply).toMatchObject({
+      width: request.width,
+      height: request.height,
+      mime: "image/png",
+      pixel: [17, 83, 137, 255],
+    });
+    expect(reply.bytes).toBeGreaterThan(0);
+    expect(acceptedIds).toContain(request.id);
+  }
+  console.log(
+    `Packed consumer ${mode}: ${requests.length} worker captures accepted with matching PNG pixels.`,
+  );
+  await page.close();
 }
 
 async function savedPicturePixels(page, picture) {
@@ -243,11 +413,17 @@ try {
   runPnpm(["install", "--frozen-lockfile", "--ignore-scripts"], {
     cwd: consumerRoot,
   });
-  runPnpm(["run", "build"], { cwd: consumerRoot });
+  runPnpm(["run", "build"], {
+    cwd: consumerRoot,
+    env: { NODE_ENV: "production" },
+  });
   assertBuiltConsumer(consumerRoot);
-  await verifyConsumerInBrowser(consumerRoot);
+  await requireHardwareWebGpu();
+  for (const mode of ["development", "production"]) {
+    await verifyConsumerInBrowser(consumerRoot, mode);
+  }
   console.log(
-    "Packed consumer built and verified picture readiness, custom styling and live content through public exports.",
+    "Packed consumer verified picture readiness, custom styling, live content and background worker captures through public exports in prebundled development and production.",
   );
   if (keepConsumer) {
     console.log(`Kept for inspection: ${consumerRoot}`);
