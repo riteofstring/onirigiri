@@ -41,7 +41,7 @@ const picturesEnabled = parameters.has("pictures");
 const pictures = new Map<string, Blob>();
 const motionRenderers = new Map<string, PaneLiveRenderer>();
 const presentations = new Map<string, PanePresentation>();
-const fixtureFrameUrl = new URL("./native-content-frame.html", import.meta.url);
+const fixtureFrameUrl = new URL("./native-content-frame.html", location.href);
 if (cooperative) fixtureFrameUrl.searchParams.set("cooperative", "");
 const fixture: NativeMotionFixture = {
   handle,

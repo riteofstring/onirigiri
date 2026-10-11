@@ -92,8 +92,17 @@ content. Separate headless pixel guards check changing content during held
 motion and overview exit, document identity, and unchanged render counts for
 content that remains hidden throughout navigation.
 
-The ordinary `pane-native-cadence-browser` guard isolates automatic presentation
-with 100 mounted iframe applications alternating automatic native Canvas 2D and
+The ordinary `pane-native-cadence-browser` guard uses a production build of its
+native fixture, with normal production React and an assertion of the running
+React renderer’s production mode before measuring. Its dedicated project stays
+in the canonical browser configuration, so both `pnpm test:browser` and the
+native browser selector include it. The development projects retain StrictMode
+functional coverage. Build output and dependency caches are separate from the
+development servers. This runtime separation prevents development overhead from
+being mistaken for shipped rendering cost; recorded development failures remain
+diagnostic evidence and are not converted into passes.
+
+The guard isolates automatic presentation with 100 mounted iframe applications alternating automatic native Canvas 2D and
 explicit native DOM animation. It traverses neighboring panes in normal and
 overview modes over ten-second samples, checks changing pixels, and enforces the
 nominal 60 Hz mean (or faster observed refresh interval), 50 ms maximum, and

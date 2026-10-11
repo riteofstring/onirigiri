@@ -20,10 +20,13 @@ and `pnpm dev:2d` show library changes without a package build. `pnpm test`
 includes the playground's Vitest project, and `pnpm build:playground` builds
 both apps. See its README for the remaining playground commands.
 
-The browser suites under `tests/browser/` that use `playwright.config.ts`, and
-the CPU checks that open the 2D playground, drive the library through the
-playground's development servers and fixture pages (`/fixture.html`), never
-through source imports.
+The functional browser projects under `tests/browser/` and the CPU checks that
+open the 2D playground use its development servers and fixture pages. The native
+cadence project in the same canonical `playwright.config.ts` builds and previews
+its fixture with production React. `pnpm test:browser` includes both functional
+projects and production native cadence; `node scripts/test-native-content.mjs
+cadence` selects only the latter. The fixture keeps StrictMode enabled in source
+for development lifecycle coverage.
 
 ## Retained-capture preview
 
@@ -63,8 +66,8 @@ pnpm consumer:check
 ```
 
 The browser smoke suite runs in headless Chrome and starts
-the sibling playground's 1D and 2D development servers only for the duration of
-the check. It covers native scrolling, mouse and keyboard workflows, overview
+the sibling playground's 1D and 2D development servers and the production native
+fixture preview only for the duration of the check. It covers native scrolling, mouse and keyboard workflows, overview
 interaction, reduced motion, an effective 200% CSS viewport, and the compact
 layout.
 

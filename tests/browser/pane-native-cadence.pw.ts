@@ -1,13 +1,24 @@
 import { expect, test } from "@playwright/test";
 
-const repositoryRoot = new URL("../../", import.meta.url).pathname;
-
 test.use({ trace: "off" });
 
 test("native live panes avoid capture stalls during navigation and overview", async ({
   page,
 }, info) => {
   test.setTimeout(45_000);
+  await page.addInitScript(() => {
+    const bundleTypes: number[] = [];
+    Object.assign(window, {
+      __nativeCadenceReactBundleTypes: bundleTypes,
+      __REACT_DEVTOOLS_GLOBAL_HOOK__: {
+        supportsFiber: true,
+        inject(renderer: { bundleType: number }) {
+          bundleTypes.push(renderer.bundleType);
+          return bundleTypes.length;
+        },
+      },
+    });
+  });
   const refreshInterval = await page.evaluate(async () => {
     const samples: number[] = [];
     let previous = await new Promise<number>((resolve) =>
@@ -24,8 +35,21 @@ test("native live panes avoid capture stalls during navigation and overview", as
   });
   const maximumMean = Math.min(1000 / 60, refreshInterval) + 0.1;
   await page.goto(
-    `/@fs${repositoryRoot}tests/browser/native-content-guard.html?grid&count=100&liveContent&auto&preloadMargin=0`,
+    "/native-content-guard.html?grid&count=100&liveContent&auto&preloadMargin=0",
   );
+  const reactBundleTypes = await page.evaluate(
+    () =>
+      (
+        window as Window & {
+          __nativeCadenceReactBundleTypes?: number[];
+        }
+      ).__nativeCadenceReactBundleTypes,
+  );
+  await info.attach("react-runtime", {
+    body: JSON.stringify({ bundleTypes: reactBundleTypes }),
+    contentType: "application/json",
+  });
+  expect(reactBundleTypes).toEqual([0]);
   await page.waitForFunction(
     () =>
       document.querySelectorAll("iframe").length === 100 &&
