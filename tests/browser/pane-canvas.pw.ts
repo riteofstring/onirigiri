@@ -2625,6 +2625,20 @@ for (const workerDpr of [1, 2]) {
             const record = auxiliary.captureElementImage;
             let recordings = 0;
             secondContent.scrollTop = 37;
+            const ordinaryScrolls = [secondContent.scrollTop];
+            const ordinaryWorker = await secondSurface.capture({
+              ...options,
+              signal,
+              background: { client, id: "second-pane" },
+            });
+            ordinaryScrolls.push(secondContent.scrollTop);
+            const ordinaryMain = await secondSurface.capture({
+              ...options,
+              signal,
+            });
+            ordinaryScrolls.push(secondContent.scrollTop);
+            secondContent.scrollTop = 38;
+            const densityScrolls = [secondContent.scrollTop];
             auxiliary.captureElementImage = function (element) {
               const image = record.call(this, element);
               recordings++;
@@ -2639,10 +2653,12 @@ for (const workerDpr of [1, 2]) {
               const worker = await secondSurface.capture({
                 ...options,
                 signal,
-                background: { client, id: "second-pane" },
+                background: { client, id: "density-retry" },
               });
+              densityScrolls.push(secondContent.scrollTop);
               auxiliary.captureElementImage = record;
               const main = await secondSurface.capture({ ...options, signal });
+              densityScrolls.push(secondContent.scrollTop);
               const originalWorker = await fixture.surface.capture({
                 ...options,
                 signal,
@@ -2654,6 +2670,12 @@ for (const workerDpr of [1, 2]) {
               });
               crossPane = {
                 retried: recordings > 1,
+                ordinaryWorker: difference(
+                  await pixels(ordinaryMain.image),
+                  await pixels(ordinaryWorker.image),
+                ),
+                ordinaryScrolls,
+                densityScrolls,
                 worker: difference(
                   await pixels(main.image),
                   await pixels(worker.image),
@@ -2663,10 +2685,12 @@ for (const workerDpr of [1, 2]) {
                   await pixels(originalWorker.image),
                 ),
                 dimensions:
-                  worker.width === main.width && worker.height === main.height,
+                  worker.width === main.width &&
+                  worker.height === main.height &&
+                  ordinaryWorker.width === ordinaryMain.width &&
+                  ordinaryWorker.height === ordinaryMain.height,
                 source: secondContent.parentElement === secondCanvas,
                 input: secondContent.querySelector("input")!.value,
-                scroll: secondContent.scrollTop,
                 reused: (await client.prepare(signal))?.canvas === auxiliary,
                 identity: identity(),
               };
@@ -2737,19 +2761,21 @@ for (const workerDpr of [1, 2]) {
       ]);
       expect(result.crossPane).toEqual({
         retried: true,
+        ordinaryWorker: 0,
+        ordinaryScrolls: [37, 37, 37],
+        densityScrolls: [38, 38, 38],
         worker: 0,
         original: 0,
         dimensions: true,
         source: true,
         input: "Other draft",
-        scroll: 37,
         reused: true,
         identity,
       });
       expect(result.aborted).toBe(true);
       expect(result.restoredAtAbort).toEqual(identity);
       expect(result.recovered).toBe(0);
-      expect(result.workerCalls).toBe(6);
+      expect(result.workerCalls).toBe(7);
       expect(result.identity).toEqual(identity);
     });
   });
