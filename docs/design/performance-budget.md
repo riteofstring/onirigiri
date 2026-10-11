@@ -102,6 +102,15 @@ development servers. This runtime separation prevents development overhead from
 being mistaken for shipped rendering cost; recorded development failures remain
 diagnostic evidence and are not converted into passes.
 
+The `pane-worker-capture-browser` and `pane-capture-display-browser` suites
+select the existing worker-PNG acceptance and live capture-display cases for
+focused regression proofs. They use the canonical Chrome project, hardware
+guard and assertions. The display cases cover full and reduced capture sizes
+at both pixel densities, including translucency and live pixels while encoding
+is pending. Their narrow selection keeps unrelated interaction costs out of
+the proof runtime; the complete native browser suite and mandatory performance
+checks retain their coverage and deadlines.
+
 The guard isolates automatic presentation with 100 mounted iframe applications alternating automatic native Canvas 2D and
 explicit native DOM animation. It traverses neighboring panes in normal and
 overview modes over ten-second samples, checks changing pixels, and enforces the

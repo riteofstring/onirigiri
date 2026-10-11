@@ -95,6 +95,8 @@
             "pane-video-browser",
             "pane-presentation-policy-browser",
             "pane-native-cadence-browser",
+            "pane-worker-capture-browser",
+            "pane-capture-display-browser",
             "workspace-performance",
             "cpu-diagnostics-contract",
             "cpu-capability-browser",
@@ -394,6 +396,47 @@
           "tests/browser/hardware-webgpu.ts",
           "tests/browser/hardware-webgpu.setup.ts",
           "tests/browser/cooperative-fixture-frame.tsx"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "pane-worker-capture-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "worker-capture"],
+        "paths": [
+          "src/**",
+          "tests/browser/native-content.pw.ts",
+          "tests/browser/native-content-*",
+          "tests/browser/playwright.config.ts",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs"
+        ],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "pane-capture-display-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "quick",
+        "argv": ["node", "scripts/test-native-content.mjs", "capture-display"],
+        "paths": [
+          "src/**",
+          "tests/browser/pane-canvas-worker.pw.ts",
+          "tests/browser/pane-canvas-fixture.ts",
+          "tests/browser/native-content-frame.html",
+          "tests/browser/playwright.config.ts",
+          "tests/browser/chrome-launch.ts",
+          "tests/browser/hardware-webgpu.ts",
+          "tests/browser/hardware-webgpu.setup.ts",
+          "scripts/test-native-content.mjs",
+          "scripts/lib/process.mjs"
         ],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 120

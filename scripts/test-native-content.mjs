@@ -58,6 +58,28 @@ const commands = {
     "--grep",
     "presentation policies distinguish|texture policies freeze fresh|live motion adapts to graphics|pointer input reaches live content|motion shields input",
   ],
+  "worker-capture": [
+    "exec",
+    "playwright",
+    "test",
+    "--config",
+    "tests/browser/playwright.config.ts",
+    "--project=chrome",
+    "tests/browser/native-content.pw.ts",
+    "--grep",
+    "workspace background pictures accept worker PNGs",
+  ],
+  "capture-display": [
+    "exec",
+    "playwright",
+    "test",
+    "--config",
+    "tests/browser/playwright.config.ts",
+    "--project=chrome",
+    "tests/browser/pane-canvas-worker.pw.ts",
+    "--grep",
+    "keeps fresh translucent live pixels while PNG encoding waits",
+  ],
   cadence: [
     "exec",
     "playwright",
@@ -98,7 +120,7 @@ const commands = {
 const mode = process.argv[2];
 if (!Object.hasOwn(commands, mode) || process.argv.length !== 3) {
   throw new Error(
-    "Choose the cache, pictures, contract, browser, video, presentation, cadence, cpu, edges, navigation, pane-defaults, or unit suite.",
+    "Choose the cache, pictures, contract, browser, video, presentation, worker-capture, capture-display, cadence, cpu, edges, navigation, pane-defaults, or unit suite.",
   );
 }
 runPnpm(["install", "--offline", "--frozen-lockfile", "--ignore-scripts"]);
