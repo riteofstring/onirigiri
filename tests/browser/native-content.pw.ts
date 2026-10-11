@@ -23,6 +23,18 @@ declare global {
       warmups: { id: string; start: number; end: number | null }[];
     };
     __coldDisplayCopies: number;
+    __workspaceWorkerCaptures: {
+      requests: {
+        worker: number;
+        id: string;
+        width: number;
+        height: number;
+        transfers: string[];
+        transferredImage: boolean;
+      }[];
+      replies: { worker: number; id: string; image: Blob }[];
+      errors: string[];
+    };
     __hiddenCaptureProbe: {
       armed: boolean;
       waiting: boolean;
@@ -1737,6 +1749,138 @@ test("viewport zoom pauses picture acquisition and restores it without replacing
     await session.send("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
     await session.detach();
     await original.dispose();
+  }
+});
+
+test("workspace background pictures accept worker PNGs", async ({
+  page,
+}, info) => {
+  test.setTimeout(30_000);
+  await page.addInitScript(() => {
+    const trace: Window["__workspaceWorkerCaptures"] = {
+      requests: [],
+      replies: [],
+      errors: [],
+    };
+    window.__workspaceWorkerCaptures = trace;
+    const workers = new WeakMap<Worker, number>();
+    let sequence = 0;
+    const postMessage = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function (message, transfer) {
+      if (message?.type === "capture") {
+        if (!workers.has(this)) {
+          const worker = ++sequence;
+          workers.set(this, worker);
+          this.addEventListener("error", (event) =>
+            trace.errors.push(event.message),
+          );
+          this.addEventListener("messageerror", () =>
+            trace.errors.push("Worker message could not be decoded"),
+          );
+          this.addEventListener("message", ({ data }) => {
+            if (data.type === "failed") trace.errors.push(data.message);
+            if (data.type === "captured")
+              trace.replies.push({ worker, id: data.id, image: data.image });
+          });
+        }
+        const transfers = Array.isArray(transfer)
+          ? transfer
+          : (transfer?.transfer ?? []);
+        trace.requests.push({
+          worker: workers.get(this)!,
+          id: message.id,
+          width: message.width,
+          height: message.height,
+          transfers: transfers.map((value) => value.constructor.name),
+          transferredImage: transfers[0] === message.image,
+        });
+      }
+      return Reflect.apply(postMessage, this, arguments);
+    };
+  });
+  await openNativeFixture(page, false, false, {
+    count: 6,
+    allPictures: true,
+    preloadMargin: 0,
+  });
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            window.__nativeMotionFixture.handle
+              .current!.getCaptureStatus()
+              .pictures.filter((picture) => picture.capture !== null).length,
+        ),
+      { timeout: 25_000 },
+    )
+    .toBe(6);
+  const evidence = await page.evaluate(async () => {
+    const status =
+      window.__nativeMotionFixture.handle.current!.getCaptureStatus();
+    const trace = window.__workspaceWorkerCaptures;
+    const accepted = new Set(
+      status.pictures.map((picture) => picture.capture?.id),
+    );
+    const matches = [];
+    for (const reply of trace.replies) {
+      const request = trace.requests.find(
+        (request) => request.worker === reply.worker && request.id === reply.id,
+      );
+      if (!request || !accepted.has(reply.id)) continue;
+      const bitmap = await createImageBitmap(reply.image);
+      try {
+        const context = new OffscreenCanvas(1, 1).getContext("2d")!;
+        context.drawImage(
+          bitmap,
+          Math.floor(bitmap.width / 2),
+          Math.floor(bitmap.height * 0.8),
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+        );
+        matches.push({
+          ...request,
+          mime: reply.image.type,
+          bytes: reply.image.size,
+          decodedWidth: bitmap.width,
+          decodedHeight: bitmap.height,
+          pixel: [...context.getImageData(0, 0, 1, 1).data],
+        });
+      } finally {
+        bitmap.close();
+      }
+    }
+    return {
+      status,
+      requests: trace.requests,
+      replies: trace.replies.map(({ worker, id, image }) => ({
+        worker,
+        id,
+        bytes: image.size,
+        mime: image.type,
+      })),
+      errors: trace.errors,
+      matches,
+    };
+  });
+  await info.attach("workspace-worker-captures", {
+    body: JSON.stringify(evidence),
+    contentType: "application/json",
+  });
+  expect(evidence.errors).toEqual([]);
+  expect(evidence.matches.length).toBeGreaterThan(0);
+  for (const match of evidence.matches) {
+    expect(match.transfers).toEqual(["ElementImage"]);
+    expect(match.transferredImage).toBe(true);
+    expect(match.mime).toBe("image/png");
+    expect(match.bytes).toBeGreaterThan(0);
+    expect(match.decodedWidth).toBe(match.width);
+    expect(match.decodedHeight).toBe(match.height);
+    expect(match.pixel).toEqual([8, 59, 75, 255]);
   }
 });
 
