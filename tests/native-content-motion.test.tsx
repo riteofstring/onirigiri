@@ -117,7 +117,7 @@ it("browser suites intercept every explicit launch before it can open a visible 
       });
       return module;
     }
-    for (const file of ["playwright.config.ts", "performance.playwright.config.ts", "pane-canvas.pw.ts", "native-content.pw.ts", "multi-video.performance.ts", "workspace-performance.performance.ts"]) {
+    for (const file of ["playwright.config.ts", "performance.playwright.config.ts", "pane-canvas.pw.ts", "pane-canvas-worker.pw.ts", "native-content.pw.ts", "multi-video.performance.ts", "workspace-performance.performance.ts"]) {
       const module = await load(resolve("tests/browser", file));
       await module.evaluate();
       if (file.endsWith("config.ts")) {
