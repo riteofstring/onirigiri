@@ -1530,6 +1530,56 @@ describe("engine pane pictures", () => {
     );
   });
 
+  it("does not report a capture after resizing during texture restoration and reports its replacement", async () => {
+    const pending =
+      deferred<Awaited<ReturnType<typeof preparePanePictureTexture>>>();
+    const late = {
+      width: 200,
+      height: 100,
+      present: vi.fn(),
+      dispose: vi.fn(),
+    };
+    preparePanePictureTexture
+      .mockImplementationOnce(
+        preparePanePictureTexture.getMockImplementation()!,
+      )
+      .mockImplementationOnce(() => pending.promise);
+    const f = fixture(capture);
+    const captured = vi.fn();
+    f.config.onCaptured = captured;
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(150);
+    const preview = f.pictures.get("a");
+    expect(preview).toMatchObject({
+      width: 64,
+      pixelated: true,
+      capture: { bounds: { width: 200, height: 100 } },
+    });
+    expect(captured).not.toHaveBeenCalled();
+    f.bounds(new DOMRect(40, 60, 240, 180));
+    pending.resolve(late);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(late.dispose).toHaveBeenCalledOnce();
+    expect(f.pictures.get("a")).toBe(preview);
+    expect(captured).not.toHaveBeenCalled();
+    expect(f.pictures.getStatus().invalidated).toBe(1);
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
+    const replacement = f.pictures.get("a");
+    expect(replacement?.capture?.bounds).toEqual({
+      x: 0,
+      y: 0,
+      width: 240,
+      height: 180,
+    });
+    expect(captured).toHaveBeenCalledOnce();
+    expect(captured).toHaveBeenCalledWith(
+      f.config.panes.get("a"),
+      replacement?.image,
+      replacement?.capture,
+    );
+  });
+
   it("retains a seed as coverage across content changes without accepting it again", async () => {
     const f = fixture(capture);
     canvasMock.uncapturable.add(f.content);

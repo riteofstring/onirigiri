@@ -211,7 +211,8 @@ capture; mark it `replaceable: true` when it only seeds the pane, such as a
 picture saved from an earlier session, and the engine still captures the pane
 when it can. A seed is dropped when the pane's content revision changes and is
 never accepted again once a capture has replaced it.
-`onPanePictureCaptured(pane, pngBlob, receipt)` reports each accepted capture.
+`onPanePictureCaptured(pane, pngBlob, receipt)` reports accepted captures that
+still match the pane when preparation finishes.
 Save `receipt.bounds.width` and `receipt.bounds.height` as the image's `cssSize`
 alongside its PNG to supply both after a reload. Those bounds belong to the
 accepted capture, so no later DOM measurement is needed.

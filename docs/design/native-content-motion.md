@@ -427,6 +427,10 @@ with their PNG and the same receipt retained by the cache. The application can
 persist its bounds as CSS dimensions without measuring changed layout after
 asynchronous encoding. The application owns persistence; the engine keeps no
 storage of its own.
+Notification rechecks pane identity, readiness and CSS bounds after asynchronous
+detail preparation. A preview accepted before a resize may remain as coverage,
+but its callback must not associate the old pixels with the pane's new geometry.
+This final check does not cancel or reject an already accepted cache entry.
 The engine owns acceptance, compressed originals, prepared GPU textures and
 presentation. Immutable PNG originals survive live-DOM eviction without a
 freshness expiry. Pane identity changes and workspace disposal release their

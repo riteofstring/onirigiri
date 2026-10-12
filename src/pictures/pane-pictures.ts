@@ -952,7 +952,10 @@ export class PanePictures {
       } else {
         this.retireSeed(pane.paneId);
         const captured = this.configuration.panes.get(pane.paneId);
-        if (captured)
+        if (
+          captured &&
+          batch.panes.every((candidate) => this.currentCandidate(candidate))
+        )
           this.configuration.onCaptured?.(captured, result.image, receipt);
       }
       this.reason = null;
