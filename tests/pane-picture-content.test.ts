@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { PanePictureContent } from "../src/pictures/pane-picture-content";
 import { PaneCanvasSurface } from "../src/pictures/pane-picture-canvas";
+import type { PanePictureCaptureClient } from "../src/pictures/pane-picture-capture-client";
 
 function scrolledTo(element: Element, top: number) {
   Object.defineProperty(element, "scrollTop", {
@@ -14,6 +15,240 @@ function scrolledTo(element: Element, top: number) {
 }
 
 describe("PanePictureContent", () => {
+  it.each(["dom", "canvas"] as const)(
+    "recovers %s content immediately when device loss aborts pending capture preparation",
+    async (renderer) => {
+      const frames = new Map<number, FrameRequestCallback>();
+      let frameId = 0;
+      vi.spyOn(window, "requestAnimationFrame").mockImplementation(
+        (callback) => {
+          frames.set(++frameId, callback);
+          return frameId;
+        },
+      );
+      vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+        frames.delete(id);
+      });
+      const flushFrames = () => {
+        const pending = [...frames.values()];
+        frames.clear();
+        for (const callback of pending) callback(16);
+      };
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          observe() {}
+          disconnect() {}
+        },
+      );
+      vi.stubGlobal("GPUTextureUsage", { COPY_DST: 1, RENDER_ATTACHMENT: 2 });
+      const context = { configure: vi.fn(), unconfigure: vi.fn() };
+      vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+        context as unknown as GPUCanvasContext,
+      );
+      let lose!: (info: GPUDeviceLostInfo) => void;
+      const device = {
+        lost: new Promise<GPUDeviceLostInfo>((resolve) => {
+          lose = resolve;
+        }),
+      } as GPUDevice;
+      const parent = document.createElement("div");
+      const canvas = document.createElement("canvas");
+      const content = document.createElement("div");
+      const input = document.createElement("input");
+      input.value = "Retained draft";
+      content.append(input);
+      canvas.append(content);
+      parent.append(canvas);
+      document.body.append(parent);
+      const drawn = vi.fn();
+      const failed = vi.fn();
+      const surface = new PaneCanvasSurface(
+        canvas,
+        content,
+        Promise.resolve(device),
+        {
+          continuous: () => true,
+          canDraw: () => true,
+          canPrime: () => false,
+          visible: () => true,
+          renderer: () => renderer,
+          displayScale: () => 1,
+          revision: () => 0,
+          drawn,
+          failed,
+        },
+      );
+      let finishPreparation!: (value: null) => void;
+      const prepare = vi.fn(
+        (_signal: AbortSignal) =>
+          new Promise<null>((resolve) => {
+            finishPreparation = resolve;
+          }),
+      );
+      let capture: Promise<unknown> | undefined;
+      try {
+        await Promise.resolve();
+        flushFrames();
+        input.focus();
+        capture = surface
+          .capture({
+            stage: true,
+            signal: new AbortController().signal,
+            maxRasterBytes: 1024 * 1024,
+            maxEncodedBytes: 1024 * 1024,
+            background: {
+              id: "lost-device",
+              client: { prepare } as unknown as PanePictureCaptureClient,
+            },
+          })
+          .catch((error: unknown) => error);
+        expect(prepare).toHaveBeenCalledOnce();
+        lose({ reason: "destroyed", message: "Device reset" });
+        await Promise.resolve();
+        flushFrames();
+        const signal = prepare.mock.calls[0]![0];
+        expect(signal.aborted).toBe(true);
+        expect(signal.reason.message).toContain("Device reset");
+        expect(surface.canCapture()).toBe(false);
+        expect(canvas.dataset.onirigiriNativeActive).toBe("true");
+        expect(content.parentElement).not.toBe(canvas);
+        expect(content.parentElement!.hidden).toBe(false);
+        expect(content.parentElement!.style.opacity).toBe("");
+        expect(content.dataset.onirigiriLive).toBe("true");
+        expect(content.querySelector("input")).toBe(input);
+        expect(input.value).toBe("Retained draft");
+        expect(drawn).toHaveBeenLastCalledWith(true, "dom");
+        if (renderer === "dom") expect(drawn).not.toHaveBeenCalledWith(false);
+        expect(failed).not.toHaveBeenCalled();
+        expect(context.unconfigure).toHaveBeenCalledOnce();
+        input.value = "Edited after device loss";
+        finishPreparation(null);
+        expect(await capture).toBe(signal.reason);
+        flushFrames();
+        expect(input.value).toBe("Edited after device loss");
+        expect(content.dataset.onirigiriLive).toBe("true");
+        await expect(
+          surface.capture({
+            stage: false,
+            signal: new AbortController().signal,
+            maxRasterBytes: 1024,
+            maxEncodedBytes: 1024,
+          }),
+        ).rejects.toThrow("Pane canvas is not ready");
+      } finally {
+        finishPreparation?.(null);
+        await capture;
+        surface.dispose();
+        parent.remove();
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+
+  it("withdraws a frozen canvas frame on device loss until native content becomes live", async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.set(++frameId, callback);
+      return frameId;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+      frames.delete(id);
+    });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal("GPUTextureUsage", { COPY_DST: 1, RENDER_ATTACHMENT: 2 });
+    const canvas = document.createElement("canvas");
+    const content = document.createElement("div");
+    const input = document.createElement("input");
+    input.value = "Retained draft";
+    content.append(input);
+    canvas.append(content);
+    document.body.append(canvas);
+    Object.defineProperties(content, {
+      offsetWidth: { get: () => 20 },
+      offsetHeight: { get: () => 12 },
+    });
+    const close = vi.fn();
+    Object.assign(canvas, {
+      requestPaint: vi.fn(),
+      captureElementImage: () => ({ width: 20, close }),
+    });
+    vi.spyOn(canvas, "getContext").mockReturnValue({
+      configure: vi.fn(),
+      unconfigure: vi.fn(),
+      getCurrentTexture: () => ({ width: 20, height: 12 }),
+    } as unknown as GPUCanvasContext);
+    let lose!: (info: GPUDeviceLostInfo) => void;
+    const device = {
+      lost: new Promise<GPUDeviceLostInfo>((resolve) => {
+        lose = resolve;
+      }),
+      limits: { maxTextureDimension2D: 8192 },
+      queue: { copyElementImageToTexture: vi.fn() },
+    } as unknown as GPUDevice;
+    let live = true;
+    const drawn = vi.fn();
+    const failed = vi.fn();
+    const surface = new PaneCanvasSurface(
+      canvas,
+      content,
+      Promise.resolve(device),
+      {
+        continuous: () => false,
+        canDraw: () => live,
+        canPrime: () => false,
+        visible: () => true,
+        renderer: () => "canvas",
+        displayScale: () => 1,
+        revision: () => 0,
+        drawn,
+        failed,
+      },
+    );
+    try {
+      await Promise.resolve();
+      canvas.dispatchEvent(
+        Object.assign(new Event("paint"), { changedElements: [content] }),
+      );
+      expect(drawn).toHaveBeenLastCalledWith(true, "canvas");
+      live = false;
+      surface.requestPaint();
+      canvas.dispatchEvent(
+        Object.assign(new Event("paint"), { changedElements: [content] }),
+      );
+      expect(drawn).toHaveBeenLastCalledWith(true, "canvas");
+      lose({ reason: "destroyed", message: "Device reset" });
+      await Promise.resolve();
+      const pending = [...frames.values()];
+      frames.clear();
+      for (const callback of pending) callback(16);
+      expect(drawn).toHaveBeenLastCalledWith(false);
+      expect(failed).not.toHaveBeenCalled();
+      expect(surface.hasCurrentFrame()).toBe(false);
+      expect(content.parentElement).not.toBe(canvas);
+      expect(content.parentElement!.style.opacity).toBe("0");
+      expect(content.querySelector("input")).toBe(input);
+      live = true;
+      surface.requestPaint();
+      expect(drawn).toHaveBeenLastCalledWith(true, "dom");
+      expect(content.parentElement!.style.opacity).toBe("");
+      expect(input.value).toBe("Retained draft");
+    } finally {
+      surface.dispose();
+      canvas.remove();
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("keeps native input live while shared display preparation outlasts an aborted capture", async () => {
     const frames = new Map<number, FrameRequestCallback>();
     let frameId = 0;

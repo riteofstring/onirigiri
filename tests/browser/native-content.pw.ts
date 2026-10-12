@@ -23,6 +23,7 @@ declare global {
       warmups: { id: string; start: number; end: number | null }[];
     };
     __coldDisplayCopies: number;
+    __deviceLossProbe: { devices: GPUDevice[] };
     __workspaceWorkerCaptures: {
       requests: {
         worker: number;
@@ -202,6 +203,108 @@ async function openNativeFixture(
     page.locator('[data-onirigiri-pane-id="pane-1"] iframe'),
   ).toBeVisible();
 }
+
+test("device loss preserves native workspace input and later pane activation", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const devices: GPUDevice[] = [];
+    window.__deviceLossProbe = { devices };
+    const requestDevice = GPUAdapter.prototype.requestDevice;
+    GPUAdapter.prototype.requestDevice = async function (...args) {
+      const device = await requestDevice.apply(this, args);
+      devices.push(device);
+      return device;
+    };
+  });
+  await openNativeFixture(page, false, false, { count: 12, preloadMargin: 0 });
+  const pane = page.locator('[data-onirigiri-pane-id="pane-1"]');
+  const frame = page.frameLocator('[data-onirigiri-pane-id="pane-1"] iframe');
+  await expect(pane).toHaveAttribute("data-moving", "false");
+  await expect(
+    pane.locator('[data-onirigiri-slot="pane-content"]'),
+  ).toHaveAttribute("data-onirigiri-content-ready", "true");
+  await frame.getByRole("textbox").fill("Retained edit");
+  const original = await pane.locator("iframe").elementHandle();
+  expect(
+    await page.evaluate(
+      () =>
+        window.__nativeMotionFixture.handle.current!.getCaptureStatus().reason,
+    ),
+  ).toBeNull();
+  const requests = await page.evaluate(() => {
+    const devices = window.__deviceLossProbe.devices;
+    for (const device of devices) device.destroy();
+    return devices.length;
+  });
+  expect(requests).toBeGreaterThan(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.__nativeMotionFixture.handle.current!.getCaptureStatus(),
+      ),
+    )
+    .toMatchObject({
+      state: "unavailable",
+      reason: expect.stringContaining("WebGPU device lost"),
+      inFlightPaneIds: [],
+    });
+  await expect(pane).toHaveAttribute("data-onirigiri-renderer", "dom");
+  await expect(
+    pane.locator('[data-onirigiri-slot="pane-content"]'),
+  ).toHaveAttribute("data-onirigiri-content-ready", "true");
+  await expect(pane.locator(".onirigiri-pane__content")).toHaveAttribute(
+    "data-onirigiri-shielded",
+    "false",
+  );
+  await expect(
+    pane.locator(".onirigiri-pane__live-content"),
+  ).not.toHaveAttribute("inert");
+  await expect(
+    pane.locator(".onirigiri-pane__live-content"),
+  ).not.toHaveAttribute("aria-hidden", "true");
+  expect(
+    await pane
+      .locator("iframe")
+      .evaluate((iframe, original) => iframe === original, original),
+  ).toBe(true);
+  await expect(frame.getByRole("textbox")).toBeFocused();
+  await frame.getByRole("textbox").click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" after recovery");
+  await expect(frame.getByRole("textbox")).toHaveValue(
+    "Retained edit after recovery",
+  );
+  expect(
+    await page.locator('[data-onirigiri-pane-id="pane-12"] iframe').count(),
+  ).toBe(0);
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.focusPane("pane-12"),
+  );
+  const later = page.locator('[data-onirigiri-pane-id="pane-12"]');
+  await expect(later).toHaveAttribute("data-moving", "false");
+  await expect(later).toHaveAttribute("data-onirigiri-renderer", "dom");
+  await expect(
+    later.locator('[data-onirigiri-slot="pane-content"]'),
+  ).toHaveAttribute("data-onirigiri-content-ready", "true");
+  await expect(later.locator(".onirigiri-pane__content")).toHaveAttribute(
+    "data-onirigiri-shielded",
+    "false",
+  );
+  await page
+    .frameLocator('[data-onirigiri-pane-id="pane-12"] iframe')
+    .getByRole("textbox")
+    .fill("New pane remains usable");
+  await expect(
+    page
+      .frameLocator('[data-onirigiri-pane-id="pane-12"] iframe')
+      .getByRole("textbox"),
+  ).toHaveValue("New pane remains usable");
+  expect(
+    await page.evaluate(() => window.__deviceLossProbe.devices.length),
+  ).toBe(requests);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
 
 test("leaves wheel input to browser scrolling without changing workspace geometry", async ({
   page,

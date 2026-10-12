@@ -191,7 +191,8 @@ export class PanePictures {
     private readonly overview: () => boolean = () => false,
   ) {}
 
-  get = (paneId: PaneId): CachedPanePicture | null => this.pictures.get(paneId);
+  get = (paneId: PaneId): CachedPanePicture | null =>
+    this.captureUnavailable === null ? this.pictures.get(paneId) : null;
   getStatus = (): OnirigiriCaptureStatus => this.status;
   getPaneError = (paneId: PaneId): string | null =>
     this.hosts.get(paneId)?.error ?? null;
@@ -445,25 +446,42 @@ export class PanePictures {
   }
 
   private getDevice(document: Document): Promise<GPUDevice> {
+    if (this.captureUnavailable !== null)
+      return Promise.reject(new Error(this.captureUnavailable));
     if (!this.device) {
       const pending = createPaneCanvasDevice(document);
       this.device = pending;
       void pending
-        .then(() => {
+        .then((device) => {
           if (this.device !== pending) return;
           this.deviceReady = true;
           this.reason = null;
           this.publish();
           this.wake();
+          void device.lost.then((info) => {
+            if (this.device !== pending) return;
+            this.deviceUnavailable(
+              new Error(`Onirigiri WebGPU device lost: ${info.message}`),
+            );
+          });
         })
         .catch((error: Error) => {
           if (this.device !== pending) return;
-          this.captureUnavailable = error.message;
-          this.cancel();
-          this.publish();
+          this.deviceUnavailable(error);
         });
     }
     return this.device;
+  }
+
+  private deviceUnavailable(error: Error): void {
+    this.captureUnavailable = error.message;
+    this.deviceReady = false;
+    this.cancel();
+    this.setOverviewPane(null);
+    this.preloader.activity();
+    for (const id of new Set([...this.hosts.keys(), ...this.pictures.keys()]))
+      this.emit(id);
+    this.publish();
   }
 
   private canDraw(paneId: PaneId, host: ContentHost): boolean {
@@ -1350,9 +1368,11 @@ export class PanePictures {
   private contentCapabilities(host: ContentHost | undefined) {
     return {
       canCapture:
-        host && host.mounted() && host.readiness.getSnapshot()
-          ? host.surface.canCapture()
-          : null,
+        this.captureUnavailable !== null
+          ? false
+          : host && host.mounted() && host.readiness.getSnapshot()
+            ? host.surface.canCapture()
+            : null,
       hasVideo: host?.surface.hasVideo() ?? false,
     };
   }
@@ -1403,7 +1423,7 @@ export class PanePictures {
     host: ContentHost,
   ): PanePresentationState {
     const decision = this.decision(paneId);
-    const picture = this.pictures.get(paneId);
+    const picture = this.get(paneId);
     const frozen = this.frozenSurface(paneId, host, decision);
     const covered = this.presentationCovered(paneId, host, decision, frozen);
     const live = !covered && this.isLive(paneId);
@@ -1467,6 +1487,7 @@ export class PanePictures {
     decision = this.decision(paneId),
   ): boolean {
     return (
+      this.captureUnavailable === null &&
       decision.kind === "texture" &&
       this.paneVisible(paneId) &&
       host.mounted() &&

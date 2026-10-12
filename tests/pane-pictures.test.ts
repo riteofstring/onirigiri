@@ -122,6 +122,9 @@ const canvasMock = vi.hoisted(() => ({
   frameVersion: 0,
   unpainted: new WeakSet<HTMLElement>(),
   uncapturable: new WeakSet<HTMLElement>(),
+  devices: new Map<HTMLElement, Promise<GPUDevice>>(),
+  callbacks: new Map<HTMLElement, { failed(error: Error): void }>(),
+  createDevice: vi.fn<() => Promise<GPUDevice>>(),
 }));
 const preparePanePictureTexture = vi.hoisted(() =>
   vi.fn(async (_document, _device, _image, size) => ({
@@ -140,7 +143,7 @@ vi.mock("../src/pictures/pane-picture-texture", () => ({
   preparePanePictureTexture,
 }));
 vi.mock("../src/pictures/pane-picture-canvas", () => ({
-  createPaneCanvasDevice: async () => ({ destroy: vi.fn() }),
+  createPaneCanvasDevice: canvasMock.createDevice,
   PaneCanvasSurface: class {
     get frameVersion() {
       return canvasMock.frameVersion;
@@ -148,9 +151,12 @@ vi.mock("../src/pictures/pane-picture-canvas", () => ({
     constructor(
       _canvas: HTMLCanvasElement,
       private content: HTMLElement,
-      _device: unknown,
-      callbacks: { drawn(ready: boolean): void },
+      device: Promise<GPUDevice>,
+      callbacks: { drawn(ready: boolean): void; failed(error: Error): void },
     ) {
+      canvasMock.devices.set(content, device);
+      canvasMock.callbacks.set(content, callbacks);
+      void device.catch(() => {});
       queueMicrotask(() => callbacks.drawn(!canvasMock.unpainted.has(content)));
       Object.defineProperties(content, {
         offsetWidth: {
@@ -208,11 +214,19 @@ function deferred<T>() {
 
 describe("engine pane pictures", () => {
   const cleanups: (() => void)[] = [];
+  let deviceLoss: ReturnType<typeof deferred<GPUDeviceLostInfo>>;
   beforeEach(() => {
     vi.useFakeTimers();
     capture.mockClear();
     vi.mocked(preparePanePictureTexture).mockClear();
     canvasMock.frameVersion = 0;
+    canvasMock.devices.clear();
+    canvasMock.callbacks.clear();
+    deviceLoss = deferred<GPUDeviceLostInfo>();
+    canvasMock.createDevice.mockReset().mockResolvedValue({
+      lost: deviceLoss.promise,
+      destroy: vi.fn(),
+    } as unknown as GPUDevice);
     frameCadence(16);
     let url = 0;
     Object.defineProperty(window.URL, "createObjectURL", {
@@ -290,15 +304,15 @@ describe("engine pane pictures", () => {
       onCaptured: undefined as OnirigiriPanePictureCaptureListener | undefined,
     };
     pictures.configure(config);
-    cleanups.push(
-      pictures.start(root),
-      pictures.register("a", content, readiness),
-    );
+    cleanups.push(pictures.start(root));
+    const unregister = pictures.register("a", content, readiness);
+    cleanups.push(unregister);
     return {
       pictures,
       readiness,
       config,
       content,
+      unregister,
       focus: (value: string) => {
         focused = value;
       },
@@ -323,6 +337,102 @@ describe("engine pane pictures", () => {
       height: request.height,
     }),
   );
+
+  it("retains encoded pictures but withdraws lost textures and never gives later hosts a dead device", async () => {
+    const f = fixture(capture);
+    await vi.advanceTimersByTimeAsync(150);
+    const picture = f.pictures.get("a")!;
+    const before = f.pictures.getStatus();
+    expect(picture.capture).not.toBeNull();
+    f.pictures.configure({ ...f.config, presentation: { kind: "texture" } });
+    f.pictures.presentCover("a", "texture");
+    deviceLoss.resolve({ reason: "destroyed", message: "Device reset" });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(f.pictures.getStatus()).toMatchObject({
+      state: "unavailable",
+      reason: "Onirigiri WebGPU device lost: Device reset",
+      pictureBytes: before.pictureBytes,
+      pictureRasterBytes: before.pictureRasterBytes,
+      pictures: before.pictures,
+    });
+    expect(f.pictures.get("a")).toBeNull();
+    f.pictures.presentCover("a", "placeholder");
+    expect(f.pictures.getPresentation("a")).toMatchObject({
+      requested: "texture",
+      actual: "placeholder",
+      reason: "texture-unavailable",
+    });
+    expect(picture.texture.dispose).not.toHaveBeenCalled();
+    expect(f.pictures.getStatus().pictures[0]!.capture).toBe(picture.capture);
+    const prepareCount = preparePanePictureTexture.mock.calls.length;
+    const later = document.createElement("div");
+    f.content.parentElement!.append(later);
+    cleanups.push(f.pictures.register("b", later, new PaneContentReadiness()));
+    await expect(canvasMock.devices.get(later)).rejects.toThrow("Device reset");
+    expect(canvasMock.createDevice).toHaveBeenCalledOnce();
+    f.pictures.configure({ ...f.config, presentation: "canvas" });
+    expect(f.pictures.getPresentation("a")).toMatchObject({
+      requested: "canvas",
+      kind: "dom",
+      reason: "capture-unavailable",
+    });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(preparePanePictureTexture).toHaveBeenCalledTimes(prepareCount);
+    expect(capture).toHaveBeenCalledOnce();
+    expect(f.pictures.getPaneError("a")).toBeNull();
+  });
+
+  it("cancels capture on device loss and keeps ordinary paint failures distinct", async () => {
+    const acquire = vi.fn<CanvasCapture>(
+      ({ signal }) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), {
+            once: true,
+          });
+        }),
+    );
+    const f = fixture(acquire);
+    await vi.advanceTimersByTimeAsync(150);
+    expect(acquire).toHaveBeenCalledOnce();
+    expect(f.pictures.getStatus().inFlightPaneIds).toEqual(["a"]);
+    deviceLoss.resolve({ reason: "unknown", message: "Device reset" });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(acquire.mock.calls[0]![0].signal.aborted).toBe(true);
+    expect(f.pictures.getStatus()).toMatchObject({
+      state: "unavailable",
+      inFlightPaneIds: [],
+      preloadingPaneId: null,
+      overviewPaneId: null,
+    });
+    expect(f.pictures.getPaneError("a")).toBeNull();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(acquire).toHaveBeenCalledOnce();
+    canvasMock.callbacks
+      .get(f.content)!
+      .failed(new Error("Invalid rendering operation"));
+    expect(f.pictures.getPaneError("a")).toBe("Invalid rendering operation");
+    expect(f.pictures.getPresentation("a").actual).toBe("error");
+  });
+
+  it("withdraws a lost texture from subscribers after its live host was evicted", async () => {
+    const f = fixture(capture);
+    await vi.advanceTimersByTimeAsync(150);
+    let displayed = f.pictures.get("a");
+    const retained = displayed!;
+    expect(retained.capture).not.toBeNull();
+    f.unregister();
+    cleanups.push(
+      f.pictures.subscribe("a", () => {
+        displayed = f.pictures.get("a");
+      }),
+    );
+    deviceLoss.resolve({ reason: "destroyed", message: "Device reset" });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(displayed).toBeNull();
+    expect(f.pictures.getStatus().pictures[0]!.capture).toBe(retained.capture);
+    expect(f.pictures.getStatus().pictureBytes).toBe(retained.image.size);
+    expect(retained.texture.dispose).not.toHaveBeenCalled();
+  });
 
   it("keeps native input local while resize gestures still update live presentation", async () => {
     const f = fixture();

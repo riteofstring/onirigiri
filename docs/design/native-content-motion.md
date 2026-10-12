@@ -229,6 +229,19 @@ fall back to native, and no capture work is admitted. The capture status reports
 `unavailable` with the reason for developers. Device and canvas resources are
 released with their owners.
 
+Losing a device after initialization takes the same native-only path. Active
+captures are cancelled, the capture status retains the device-loss reason, and
+later content hosts do not receive the lost device or request a replacement.
+The original DOM, inputs and frames stay mounted and usable for automatic, DOM
+and canvas presentation. Encoded pictures and their source identities remain
+owned by the cache, but textures prepared on the lost device are unavailable for
+presentation, including pictures whose live hosts have been evicted. Frozen
+canvas presentation loses readiness with its pixels; the ordinary cover remains
+until native content can be revealed. An explicit texture policy keeps its existing
+`texture-unavailable` placeholder until the developer changes that policy;
+ordinary native presentation remains available. Rendering errors unrelated to
+device loss continue to report pane errors.
+
 Without HTML-in-Canvas, children inside a canvas have no layout boxes. Native-only
 surfaces therefore attach their original content to an invisible native host
 before consumer readiness, allowing size observers and responsive layout to

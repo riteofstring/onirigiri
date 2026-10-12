@@ -2456,18 +2456,30 @@ test("native content recovers after a GPU device loss during canvas presentation
     fixture.surface.requestPaint();
   });
   await expect
-    .poll(() => page.evaluate(() => window.__paneCanvasFixture.drawn))
-    .toBe(true);
+    .poll(() =>
+      page.evaluate(() => {
+        const fixture = window.__paneCanvasFixture;
+        return {
+          drawn: fixture.drawn,
+          canCapture: fixture.surface.canCapture(),
+          native: fixture.canvas.dataset.onirigiriNativeActive === "true",
+          frame: fixture.surface.frameVersion,
+          error: fixture.error,
+        };
+      }),
+    )
+    .toEqual({
+      drawn: true,
+      canCapture: true,
+      native: false,
+      frame: expect.any(Number),
+      error: null,
+    });
+  expect(
+    await page.evaluate(() => window.__paneCanvasFixture.surface.frameVersion),
+  ).toBeGreaterThan(0);
   const original = await page.locator("iframe").elementHandle();
   await page.evaluate(() => window.__paneCanvasFixture.device!.destroy());
-  await expect
-    .poll(() => page.evaluate(() => window.__paneCanvasFixture.error))
-    .toContain("device lost");
-  await page.evaluate(() => {
-    const fixture = window.__paneCanvasFixture;
-    fixture.motionRenderer = "dom";
-    fixture.surface.requestPaint();
-  });
   await expect(page.locator("#canvas")).toHaveAttribute(
     "data-onirigiri-native-active",
     "true",
@@ -2479,5 +2491,40 @@ test("native content recovers after a GPU device loss during canvas presentation
   ).toBe(true);
   await expect(page.frameLocator("iframe").getByRole("textbox")).toHaveValue(
     "Keep this edit",
+  );
+  expect(
+    await page.evaluate(async () => {
+      const fixture = window.__paneCanvasFixture;
+      const captureError = await fixture.surface
+        .capture({
+          stage: true,
+          signal: AbortSignal.timeout(5000),
+          maxRasterBytes: 16 * 1024 * 1024,
+          maxEncodedBytes: 8 * 1024 * 1024,
+        })
+        .then(
+          () => null,
+          (error: Error) => error.message,
+        );
+      return {
+        requested: fixture.motionRenderer,
+        drawn: fixture.drawn,
+        error: fixture.error,
+        canCapture: fixture.surface.canCapture(),
+        captureError,
+      };
+    }),
+  ).toEqual({
+    requested: "canvas",
+    drawn: true,
+    error: null,
+    canCapture: false,
+    captureError: "Pane canvas is not ready",
+  });
+  await page.frameLocator("iframe").getByRole("textbox").click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" after recovery");
+  await expect(page.frameLocator("iframe").getByRole("textbox")).toHaveValue(
+    "Keep this edit after recovery",
   );
 });

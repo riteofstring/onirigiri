@@ -143,7 +143,10 @@ it("browser suites intercept every explicit launch before it can open a visible 
 });
 
 vi.mock("../src/pictures/pane-picture-canvas", () => ({
-  createPaneCanvasDevice: async () => ({ destroy() {} }),
+  createPaneCanvasDevice: async () => ({
+    destroy() {},
+    lost: new Promise<GPUDeviceLostInfo>(() => {}),
+  }),
   PaneCanvasSurface: class {
     frameVersion = 0;
     constructor(

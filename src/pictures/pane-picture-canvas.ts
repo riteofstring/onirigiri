@@ -526,16 +526,25 @@ export class PaneCanvasSurface {
     this.nativeOnly = true;
     this.initialized = true;
     this.requestPaint();
+    this.callbacks.changed?.();
   };
 
   private lost(info: GPUDeviceLostInfo): void {
     if (this.disposed) return;
     const error = new Error(`Onirigiri WebGPU device lost: ${info.message}`);
-    this.captureAbort?.abort(error);
+    const capture = this.captureAbort;
+    this.captureAbort = null;
+    capture?.abort(error);
     this.context?.unconfigure();
     this.context = null;
     this.device = null;
-    this.failed(error);
+    this.lastImage?.close();
+    this.lastImage = null;
+    this.imageSize = null;
+    this.freezePending = false;
+    this.copyBudget.forget(this);
+    if (!this.source.isNative()) this.callbacks.drawn(false);
+    this.captureUnavailable();
   }
 
   private configure(): void {
