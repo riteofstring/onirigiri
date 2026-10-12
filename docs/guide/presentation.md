@@ -195,15 +195,26 @@ image, so use this option when their departing content should remain briefly.
 />
 ```
 
-Capture is built into the engine. Optional `getPanePicture` returns `{ image: pngBlob, fit?, position? }`.
+Capture is built into the engine. Optional `getPanePicture` returns
+`{ image: pngBlob, cssSize?: { width, height }, fit?, position? }`.
+`cssSize` preserves the image's extent in CSS pixels, independently of display
+density or a reduced texture's raster dimensions. The image box stays anchored
+at the pane's top-left: shrinking the pane clips it, and growing the pane exposes
+the pane background. Use `fit: "fill", position: "left top"` for a saved capture.
+Omitting `cssSize` preserves the existing behavior of fitting the current pane.
+Automatic captures retain their captured CSS dimensions with the same top-left
+anchoring until a new capture replaces them.
 Use an immutable PNG Blob per revision; Onirigiri owns its prepared textures. Withdrawing a
 source retains its last accepted picture. Removing the pane or replacing its
 surface releases that picture. A supplied picture otherwise stands in for
 capture; mark it `replaceable: true` when it only seeds the pane, such as a
 picture saved from an earlier session, and the engine still captures the pane
 when it can. A seed is dropped when the pane's content revision changes and is
-never accepted again once a capture has replaced it. `onPanePictureCaptured(pane, pngBlob)` reports each accepted
-capture, so an application can save it and supply it again after a reload.
+never accepted again once a capture has replaced it.
+`onPanePictureCaptured(pane, pngBlob, receipt)` reports each accepted capture.
+Save `receipt.bounds.width` and `receipt.bounds.height` as the image's `cssSize`
+alongside its PNG to supply both after a reload. Those bounds belong to the
+accepted capture, so no later DOM measurement is needed.
 Developers can set both retention budgets:
 
 - `pictureBudgetBytes`: retained PNG bytes, default 256 MiB.

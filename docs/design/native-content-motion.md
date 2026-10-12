@@ -397,7 +397,18 @@ universal frame-rate guarantee.
 ## Picture ownership and capture
 
 One engine service owns acquired and developer-supplied PNG pictures.
-`getPanePicture` supplies immutable Blob revisions and optional fit/position.
+`getPanePicture` supplies immutable Blob revisions and optional CSS dimensions,
+fit and position. Supplied `cssSize` describes the saved image's CSS extent,
+independent of raster density, prepared preview size, current pane geometry,
+layout mode and monitor size. The image box stays anchored at the top-left and
+is clipped by the pane; growth exposes the existing pane background. Pictures
+without supplied CSS dimensions retain their current-pane fitting behavior.
+Automatic captures use the accepted receipt's existing bounds as their CSS
+extent, with fill and top-left positioning. A stale capture keeps those bounds
+until a replacement is accepted; no new layout measurement or resize scheduler
+is needed. Texture demotion and restoration preserve the CSS extent. Styling
+updates apply only to the matching supplied image, so an old seed cannot change
+the geometry or fit of its replacement capture.
 A supplied picture replaces capture for its pane unless it is marked
 replaceable: then it only seeds the pane until a capture is accepted, which lets
 an application restore pictures saved from an earlier session without freezing
@@ -411,8 +422,11 @@ the cache evicts the complete entry, its current supplied seed can restore
 coverage, including a retired seed. Restoration revalidates the pane, resolver
 and Blob through decoding and acceptance. A restored retired seed remains stale
 coverage so overview and background acquisition can replace it. A new supplied
-Blob or accepted capture clears that stale state. Accepted captures are reported with their PNG so the application owns
-persistence; the engine keeps no storage of its own.
+Blob or accepted capture clears that stale state. Accepted captures are reported
+with their PNG and the same receipt retained by the cache. The application can
+persist its bounds as CSS dimensions without measuring changed layout after
+asynchronous encoding. The application owns persistence; the engine keeps no
+storage of its own.
 The engine owns acceptance, compressed originals, prepared GPU textures and
 presentation. Immutable PNG originals survive live-DOM eviction without a
 freshness expiry. Pane identity changes and workspace disposal release their

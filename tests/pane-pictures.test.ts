@@ -1457,21 +1457,76 @@ describe("engine pane pictures", () => {
     expect(f.pictures.getStatus()).toMatchObject({ state: "unavailable" });
   });
 
-  it("lets a capture replace a replaceable supplied picture and reports it", async () => {
+  it("reports accepted CSS bounds and keeps a replacement capture independent of its saved seed", async () => {
+    const capture = vi.fn(async (request: CanvasRequest) => ({
+      image: png(request.width * 2, request.height * 2),
+      width: request.width * 2,
+      height: request.height * 2,
+    }));
     const f = fixture(capture);
     const seed = png();
     const captured = vi.fn();
-    f.config.resolver = () => ({ image: seed, replaceable: true });
+    f.config.resolver = () => ({
+      image: seed,
+      cssSize: { width: 320, height: 180 },
+      fit: "cover",
+      position: "center",
+      replaceable: true,
+    });
     f.config.onCaptured = captured;
     f.pictures.configure(f.config);
     await vi.advanceTimersByTimeAsync(500);
     expect(capture).toHaveBeenCalled();
     const accepted = f.pictures.get("a");
-    expect(accepted?.capture).not.toBeNull();
+    expect(accepted).toMatchObject({
+      fit: "fill",
+      position: "left top",
+      originalSize: { width: 400, height: 200 },
+      capture: {
+        bounds: { x: 0, y: 0, width: 200, height: 100 },
+        pixelsPerCss: { x: 2, y: 2 },
+      },
+    });
     expect(accepted?.image).not.toBe(seed);
     expect(captured).toHaveBeenCalledWith(
       f.config.panes.get("a"),
       accepted?.image,
+      accepted?.capture,
+    );
+    expect(captured.mock.lastCall?.[2]).toBe(accepted?.capture);
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toBe(accepted);
+    expect(accepted?.cssSize).toBeUndefined();
+  });
+
+  it("updates supplied CSS dimensions without decoding the same PNG again", async () => {
+    const f = fixture();
+    const image = png(400, 200);
+    let cssSize: OnirigiriPanePicture["cssSize"] = {
+      width: 200,
+      height: 100,
+    };
+    f.config.resolver = () => ({ image, cssSize });
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    const accepted = f.pictures.get("a")!;
+    expect(accepted.cssSize).toEqual({ width: 200, height: 100 });
+    const decoded = vi.mocked(window.createImageBitmap).mock.calls.length;
+    cssSize = { width: 320, height: 180 };
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toMatchObject({
+      cssSize,
+      revision: accepted.revision,
+    });
+    expect(f.pictures.get("a")?.texture).toBe(accepted.texture);
+    cssSize = undefined;
+    f.pictures.activity();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")?.cssSize).toBeUndefined();
+    expect(vi.mocked(window.createImageBitmap).mock.calls).toHaveLength(
+      decoded,
     );
   });
 
@@ -1770,7 +1825,10 @@ describe("engine pane pictures", () => {
       renderItem({ paneId: "a", x: 0, visible: true }),
       renderItem({ paneId: "b", x: 4000, visible: false }),
     ];
-    f.config.resolver = (pane) => ({ image: images.get(pane.paneId)! });
+    f.config.resolver = (pane) => ({
+      image: images.get(pane.paneId)!,
+      cssSize: { width: 400, height: 200 },
+    });
     f.config.rasterBudgetBytes = 100000;
     f.pictures.configure(f.config);
     await vi.advanceTimersByTimeAsync(300);
@@ -1783,6 +1841,7 @@ describe("engine pane pictures", () => {
     expect(f.pictures.get("b")).toMatchObject({
       width: 64,
       height: 32,
+      cssSize: { width: 400, height: 200 },
       pixelated: true,
     });
     expect(f.pictures.getStatus().pictureBytes).toBe(88);
@@ -1801,6 +1860,7 @@ describe("engine pane pictures", () => {
     expect(f.pictures.get("b")).toMatchObject({
       width: 200,
       height: 100,
+      cssSize: { width: 400, height: 200 },
       pixelated: false,
       revision,
     });

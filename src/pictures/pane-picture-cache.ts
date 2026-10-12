@@ -20,6 +20,7 @@ export interface CachedPanePicture extends PictureSize {
   capture: OnirigiriPaneCaptureReceipt | null;
   image: Blob;
   originalSize: PictureSize;
+  cssSize?: PictureSize;
   texture: PanePictureTexture;
   preview: PanePictureTexture;
   fit: "contain" | "cover" | "fill";
@@ -95,11 +96,27 @@ export class PanePictureCache {
     this.planKey = key;
   }
 
-  style(id: PaneId, fit: CachedPanePicture["fit"], position: string): void {
+  style(
+    id: PaneId,
+    fit: CachedPanePicture["fit"],
+    position: string,
+    cssSize: PictureSize | undefined,
+  ): void {
     const picture = this.get(id);
-    if (!picture || (picture.fit === fit && picture.position === position))
+    if (
+      !picture ||
+      (picture.fit === fit &&
+        picture.position === position &&
+        picture.cssSize?.width === cssSize?.width &&
+        picture.cssSize?.height === cssSize?.height)
+    )
       return;
-    this.pictures.set(id, { ...picture, fit, position });
+    this.pictures.set(id, {
+      ...picture,
+      fit,
+      position,
+      cssSize: cssSize ? { ...cssSize } : undefined,
+    });
     this.changed(id);
   }
 
@@ -161,6 +178,7 @@ export class PanePictureCache {
       capture: options.capture ?? null,
       image: source.image,
       originalSize: size,
+      cssSize: source.cssSize ? { ...source.cssSize } : undefined,
       preview,
       texture: preview,
       width: preview.width,

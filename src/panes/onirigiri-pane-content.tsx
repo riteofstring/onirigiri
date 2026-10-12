@@ -596,6 +596,7 @@ function PanePicture({
   style: CSSProperties | undefined;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const cssSize = picture.capture?.bounds ?? picture.cssSize;
   useLayoutEffect(() => {
     if (!canvas.current || !visible) return;
     const release = picture.texture.present(canvas.current);
@@ -617,6 +618,10 @@ function PanePicture({
       data-onirigiri-slot="pane-picture"
       data-onirigiri-picture-pixelated={String(picture.pixelated)}
       style={{
+        width: cssSize?.width,
+        height: cssSize?.height,
+        right: cssSize ? "auto" : undefined,
+        bottom: cssSize ? "auto" : undefined,
         objectFit: picture.fit,
         objectPosition: picture.position,
         ...style,

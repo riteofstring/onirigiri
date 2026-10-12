@@ -239,6 +239,64 @@ it.each(["error", "hidden", "disabled", "unmount"])(
   },
 );
 
+it.each(["supplied", "captured", "unsized"])(
+  "preserves %s picture sizing across pane shrink and growth",
+  async (source) => {
+    const texture = {
+      width: 64,
+      height: 36,
+      present: vi.fn((canvas: HTMLCanvasElement) => {
+        canvas.width = 64;
+        canvas.height = 36;
+        return () => {};
+      }),
+      dispose: vi.fn(),
+    };
+    const picture: NonNullable<ReturnType<PanePictures["get"]>> = {
+      revision: 1,
+      capture:
+        source === "captured"
+          ? {
+              id: "capture",
+              devicePixelRatio: 2,
+              pixelsPerCss: { x: 2, y: 2 },
+              bounds: { x: 0, y: 0, width: 320, height: 180 },
+            }
+          : null,
+      image: new Blob(["Saved picture"]),
+      width: 64,
+      height: 36,
+      originalSize: { width: 640, height: 360 },
+      cssSize: source === "unsized" ? undefined : { width: 240, height: 120 },
+      texture,
+      preview: texture,
+      fit: "fill",
+      position: "left top",
+      pixelated: true,
+    };
+    const fixture = await coverFixture({ custom: false, picture });
+    const canvas = container.querySelector<HTMLCanvasElement>(
+      "[data-onirigiri-slot=pane-picture]",
+    )!;
+    for (const paneSize of [100, 800]) {
+      container.style.width = `${paneSize}px`;
+      container.style.height = `${paneSize}px`;
+      await fixture.render();
+      expect(canvas.style.width).toBe(
+        source === "captured" ? "320px" : source === "supplied" ? "240px" : "",
+      );
+      expect(canvas.style.height).toBe(
+        source === "captured" ? "180px" : source === "supplied" ? "120px" : "",
+      );
+      expect(canvas.style.right).toBe(source === "unsized" ? "" : "auto");
+      expect(canvas.style.bottom).toBe(source === "unsized" ? "" : "auto");
+      expect(canvas.width).toBe(64);
+      expect(canvas.height).toBe(36);
+    }
+    expect(texture.present).toHaveBeenCalledOnce();
+  },
+);
+
 it("keeps the existing texture output through the fade and releases its buffer at completion", async () => {
   const release = vi.fn();
   const texture = {

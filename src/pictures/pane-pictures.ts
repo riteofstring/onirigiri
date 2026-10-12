@@ -922,27 +922,28 @@ export class PanePictures {
       const pane = batch.panes[0]!;
       const result = await pane.surface.capture(this.captureRequest(batch));
       if (!this.valid(batch)) return false;
+      const receipt: OnirigiriPaneCaptureReceipt = {
+        id: batch.id,
+        devicePixelRatio: batch.devicePixelRatio,
+        pixelsPerCss: {
+          x: result.width / pane.bounds.width,
+          y: result.height / pane.bounds.height,
+        },
+        bounds: {
+          x: 0,
+          y: 0,
+          width: pane.bounds.width,
+          height: pane.bounds.height,
+        },
+      };
       const accepted = await this.accept(
         pane.paneId,
-        { image: result.image, fit: "fill" },
+        { image: result.image, fit: "fill", position: "left top" },
         result,
         () => this.valid(batch),
         {
           evict: !batch.preload,
-          capture: {
-            id: batch.id,
-            devicePixelRatio: batch.devicePixelRatio,
-            pixelsPerCss: {
-              x: result.width / pane.bounds.width,
-              y: result.height / pane.bounds.height,
-            },
-            bounds: {
-              x: 0,
-              y: 0,
-              width: pane.bounds.width,
-              height: pane.bounds.height,
-            },
-          },
+          capture: receipt,
         },
       );
       if (!accepted) {
@@ -951,7 +952,8 @@ export class PanePictures {
       } else {
         this.retireSeed(pane.paneId);
         const captured = this.configuration.panes.get(pane.paneId);
-        if (captured) this.configuration.onCaptured?.(captured, result.image);
+        if (captured)
+          this.configuration.onCaptured?.(captured, result.image, receipt);
       }
       this.reason = null;
       return accepted;
@@ -1068,16 +1070,11 @@ export class PanePictures {
 
   private updatePictureStyle(id: PaneId, supplied: OnirigiriPanePicture): void {
     const accepted = this.pictures.get(id);
-    if (
-      !accepted ||
-      (accepted.image !== supplied.image &&
-        this.supplied.get(id)?.image.deref() !== supplied.image)
-    )
+    if (!accepted || accepted.capture || accepted.image !== supplied.image)
       return;
     const fit = supplied.fit ?? "contain";
     const position = supplied.position ?? "center";
-    if (accepted.fit === fit && accepted.position === position) return;
-    this.pictures.style(id, fit, position);
+    this.pictures.style(id, fit, position, supplied.cssSize);
   }
 
   private suppliedCurrent(

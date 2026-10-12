@@ -2,6 +2,7 @@ import type { PaneId, WorkspacePane } from "../types.js";
 
 export interface OnirigiriPanePicture {
   image: Blob;
+  cssSize?: { width: number; height: number };
   fit?: "contain" | "cover" | "fill";
   position?: string;
   replaceable?: boolean;
@@ -10,6 +11,7 @@ export interface OnirigiriPanePicture {
 export type OnirigiriPanePictureCaptureListener = (
   pane: WorkspacePane,
   image: Blob,
+  receipt: OnirigiriPaneCaptureReceipt,
 ) => void;
 
 export type OnirigiriPanePictureResolver = (
