@@ -84,9 +84,13 @@ export function eventTargetIsInsideAnotherWorkspace(
 function shortcutEventIsComposing(
   event: OnirigiriShortcutKeyboardEvent,
 ): boolean {
-  return "nativeEvent" in event
-    ? event.nativeEvent.isComposing
-    : event.isComposing;
+  const native = "nativeEvent" in event ? event.nativeEvent : event;
+  return (
+    native.isComposing ||
+    native.key === "Process" ||
+    native.keyCode === 229 ||
+    native.getModifierState("AltGraph")
+  );
 }
 
 export function shortcutEventIsIgnored(

@@ -714,6 +714,107 @@ describe("OnirigiriWorkspace keyboard shortcuts", () => {
     container.remove();
   });
 
+  it.each(["application", "workspace"] as const)(
+    "reserves opted-in editing shortcuts before a consuming editor in %s scope",
+    async (shortcutScope) => {
+      const container = document.createElement("div");
+      document.body.append(container);
+      const root = createRoot(container);
+      const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
+      const binding = {
+        altKey: true,
+        ctrlKey: true,
+        key: "ArrowRight",
+        metaKey: false,
+        shiftKey: false,
+        whileEditing: true,
+      };
+      await act(async () => {
+        root.render(
+          <OnirigiriWorkspace
+            initialPanes={["left", "middle", "right"].map((paneId) => ({
+              paneId,
+              surfaceKind: "test",
+              title: paneId,
+            }))}
+            ref={workspaceRef}
+            renderPane={(pane) => (
+              <textarea aria-label={`${pane.paneId} terminal`} />
+            )}
+            shortcutScope={shortcutScope}
+            shortcuts={{
+              focusRight: [binding],
+              toggleOverview: [{ ...binding, key: "o" }],
+            }}
+          />,
+        );
+      });
+      const workspace = requiredWorkspaceHandle(workspaceRef.current);
+      const input = requiredElement<HTMLTextAreaElement>(
+        container,
+        '[aria-label="left terminal"]',
+      );
+      const shell = vi.fn();
+      input.addEventListener("keydown", (event) => {
+        if (!event.defaultPrevented) shell(event.key);
+        event.stopPropagation();
+      });
+      await act(async () => {
+        workspace.focusPane("left");
+        input.focus();
+        for (const init of [
+          { key: "ArrowRight", altKey: true },
+          { key: "c", ctrlKey: true },
+          { key: "ArrowRight", ctrlKey: true, altKey: true, isComposing: true },
+          { key: "ArrowRight", ctrlKey: true, altKey: true, keyCode: 229 },
+          { key: "o", ctrlKey: true, altKey: true, modifierAltGraph: true },
+        ]) {
+          const event = dispatchKeyDown(input, init);
+          expect(event.defaultPrevented).toBe(false);
+          expect(workspace.getSnapshot().focusedPaneId).toBe("left");
+          expect(workspace.getSnapshot().presentationMode).toBe("normal");
+        }
+        const prevented = new KeyboardEvent("keydown", {
+          ...binding,
+          bubbles: true,
+          cancelable: true,
+        });
+        prevented.preventDefault();
+        input.dispatchEvent(prevented);
+        const modal = input.parentElement!;
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        expect(dispatchKeyDown(input, binding).defaultPrevented).toBe(false);
+        modal.removeAttribute("role");
+        modal.removeAttribute("aria-modal");
+      });
+      expect(shell).toHaveBeenCalledTimes(6);
+      expect(workspace.getSnapshot().focusedPaneId).toBe("left");
+      shell.mockClear();
+      for (const [repeat, expected] of [
+        [false, "middle"],
+        [true, "right"],
+      ] as const) {
+        await act(async () => {
+          expect(
+            dispatchKeyDown(input, { ...binding, repeat }).defaultPrevented,
+          ).toBe(true);
+        });
+        expect(workspace.getSnapshot().focusedPaneId).toBe(expected);
+      }
+      await act(async () => {
+        expect(
+          dispatchKeyDown(input, { ...binding, key: "o", code: "KeyO" })
+            .defaultPrevented,
+        ).toBe(true);
+      });
+      expect(workspace.getSnapshot().presentationMode).toBe("overview");
+      expect(shell).not.toHaveBeenCalled();
+      await act(async () => root.unmount());
+      container.remove();
+    },
+  );
+
   it("leaves overview and then a maximized pane with Escape", async () => {
     const container = document.createElement("div");
     document.body.append(container);

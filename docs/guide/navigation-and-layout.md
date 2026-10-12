@@ -250,6 +250,9 @@ An empty array disables that action. Set `shortcuts={false}` to disable all conf
 Escape always retains its exit-overview and restore behavior. Editable controls, content-editable
 content, composing input, and modal dialogs keep their native keyboard behavior. A binding with
 `whileEditing: true` also runs from an editable control, for chords that never edit text, such as
-Control+Alt+Arrow; Escape in an editable control stays with the control. Custom modal
+Control+Alt+Arrow. These opted-in bindings run during capture, before an editor or terminal
+can consume the key. Custom editable controls should respect `event.defaultPrevented` before
+sending keys to their application. Composition and AltGraph text input remain with the control,
+and Escape in an editable control stays with the control. Custom modal
 overlays should use native `<dialog>` or `role="dialog" aria-modal="true"`; a host can also switch
 back to `shortcutScope="workspace"` while a custom overlay is open.

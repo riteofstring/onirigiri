@@ -341,6 +341,19 @@ export const OnirigiriWorkspace = forwardRef<
   );
   const shortcutKeyDownHandlerRef = useRef(handleShortcutKeyDown);
   shortcutKeyDownHandlerRef.current = handleShortcutKeyDown;
+  const handleEditableShortcutKeyDown = useCallback(
+    (event: OnirigiriShortcutKeyboardEvent) => {
+      const workspace = workspaceRef.current;
+      if (
+        workspace &&
+        eventTargetAcceptsText(event.target) &&
+        !eventTargetIsInsideAnotherWorkspace(event.target, workspace)
+      ) {
+        handleShortcutKeyDown(event);
+      }
+    },
+    [handleShortcutKeyDown],
+  );
 
   const activateApplicationShortcuts = useCallback(
     () =>
@@ -376,8 +389,21 @@ export const OnirigiriWorkspace = forwardRef<
         shortcutKeyDownHandlerRef.current(event);
       }
     };
+    const handleEditableDocumentKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (eventTargetAcceptsText(event.target)) handleDocumentKeyDown(event);
+    };
+    ownerDocument.addEventListener(
+      "keydown",
+      handleEditableDocumentKeyDown,
+      true,
+    );
     ownerDocument.addEventListener("keydown", handleDocumentKeyDown);
     return () => {
+      ownerDocument.removeEventListener(
+        "keydown",
+        handleEditableDocumentKeyDown,
+        true,
+      );
       ownerDocument.removeEventListener("keydown", handleDocumentKeyDown);
       unregister();
     };
@@ -984,6 +1010,10 @@ export const OnirigiriWorkspace = forwardRef<
           data-onirigiri-styling-version={onirigiriStylingContract.version}
           data-onirigiri-workspace-id={workspaceId}
           onFocusCapture={activateApplicationShortcuts}
+          onKeyDownCapture={workspaceShortcutKeyDownHandler(
+            shortcutScope,
+            handleEditableShortcutKeyDown,
+          )}
           onKeyDown={workspaceShortcutKeyDownHandler(
             shortcutScope,
             handleShortcutKeyDown,
