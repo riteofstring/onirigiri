@@ -146,6 +146,113 @@ describe("WorkspaceFrameScheduler", () => {
     harness.scheduler.teardown();
   });
 
+  it("keeps stationary panes interactive while their focus outline animates", () => {
+    const cursorPresentation = new WorkspaceGridCursorPresentation();
+    const cursorHost = document.createElement("div");
+    cursorPresentation.bindCursorHost(cursorHost);
+    const { cursor, scene } = createWorkspaceScene({
+      panes: ["a", "b"].map((paneId, index) => ({
+        columnId: `column-${paneId}`,
+        columnWidth: { unit: "px" as const, value: 120 },
+        paneId,
+        slotIndex: index,
+        surfaceKind: "test",
+        title: paneId,
+      })),
+    });
+    const harness = createSchedulerHarnessFor(
+      scene,
+      cursor,
+      ["a", "b"],
+      undefined,
+      cursorPresentation,
+    );
+    const contents = [...harness.hosts.values()].map((host) => {
+      const content = document.createElement("div");
+      content.className = "onirigiri-pane__content";
+      const live = document.createElement("div");
+      live.className = "onirigiri-pane__live-content";
+      content.append(live);
+      host.append(content);
+      return { content, host, live };
+    });
+    harness.scheduler.start();
+    harness.frameHost.flushAll();
+    const worldTransform = harness.stage.style.transform;
+    const paneTransforms = contents.map(({ host }) => host.style.transform);
+    const initialCursorTransform = cursorHost.style.transform;
+    harness.focusedPaneMotion.length = 0;
+
+    expect(harness.store.focusPaneWithoutReveal("b")).toBe(true);
+    const cursorTransforms = new Set<string>();
+    for (
+      let frame = 0;
+      frame < 240 && harness.frameHost.pendingFrameCount() > 0;
+      frame += 1
+    ) {
+      harness.frameHost.flushFrames(1);
+      cursorTransforms.add(cursorHost.style.transform);
+      expect(cursorHost.dataset.moving).toBe(
+        String(cursorPresentation.hasActiveMotion()),
+      );
+      expect(harness.stage.style.transform).toBe(worldTransform);
+      contents.forEach(({ content, host, live }, index) => {
+        expect(host.style.transform).toBe(paneTransforms[index]);
+        expect(host.dataset.moving).toBe("false");
+        expect(host.dataset.runtimeState).toBe("live");
+        expect(content.dataset.onirigiriShielded).toBe("false");
+        expect(live.hasAttribute("inert")).toBe(false);
+        expect(live.getAttribute("aria-hidden")).toBe("false");
+      });
+    }
+    expect(cursorTransforms.size).toBeGreaterThan(2);
+    expect(cursorHost.style.transform).not.toBe(initialCursorTransform);
+    expect(cursorPresentation.hasActiveMotion()).toBe(false);
+    expect(cursorHost.dataset.moving).toBe("false");
+    expect(harness.frameHost.pendingFrameCount()).toBe(0);
+    expect(harness.focusedPaneMotion).toHaveLength(1);
+    expect(harness.focusedPaneMotion[0]).toMatchObject({
+      frame: { paneId: "b" },
+      moving: false,
+    });
+
+    expect(harness.store.focusPane("b")).toBe(true);
+    harness.frameHost.flushFrames(2);
+    expect(harness.stage.style.transform).not.toBe(worldTransform);
+    expect(contents[1]!.content.dataset.onirigiriShielded).toBe("true");
+    harness.frameHost.flushAll();
+    expect(contents[1]!.content.dataset.onirigiriShielded).toBe("false");
+
+    harness.store.setCameraModes(cameraModes("follow", "fixed"));
+    harness.store.toggleOverviewMode();
+    harness.frameHost.flushAll();
+    const overviewTransform = harness.stage.style.transform;
+    harness.boundaries.mockClear();
+    expect(harness.store.focusPane("a")).toBe(true);
+    harness.frameHost.flushFrames(2);
+    expect(cursorPresentation.hasActiveMotion()).toBe(true);
+    expect(cursorHost.dataset.moving).toBe("true");
+    expect(harness.stage.style.transform).toBe(overviewTransform);
+    for (const { host, live } of contents) {
+      expect(host.dataset.moving).toBe("false");
+      expect(host.dataset.runtimeState).toBe("frozen");
+      expect(live.hasAttribute("inert")).toBe(true);
+    }
+    harness.frameHost.flushAll();
+    expect(harness.boundaries.mock.calls.map((call) => call[1])).toEqual([
+      "request",
+    ]);
+    expect(cursorHost.dataset.moving).toBe("false");
+    expect(harness.store.focusOverviewPane("b", viewport)).toBe(true);
+    harness.frameHost.flushAll();
+    expect(harness.store.getSnapshot()).toMatchObject({
+      focusedPaneId: "b",
+      presentationMode: "normal",
+    });
+    expect(contents[1]!.live.hasAttribute("inert")).toBe(false);
+    harness.scheduler.teardown();
+  });
+
   it.each([
     ["the default follow camera", defaultCameraMotion],
     [

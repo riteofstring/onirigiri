@@ -317,7 +317,7 @@ export class WorkspaceFrameScheduler {
       worldFrame;
     this.options.cursorPresentation?.apply(
       cursor,
-      motion.moving,
+      motion.moving || motion.cursor.active,
       this.options.worldPresentation?.presentedScale(worldFrame.scale) ??
         worldFrame.scale,
     );
@@ -437,7 +437,6 @@ export class WorkspaceFrameScheduler {
     const moving = [
       workspaceSnapshotIsMoving(snapshot),
       paneRearrangement.wasActive,
-      cursor.wasActive,
       overviewCamera.wasActive,
     ].some(Boolean);
     return { cursor, moving, overviewCamera, paneRearrangement };

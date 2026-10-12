@@ -55,6 +55,12 @@ row and split resizing, update its bounds on the same frame as the pane. Such
 geometry changes cancel any unfinished focus transition so the outline cannot
 trail the resize gesture.
 
+Moving the focus outline alone does not mark stationary panes as moving. Content
+stays live and accepts the original pointer gesture when focus changes without
+revealing a new camera position. The scheduler continues the outline's timeline
+independently; camera, overview and pane rearrangement motion still protect content
+from input during movement.
+
 Zustand is an exact runtime dependency, externalized from the library bundle.
 No persistence middleware is used: the existing explicit layout serialization and
 restore contract remains responsible for persisted layout data. Picture blobs,

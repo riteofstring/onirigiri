@@ -301,6 +301,58 @@ test("enters overview from atlas and exits to system through continuous scene le
   expectOnlyRuntimeTransitionsDuringInterpolation(exit, renders);
 });
 
+test("keeps the first pointer click interactive while the focus highlight moves", async ({
+  page,
+}) => {
+  await openPlayground(page);
+  const tasks = pane(page, "tasks");
+  const checkbox = tasks.locator(".task-list input[type=checkbox]").first();
+  await expect(tasks).toHaveAttribute("data-focused", "false");
+  await expect(tasks).toHaveAttribute("data-visible", "true");
+  await expect(tasks).toHaveAttribute("data-runtime-state", "live");
+  await expect(checkbox).toBeChecked();
+  await checkbox.evaluate((input) => {
+    input.dataset.onirigiriChangeCount = "0";
+    input.addEventListener("change", () => {
+      input.dataset.onirigiriChangeCount = String(
+        Number(input.dataset.onirigiriChangeCount) + 1,
+      );
+    });
+  });
+  const before = await focusClickFrame(page);
+  const box = await checkbox.boundingBox();
+  if (!box) throw new Error("The task checkbox has no visible bounds.");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  const frames = [];
+  try {
+    for (let index = 0; index < 2; index += 1) {
+      frames.push(await focusClickFrame(page));
+    }
+  } finally {
+    await page.mouse.up();
+  }
+  await expect(checkbox).not.toBeChecked();
+  await expect(checkbox).toHaveAttribute("data-onirigiri-change-count", "1");
+  expect(frames.some((frame) => frame.highlightMoving)).toBe(true);
+  expect(
+    new Set(frames.map((frame) => JSON.stringify(frame.highlight))).size,
+  ).toBeGreaterThan(1);
+  for (const frame of frames) {
+    expect(frame.pane).toEqual(before.pane);
+    expect(frame.camera).toBe(before.camera);
+    expect(frame.focused).toBe(true);
+    expect(frame.runtimeState).toBe("live");
+    expect(frame.moving).toBe(false);
+    expect(frame.shielded).toBe(false);
+  }
+  await expect(
+    page.locator(".onirigiri-workspace__grid-cursor"),
+  ).toHaveAttribute("data-moving", "false");
+  await expect(checkbox).not.toBeChecked();
+  await expect(checkbox).toHaveAttribute("data-onirigiri-change-count", "1");
+});
+
 test("retains consumer form, scroll, canvas, and subtree identity across a movement round trip", async ({
   page,
 }) => {
@@ -982,6 +1034,47 @@ async function paneBoxes(page: Page): Promise<RestGeometry> {
     return Object.fromEntries(entries);
   }, paneIds);
   return boxes as RestGeometry;
+}
+
+async function focusClickFrame(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+  );
+  return page.evaluate(() => {
+    const host = document.querySelector<HTMLElement>(
+      '.onirigiri-pane[data-onirigiri-pane-id="tasks"]',
+    );
+    const world = document.querySelector<HTMLElement>(
+      ".onirigiri-workspace__world",
+    );
+    const highlight = document.querySelector<HTMLElement>(
+      ".onirigiri-workspace__grid-cursor",
+    );
+    const content = host?.querySelector<HTMLElement>(
+      ".onirigiri-pane__content",
+    );
+    if (!host || !world || !highlight || !content) {
+      throw new Error("The task pane focus surfaces are unavailable.");
+    }
+    const pane = host.getBoundingClientRect();
+    const cursor = highlight.getBoundingClientRect();
+    return {
+      camera: world.style.transform,
+      focused: host.dataset.focused === "true",
+      highlight: {
+        x: cursor.x,
+        y: cursor.y,
+        width: cursor.width,
+        height: cursor.height,
+      },
+      highlightMoving: highlight.dataset.moving === "true",
+      moving: host.dataset.moving === "true",
+      pane: { x: pane.x, y: pane.y, width: pane.width, height: pane.height },
+      runtimeState: host.dataset.runtimeState,
+      shielded: content.dataset.onirigiriShielded === "true",
+    };
+  });
 }
 
 interface SeededConsumerState {

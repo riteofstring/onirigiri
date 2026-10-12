@@ -465,11 +465,14 @@ test("keeps unfocused pane actions available and puts resize handles on the pane
   await openPlayground(page);
 
   const focusedPane = pane(page, "north-signals");
-  const unfocusedPane = pane(page, "north-atlas");
+  const unfocusedPane = pane(page, "middle-tasks");
   const focusedActions = focusedPane.locator(".onirigiri-pane__actions");
   const unfocusedActions = unfocusedPane.locator(".onirigiri-pane__actions");
   const unfocusedButtons = unfocusedActions.getByRole("button");
 
+  await expect(focusedPane).toHaveAttribute("data-moving", "false");
+  await expect(unfocusedPane).toHaveAttribute("data-moving", "false");
+  await expect(unfocusedActions).toBeInViewport({ ratio: 1 });
   await expect(unfocusedPane).toHaveAttribute("data-focused", "false");
   await expect(unfocusedActions).toHaveAttribute("aria-hidden", "false");
   await expect(unfocusedButtons).toHaveCount(2);
