@@ -169,6 +169,20 @@ returns. Retained pictures cover cold or loading content. Compressed originals
 survive content eviction and have no freshness expiry. Unvisited panes show a
 styled icon and title.
 
+Set `restPictureFade` to fade a displayed retained picture or custom
+`renderPanePlaceholder` over ready live content for 100 ms at normal rest.
+It defaults to `false`. Only the departing cover fades; live content and input
+resume immediately through the existing readiness boundary. The cover is inert
+and ignores pointer input, and motion, hiding, errors or disabling the option
+cancel it immediately. Reduced motion skips the fade. The built-in icon/title
+placeholder does not fade, and content already live needs no cover or transition.
+Custom placeholders are treated as covers regardless of whether they contain an
+image, so use this option when their departing content should remain briefly.
+
+```tsx
+<OnirigiriWorkspace restPictureFade renderPane={renderPane} />
+```
+
 ```tsx
 <OnirigiriWorkspace
   getPanePicture={(pane) => savedPngs.get(pane.paneId) ?? null}

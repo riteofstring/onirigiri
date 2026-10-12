@@ -47,6 +47,7 @@ interface OnirigiriPaneContentProps {
   presentationMode: WorkspacePresentationMode;
   renderPane: OnirigiriPaneRenderer;
   renderPanePlaceholder?: OnirigiriWorkspaceProps["renderPanePlaceholder"];
+  restPictureFade?: boolean;
   runtimeState: PaneRuntimeState;
   visible: boolean;
 }
@@ -61,6 +62,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
   presentationMode,
   renderPane,
   renderPanePlaceholder,
+  restPictureFade = false,
   runtimeState,
   visible,
 }: OnirigiriPaneContentProps) {
@@ -87,6 +89,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
     presentation,
     covered,
     interactive,
+    atRest,
     error,
   } = usePaneContentState({
     pictures,
@@ -95,6 +98,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
     placeholderOnly,
     presentationMode,
     runtimeState,
+    restPictureFade,
   });
   useLayoutEffect(() => {
     readiness.invalidate();
@@ -181,6 +185,8 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
           }
           presentation={presentation}
           renderPanePlaceholder={renderPanePlaceholder}
+          restPictureFade={restPictureFade}
+          atRest={atRest}
           visible={visible}
           error={error}
         />
@@ -221,8 +227,14 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
 
 interface PaneCoverProps extends Pick<
   OnirigiriPaneContentProps,
-  "pictures" | "picture" | "pane" | "renderPanePlaceholder" | "visible"
+  | "pictures"
+  | "picture"
+  | "pane"
+  | "renderPanePlaceholder"
+  | "restPictureFade"
+  | "visible"
 > {
+  atRest: boolean;
   covered: boolean;
   inputAvailable: boolean;
   presentation: ReturnType<PanePictures["getPresentation"]>;
@@ -253,32 +265,47 @@ function usePaneCoverState({
 const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
   const { pictures, picture, pane, covered, visible, error } = props;
   const { showPicture, placeholderInteractive } = usePaneCoverState(props);
+  const { fading, retainedCover, surfaceRef } = usePaneCoverFade(
+    props,
+    showPicture,
+  );
+  const coverProps = retainedCover?.props ?? props;
+  const coverShowPicture = retainedCover?.showPicture ?? showPicture;
+  const surfaceVisible = covered || fading;
   const styling = useOnirigiriStyling();
   const pictureSlot = resolveOnirigiriSlotProps(
     styling,
     "pane-picture",
     "onirigiri-pane__picture",
   );
-  if (!covered && !picture) return null;
+  if (!surfaceVisible && !picture) return null;
   return (
     <div
       className="onirigiri-pane__picture-surface"
       aria-hidden={!covered || (showPicture && !error)}
-      data-onirigiri-picture-visible={String(covered)}
+      data-onirigiri-picture-visible={String(surfaceVisible)}
+      data-onirigiri-picture-fading={String(fading)}
+      {...inertAttribute(fading)}
+      ref={surfaceRef}
+      style={
+        fading
+          ? { animationDuration: `${panePictureFadeDuration}ms` }
+          : undefined
+      }
     >
-      {covered ? (
+      {surfaceVisible ? (
         <PaneCoverPlaceholder
-          {...props}
-          showPicture={showPicture}
+          {...coverProps}
+          showPicture={coverShowPicture}
           interactive={placeholderInteractive}
         />
       ) : null}
-      {showPicture && picture ? (
+      {coverShowPicture && picture ? (
         <PanePicture
           picture={picture}
           pictures={pictures}
           paneId={pane.paneId}
-          visible={visible && covered}
+          visible={visible && surfaceVisible}
           className={pictureSlot.className}
           style={pictureSlot.style}
         />
@@ -286,6 +313,74 @@ const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
     </div>
   );
 });
+
+const panePictureFadeDuration = 100;
+
+function usePaneCoverFade(props: PaneCoverProps, showPicture: boolean) {
+  const { covered, restPictureFade, atRest, visible, picture, error } = props;
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const previousCover = useRef<{
+    props: PaneCoverProps;
+    showPicture: boolean;
+  } | null>(null);
+  const [finished, setFinished] = useState(false);
+  const previous = previousCover.current;
+  const fading = Boolean(
+    restPictureFade &&
+    atRest &&
+    visible &&
+    !covered &&
+    !error &&
+    !finished &&
+    previous &&
+    previous.props.pane === props.pane &&
+    (previous.showPicture
+      ? previous.props.picture === picture && showPicture
+      : previous.props.renderPanePlaceholder === props.renderPanePlaceholder),
+  );
+  useLayoutEffect(() => {
+    if (
+      restPictureFade &&
+      covered &&
+      visible &&
+      !error &&
+      (showPicture || props.renderPanePlaceholder)
+    ) {
+      previousCover.current = { props, showPicture };
+      if (finished) setFinished(false);
+    } else if (!fading) previousCover.current = null;
+  }, [
+    props,
+    covered,
+    restPictureFade,
+    visible,
+    error,
+    showPicture,
+    finished,
+    fading,
+  ]);
+  useLayoutEffect(() => {
+    if (!fading) return;
+    const reducedMotion =
+      surfaceRef.current?.ownerDocument.defaultView?.matchMedia?.(
+        "(prefers-reduced-motion: reduce)",
+      );
+    if (reducedMotion?.matches) {
+      setFinished(true);
+      return;
+    }
+    const changed = () => {
+      if (reducedMotion?.matches) setFinished(true);
+    };
+    reducedMotion?.addEventListener("change", changed);
+    const timer = setTimeout(() => setFinished(true), panePictureFadeDuration);
+    return () => {
+      clearTimeout(timer);
+      reducedMotion?.removeEventListener("change", changed);
+    };
+  }, [fading]);
+  return { fading, retainedCover: fading ? previous : null, surfaceRef };
+}
 
 function PaneCoverPlaceholder(
   props: PaneCoverProps & { showPicture: boolean; interactive: boolean },
@@ -342,6 +437,7 @@ function usePaneContentState({
   placeholderOnly,
   presentationMode,
   runtimeState,
+  restPictureFade,
 }: Pick<
   OnirigiriPaneContentProps,
   | "pictures"
@@ -350,6 +446,7 @@ function usePaneContentState({
   | "placeholderOnly"
   | "presentationMode"
   | "runtimeState"
+  | "restPictureFade"
 >) {
   const [readiness] = useState(() => new PaneContentReadiness());
   useSyncExternalStore(
@@ -369,13 +466,18 @@ function usePaneContentState({
       (pictures.isLive(pane.paneId) && pictures.acceptsContentInput()
         ? 32
         : 0) |
+      (restPictureFade &&
+      pictures.isLive(pane.paneId) &&
+      pictures.isInteractive()
+        ? 64
+        : 0) |
       (pictures.isDrawn(pane.paneId) ? 4 : 0) |
       (pictures.isOverviewCapture(pane.paneId)
         ? 1
         : pictures.isPreloading(pane.paneId)
           ? 2
           : 0),
-    [pictures, pane.paneId],
+    [pictures, pane.paneId, restPictureFade],
   );
   const warming = useSyncExternalStore(
     subscribe,
@@ -445,6 +547,7 @@ function usePaneContentState({
     presentation,
     covered,
     interactive,
+    atRest: (warming & 64) !== 0,
     error,
   };
 }

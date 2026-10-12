@@ -181,6 +181,7 @@ export interface OnirigiriWorkspaceProps extends PaneDefaultsConfiguration {
     pane: WorkspacePane,
     state: PanePresentationState,
   ) => ReactNode;
+  restPictureFade?: boolean;
   liveContent?: boolean;
   onPanePresentationChange?: (
     paneId: PaneId,

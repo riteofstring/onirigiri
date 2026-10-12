@@ -373,6 +373,27 @@ embedded content or leaving the viewport does not interrupt movement or release.
 Left and top handles share this lifecycle; the retained texture stays anchored
 at the pane's top-left while that corner follows the pointer.
 
+`restPictureFade` optionally retains a previously displayed picture or custom
+placeholder for a 100 ms opacity fade after ready live presentation resumes at
+normal rest. The default remains off. Generic icon/title placeholders never
+fade; custom renderers supply arbitrary cover content and cannot be classified
+as pictures. Their previous presentation inputs remain fixed during departure.
+Live content, producer clocks and input follow the existing readiness boundary
+without waiting for the cover. The departing layer is inert, hidden from
+accessibility and excludes pointer input.
+
+The opt-in rest bit uses the existing pane-local picture subscription. Motion
+boundaries cancel a fade even when the underlying live presentation is unchanged;
+the default snapshot and motion-frame scheduling stay unchanged. Only a departing
+cover starts a CSS opacity animation and one cleanup timer. No geometry reads,
+capture, extra animation-frame loop or compositor hints are added. Completion
+unmounts the custom cover and releases the texture output's drawing buffer through
+its existing cleanup, without disposing the cache's picture. Motion, hidden
+content, errors, cover replacement and disabling the option cancel departure.
+Reduced motion skips retention and changing that preference cancels an active
+fade. This bounded overlap still costs blending at rest; it establishes no
+universal frame-rate guarantee.
+
 ## Picture ownership and capture
 
 One engine service owns acquired and developer-supplied PNG pictures.

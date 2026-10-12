@@ -749,6 +749,21 @@
     visibility: hidden;
   }
 
+  .onirigiri-pane__picture-surface[data-onirigiri-picture-fading="true"] {
+    animation-name: onirigiri-picture-fade;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes onirigiri-picture-fade {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
   .onirigiri-pane__picture {
     display: block;
     height: 100%;

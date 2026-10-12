@@ -50,6 +50,7 @@ export interface OnirigiriPaneViewProps extends Omit<
   pictures: PanePictures;
   renderPane: OnirigiriWorkspaceProps["renderPane"];
   renderPanePlaceholder?: OnirigiriWorkspaceProps["renderPanePlaceholder"];
+  restPictureFade?: boolean;
   rowHeight: number;
 }
 
@@ -68,6 +69,7 @@ export const OnirigiriPaneView = memo(function OnirigiriPaneView({
   pictures,
   renderPane,
   renderPanePlaceholder,
+  restPictureFade,
   rowHeight,
   showControls,
   store,
@@ -144,6 +146,7 @@ export const OnirigiriPaneView = memo(function OnirigiriPaneView({
         presentationMode={item.presentationMode}
         renderPane={renderPane}
         renderPanePlaceholder={renderPanePlaceholder}
+        restPictureFade={restPictureFade}
         runtimeState={item.runtimeState}
         visible={item.visible}
       />
@@ -313,6 +316,7 @@ const paneViewStablePropKeys = [
   "presentation",
   "pictures",
   "renderPane",
+  "restPictureFade",
   "showControls",
   "store",
 ] as const satisfies readonly (keyof OnirigiriPaneViewProps)[];

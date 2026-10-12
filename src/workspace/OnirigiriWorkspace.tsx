@@ -154,6 +154,7 @@ export const OnirigiriWorkspace = forwardRef<
     panePresentation,
     getPanePresentation,
     renderPanePlaceholder,
+    restPictureFade,
     liveContent,
     onCaptureStatusChange,
     onPanePresentationChange,
@@ -977,6 +978,7 @@ export const OnirigiriWorkspace = forwardRef<
         renderItemByPaneId={renderItemByPaneId}
         renderPane={renderPane}
         renderPanePlaceholder={renderPanePlaceholder}
+        restPictureFade={restPictureFade}
         rowHeightByPaneId={rowHeightByPaneId}
         selectedGroupColumnId={selectedPaneGroupColumnId(layoutSnapshot)}
         showControls={showControls}

@@ -382,6 +382,7 @@ Only `renderPane` is required.
 | `panePresentation`         | `"auto"` | Workspace-wide presentation choice                                |
 | `getPanePresentation`      | —        | Per-pane, per-phase presentation choice                           |
 | `renderPanePlaceholder`    | icon     | Custom placeholder content                                        |
+| `restPictureFade`          | `false`  | Fade departing pictures or custom covers for 100 ms at rest       |
 | `getPanePicture`           | —        | Supply your own pictures for panes that are not mounted           |
 | `onPanePictureCaptured`    | —        | Receive each captured picture, for example to save it             |
 | `onPanePresentationChange` | —        | Observe each pane's effective presentation                        |

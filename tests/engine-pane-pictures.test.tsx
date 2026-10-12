@@ -86,7 +86,10 @@ vi.mock("../src/pictures/pane-picture-texture", () => ({
   ),
 }));
 vi.mock("../src/pictures/pane-picture-canvas", () => ({
-  createPaneCanvasDevice: async () => ({ destroy: vi.fn() }),
+  createPaneCanvasDevice: async () => ({
+    destroy: vi.fn(),
+    lost: new Promise<GPUDeviceLostInfo>(() => {}),
+  }),
   PaneCanvasSurface: class {
     frameVersion = 0;
     constructor(

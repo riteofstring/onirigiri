@@ -22,6 +22,7 @@ interface OnirigiriWorkspacePaneLayerProps {
   renderItemByPaneId: ReadonlyMap<PaneId, PaneRenderItem>;
   renderPane: OnirigiriWorkspaceProps["renderPane"];
   renderPanePlaceholder?: OnirigiriWorkspaceProps["renderPanePlaceholder"];
+  restPictureFade?: boolean;
   rowHeightByPaneId: ReadonlyMap<PaneId, number>;
   selectedGroupColumnId: string | null;
   showControls: boolean;
@@ -41,6 +42,7 @@ export function OnirigiriWorkspacePaneLayer({
   renderItemByPaneId,
   renderPane,
   renderPanePlaceholder,
+  restPictureFade,
   rowHeightByPaneId,
   selectedGroupColumnId,
   showControls,
@@ -77,6 +79,7 @@ export function OnirigiriWorkspacePaneLayer({
         presentation={presentation}
         renderPane={renderPane}
         renderPanePlaceholder={renderPanePlaceholder}
+        restPictureFade={restPictureFade}
         rowHeight={rowHeightByPaneId.get(pane.paneId) ?? item.height}
         showControls={showControls}
         store={store}
