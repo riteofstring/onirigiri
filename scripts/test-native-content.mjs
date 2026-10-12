@@ -29,6 +29,7 @@ const commands = {
     "--project=chrome-native-cadence",
     "native-content.pw.ts",
     "pane-canvas.pw.ts",
+    "pane-canvas-pixels.pw.ts",
     "pane-canvas-worker.pw.ts",
     "fullscreen-content.pw.ts",
     "pane-native-cadence.pw.ts",

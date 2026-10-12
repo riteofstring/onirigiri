@@ -734,6 +734,9 @@ Motion/rest checks compare every descendant's bounds exactly at several pane wid
 including native text and form controls in same-origin frames. Raster comparisons
 permit only small antialiasing differences between browser screenshot and texture
 readback; layout tolerances are zero.
+Nested text and border comparisons retain the native screenshot and canvas PNG
+used by the pixel assertion, so raster differences can be inspected without
+capturing a later frame.
 Engine checks capture an offscreen
 neighbor before navigation and fill missing overview pictures serially.
 The 100-pane interaction case exercises width, row-height and stacked-divider
