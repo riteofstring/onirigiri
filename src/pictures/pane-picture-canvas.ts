@@ -364,10 +364,9 @@ export class PaneCanvasSurface {
   }> {
     request.signal.throwIfAborted();
     this.assertCapturable();
-    const display =
-      this.live && !request.stage && !this.hasCurrentFrame()
-        ? await preparePaneCaptureDisplay(this.device!, request.signal)
-        : undefined;
+    const display = this.needsCaptureDisplay(request.stage)
+      ? await preparePaneCaptureDisplay(this.device!, request.signal)
+      : undefined;
     request.signal.throwIfAborted();
     this.assertCapturable();
     const controller = new AbortController();
@@ -460,6 +459,10 @@ export class PaneCanvasSurface {
       if (restore) signal.removeEventListener("abort", restore);
       restore?.();
     }
+  }
+
+  private needsCaptureDisplay(stage: boolean): boolean {
+    return this.live && !stage && !this.hasCurrentFrame();
   }
 
   private assertCapturable(): void {
@@ -783,25 +786,7 @@ export class PaneCanvasSurface {
         try {
           signal.throwIfAborted();
           if (!this.copyElement(texture, false)) return;
-          if (this.live && !staged) {
-            const size = this.rasterSize(128 * 1024 * 1024);
-            if (this.canvas.width !== size.width)
-              this.canvas.width = size.width;
-            if (this.canvas.height !== size.height)
-              this.canvas.height = size.height;
-            const destination = this.context!.getCurrentTexture();
-            if (
-              display &&
-              texture.width === destination.width &&
-              texture.height === destination.height
-            )
-              displayPaneCapture(this.device!, display, texture, destination);
-            else this.copyImage(this.lastImage!, destination, true);
-            this.canvas.updateElementGeometry?.(this.content);
-            this.presentation.painted();
-            this.freezePending = false;
-            this.callbacks.drawn(true);
-          }
+          if (this.live && !staged) this.displayCapture(texture, display);
           cleanup();
           resolve();
         } catch (error) {
@@ -813,6 +798,27 @@ export class PaneCanvasSurface {
       signal.addEventListener("abort", abort, { once: true });
       this.requestPaint();
     });
+  }
+
+  private displayCapture(
+    texture: GPUTexture,
+    display: GPURenderPipeline | undefined,
+  ): void {
+    const size = this.rasterSize(128 * 1024 * 1024);
+    if (this.canvas.width !== size.width) this.canvas.width = size.width;
+    if (this.canvas.height !== size.height) this.canvas.height = size.height;
+    const destination = this.context!.getCurrentTexture();
+    if (
+      display &&
+      texture.width === destination.width &&
+      texture.height === destination.height
+    )
+      displayPaneCapture(this.device!, display, texture, destination);
+    else this.copyImage(this.lastImage!, destination, true);
+    this.canvas.updateElementGeometry?.(this.content);
+    this.presentation.painted();
+    this.freezePending = false;
+    this.callbacks.drawn(true);
   }
 
   private stage(): () => void {
