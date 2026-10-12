@@ -209,31 +209,51 @@ function paneViewFieldsAreUnchanged(
 function paneItemFieldsAreUnchanged(
   previous: PaneRenderItem | null,
   next: PaneRenderItem | null,
-  ignoreHiddenMotion: boolean,
+  ownItem: boolean,
 ): boolean {
   if (previous === next) return true;
   if (!previous || !next) return false;
   const hidden =
-    ignoreHiddenMotion &&
+    ownItem &&
     !previous.visible &&
     !next.visible &&
     previous.runtimeState === "hidden" &&
     next.runtimeState === "hidden";
-  return equalPaneItemFields(previous, next, hidden);
+  const frozenOverview =
+    ownItem &&
+    previous.visible &&
+    next.visible &&
+    !previous.focused &&
+    !next.focused &&
+    previous.runtimeState === "frozen" &&
+    next.runtimeState === "frozen" &&
+    previous.presentationMode === "overview" &&
+    next.presentationMode === "overview";
+  return equalPaneItemFields(
+    previous,
+    next,
+    hidden || frozenOverview,
+    frozenOverview,
+  );
 }
 
 function equalPaneItemFields(
   previous: PaneRenderItem,
   next: PaneRenderItem,
   ignoreMotion: boolean,
+  ignorePreload: boolean,
 ): boolean {
   for (const field in previous) {
     const key = field as keyof PaneRenderItem;
+    if (key === "preload" && ignorePreload) continue;
     if (!(key in next)) return false;
     if (key === "moving" && ignoreMotion) continue;
     if (previous[key] !== next[key]) return false;
   }
-  for (const key in next) if (!(key in previous)) return false;
+  for (const key in next) {
+    if (key === "preload" && ignorePreload) continue;
+    if (!(key in previous)) return false;
+  }
   return true;
 }
 

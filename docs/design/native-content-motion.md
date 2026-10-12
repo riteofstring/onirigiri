@@ -770,6 +770,15 @@ bounds and attributes before the next frame paints; the lifecycle retains curren
 geometry for picture sizing
 and its area budget. No second geometry cache is introduced.
 
+Visible, unfocused overview panes also reuse their shell when only motion and
+preload metadata change. The frame scheduler updates host motion and input
+attributes before paint; overview content remains shielded throughout. Focus,
+visibility, runtime, geometry, content, callbacks and neighbouring items still
+invalidate the shell. This removes redundant React work at camera boundaries
+without changing presentation, live-content policy or resize behavior.
+For those panes, the `data-moving` theme hook changes on the first scheduled
+frame rather than during the preceding React request commit.
+
 Hidden resize controls remain unavailable while their item geometry changes.
 Becoming visible supplies current geometry and neighbour items to their event
 handlers. Focus, maximized state, presentation mode, placeholder mounting,

@@ -311,6 +311,176 @@ describe("OnirigiriWorkspace native content motion", () => {
     },
   );
 
+  it.each([false, true])(
+    "reuses visible overview shells while retaining motion shields and live reentry (live content: %s)",
+    async (liveContent) => {
+      const boundary = vi.spyOn(
+        PanePresentationEngine.prototype,
+        "updatePaneHostBoundary",
+      );
+      const container = document.createElement("div");
+      document.body.append(container);
+      const root = createRoot(container);
+      const ref = createRef<OnirigiriWorkspaceHandle>();
+      const panes = columnPanes(6, 520).map((pane, index) => ({
+        ...pane,
+        heightPx: 600,
+        planeIndex: Math.floor(index / 3),
+        slotIndex: index % 3,
+      }));
+      const render = async (revision: string) => {
+        await act(async () => {
+          root.render(
+            <OnirigiriWorkspace
+              initialPanes={panes}
+              liveContent={liveContent}
+              preloadMarginPanes={0}
+              ref={ref}
+              renderPane={(pane) => (
+                <input data-revision={revision} aria-label={pane.title} />
+              )}
+            />,
+          );
+        });
+      };
+      try {
+        await render("initial");
+        await flushAnimationFrames(animationFrames);
+        const workspace = requiredWorkspaceHandle(ref.current);
+        const pane = requiredElement<HTMLElement>(
+          container,
+          '[data-onirigiri-pane-id="pane-2"]',
+        );
+        const input = requiredElement<HTMLInputElement>(pane, "input");
+        input.value = "retained overview draft";
+        const content = requiredElement<HTMLElement>(
+          pane,
+          ".onirigiri-pane__live-content",
+        );
+        const resize = requiredElement<HTMLButtonElement>(
+          pane,
+          '[data-onirigiri-slot="pane-resize-column"]',
+        );
+        await act(async () => workspace.toggleOverview());
+        await flushAnimationFrames(animationFrames);
+        for (const target of ["pane-3", "pane-1"]) {
+          expect(pane.dataset.visible).toBe("true");
+          expect(pane.dataset.focused).toBe("false");
+          expect(pane.dataset.runtimeState).toBe("frozen");
+          expect(content.hasAttribute("inert")).toBe(true);
+          expect(resize.hidden).toBe(true);
+          boundary.mockClear();
+          await act(async () => workspace.focusPane(target));
+          await flushAnimationFrames(animationFrames, 1);
+          expect(pane.dataset.moving).toBe("true");
+          expect(content.hasAttribute("inert")).toBe(true);
+          await flushAnimationFrames(animationFrames);
+          expect(pane.dataset.moving).toBe("false");
+          expect(content.hasAttribute("inert")).toBe(true);
+          expect(
+            boundary.mock.calls.filter(([id]) => id === "pane-2"),
+          ).toHaveLength(0);
+          expect(requiredElement(pane, "input")).toBe(input);
+          expect(input.value).toBe("retained overview draft");
+        }
+        await render("updated");
+        await act(async () => workspace.renamePane("pane-2", "Updated title"));
+        expect(pane.getAttribute("aria-label")).toBe("Updated title");
+        expect(input.getAttribute("aria-label")).toBe("Updated title");
+        expect(input.dataset.revision).toBe("updated");
+        await act(async () => workspace.focusPane("pane-2"));
+        await flushAnimationFrames(animationFrames);
+        expect(pane.dataset.focused).toBe("true");
+        await act(async () => workspace.toggleOverview());
+        await flushAnimationFrames(animationFrames);
+        expect(pane.dataset.runtimeState).toBe("live");
+        expect(content.hasAttribute("inert")).toBe(false);
+        expect(content.getAttribute("aria-hidden")).toBe("false");
+        expect(resize.hidden).toBe(false);
+        const previousWidth = Number.parseFloat(pane.style.width);
+        await act(async () =>
+          resize.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+          ),
+        );
+        await flushAnimationFrames(animationFrames);
+        expect(Number.parseFloat(pane.style.width)).toBe(previousWidth + 16);
+        expect(requiredElement(pane, "input")).toBe(input);
+        expect(input.value).toBe("retained overview draft");
+      } finally {
+        await act(async () => root.unmount());
+        container.remove();
+      }
+    },
+  );
+
+  it("keeps stacked overview neighbours current through camera motion", async () => {
+    const boundary = vi.spyOn(
+      PanePresentationEngine.prototype,
+      "updatePaneHostBoundary",
+    );
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const ref = createRef<OnirigiriWorkspaceHandle>();
+    try {
+      await act(async () => {
+        root.render(
+          <OnirigiriWorkspace
+            initialPanes={gridPanes(4, 2, 520)}
+            liveContent
+            preloadMarginPanes={0}
+            ref={ref}
+            renderPane={(pane) => <input aria-label={pane.title} />}
+          />,
+        );
+      });
+      const workspace = requiredWorkspaceHandle(ref.current);
+      await act(async () => workspace.focusPane("pane-5"));
+      await flushAnimationFrames(animationFrames);
+      await act(async () => workspace.toggleOverview());
+      await flushAnimationFrames(animationFrames);
+      const pane = requiredElement<HTMLElement>(
+        container,
+        '[data-onirigiri-pane-id="pane-3"]',
+      );
+      const divider = requiredElement<HTMLButtonElement>(
+        pane,
+        '[data-onirigiri-slot="pane-resize-row"]',
+      );
+      expect(pane.dataset.visible).toBe("true");
+      expect(pane.dataset.focused).toBe("false");
+      expect(pane.dataset.runtimeState).toBe("frozen");
+      boundary.mockClear();
+      await act(async () => workspace.focusPane("pane-7"));
+      await flushAnimationFrames(animationFrames);
+      expect(boundary.mock.calls.some(([id]) => id === "pane-3")).toBe(true);
+      expect(divider.hidden).toBe(true);
+      await act(async () => workspace.renamePane("pane-4", "Lower pane"));
+      expect(divider.getAttribute("aria-label")).toBe(
+        "Resize split between Pane 3 and Lower pane",
+      );
+      await act(async () => workspace.focusPane("pane-3"));
+      await flushAnimationFrames(animationFrames);
+      await act(async () => workspace.toggleOverview());
+      await flushAnimationFrames(animationFrames);
+      expect(divider.hidden).toBe(false);
+      const previousHeight = Number.parseFloat(pane.style.height);
+      await act(async () =>
+        divider.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        ),
+      );
+      await flushAnimationFrames(animationFrames);
+      expect(Number.parseFloat(pane.style.height)).toBeGreaterThan(
+        previousHeight,
+      );
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  });
+
   it("reuses hidden covers and controls while keeping their updates and reentry current", async () => {
     const container = document.createElement("div");
     document.body.append(container);
