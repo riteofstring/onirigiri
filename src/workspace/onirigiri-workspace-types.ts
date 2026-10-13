@@ -122,6 +122,7 @@ export interface OnirigiriWorkspaceHandle {
     direction: "up" | "down" | "left" | "right",
   ): PaneId;
   splitPaneToPlane(paneId: PaneId, direction: "up" | "down"): PaneId;
+  togglePaneMaximized(paneId: PaneId): void;
   toggleOverview(): void;
 }
 

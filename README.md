@@ -398,15 +398,15 @@ Advanced tuning, rarely needed: `retainedAreaBudgetViewports` (8),
 
 Attach a ref to `<OnirigiriWorkspace>` to receive an `OnirigiriWorkspaceHandle`.
 
-| Area          | Methods                                                                                                      |
-| ------------- | ------------------------------------------------------------------------------------------------------------ |
-| Panes         | `openPane`, `openPaneNear`, `configurePane`, `renamePane`, `closePane`                                       |
-| Splits        | `splitPane`, `splitPaneToPlane`, `insertPaneAsSplit`, `createReservedBlankSplit`, `removeReservedBlankSplit` |
-| Focus         | `focus`, `focusPane`, `focusColumn`, `returnHome`, `setFocusAnchor`                                          |
-| Rearrangement | `movePane`, `movePaneGroup`, `selectPaneGroup`, `clearPaneRearrangementGroup`                                |
-| View          | `toggleOverview`, `resizePanes("default" \| "fit-content" \| "minimum" \| "full")`                           |
-| Layout        | `getLayout`, `restoreLayout`, `getScene`, `getSnapshot`                                                      |
-| Pictures      | `getCaptureStatus`, `getPanePresentationState`, `refreshPanePictures`                                        |
+| Area          | Methods                                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Panes         | `openPane`, `openPaneNear`, `configurePane`, `renamePane`, `closePane`                                            |
+| Splits        | `splitPane`, `splitPaneToPlane`, `insertPaneAsSplit`, `createReservedBlankSplit`, `removeReservedBlankSplit`      |
+| Focus         | `focus`, `focusPane`, `focusColumn`, `returnHome`, `setFocusAnchor`                                               |
+| Rearrangement | `movePane`, `movePaneGroup`, `selectPaneGroup`, `clearPaneRearrangementGroup`                                     |
+| View          | `toggleOverview`, `togglePaneMaximized(paneId)`, `resizePanes("default" \| "fit-content" \| "minimum" \| "full")` |
+| Layout        | `getLayout`, `restoreLayout`, `getScene`, `getSnapshot`                                                           |
+| Pictures      | `getCaptureStatus`, `getPanePresentationState`, `refreshPanePictures`                                             |
 
 `restoreLayout` validates the whole document first and throws without changing
 the workspace if it is invalid.

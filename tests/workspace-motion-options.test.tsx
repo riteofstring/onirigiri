@@ -81,6 +81,35 @@ describe("workspace motion options", () => {
     }
   }
 
+  it("maximizes a named pane and restores its layout without replacing live input", async () => {
+    const workspace = await renderWorkspace({
+      liveContent: true,
+      renderPane: (pane) => (
+        <input aria-label={pane.paneId} defaultValue="Original" />
+      ),
+    });
+    const pane = container.querySelector('[data-onirigiri-pane-id="pane-2"]')!;
+    const input = pane.querySelector("input")!;
+    input.value = "Retained draft";
+    const layout = workspace.getLayout();
+    await act(async () => workspace.togglePaneMaximized("pane-2"));
+    await advanceFrames(30, 16);
+    expect(workspace.getSnapshot().focusedPaneId).toBe("pane-2");
+    expect(workspace.getSnapshot().maximizedPaneId).toBe("pane-2");
+    expect(pane.getAttribute("data-maximized")).toBe("true");
+    expect(pane.querySelector("input")).toBe(input);
+    expect(input.value).toBe("Retained draft");
+    await act(async () => workspace.togglePaneMaximized("pane-2"));
+    await advanceFrames(30, 16);
+    expect(workspace.getSnapshot().maximizedPaneId).toBeNull();
+    expect(pane.getAttribute("data-maximized")).toBe("false");
+    expect(workspace.getLayout().columns).toEqual(layout.columns);
+    expect(pane.querySelector("input")).toBe(input);
+    expect(input.value).toBe("Retained draft");
+    await act(async () => workspace.togglePaneMaximized("missing-pane"));
+    expect(workspace.getSnapshot().maximizedPaneId).toBeNull();
+  });
+
   it("renders the focus highlight unless the host disables it", async () => {
     await renderWorkspace();
     expect(

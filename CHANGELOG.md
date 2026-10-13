@@ -4,6 +4,8 @@
 
 ### Added
 
+- `togglePaneMaximized(paneId)` lets host controls maximize or restore a pane
+  through the same behavior as its titlebar button.
 - `onFocusedPaneFrame(frame, moving)` reports displayed pane geometry and the
   motion boundary so hosts can defer expensive work until navigation rests.
 - `useOnirigiriPaneInteractive()` reports when live content accepts input.

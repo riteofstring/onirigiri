@@ -672,6 +672,9 @@ export const OnirigiriWorkspace = forwardRef<
       },
       splitPane,
       splitPaneToPlane,
+      togglePaneMaximized(paneId: PaneId) {
+        runtime.store.togglePaneMaximized(paneId);
+      },
       toggleOverview() {
         runtime.store.toggleOverviewMode();
       },
