@@ -99,6 +99,8 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
     presentationMode,
     runtimeState,
     restPictureFade,
+    placeholderInput:
+      visible && !!renderPanePlaceholder && presentationMode === "normal",
   });
   useLayoutEffect(() => {
     readiness.invalidate();
@@ -180,9 +182,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
           picture={picture}
           pane={pane}
           covered={covered}
-          inputAvailable={
-            visible && pictures.isInteractive() && presentationMode === "normal"
-          }
+          inputAvailable={visible && atRest && presentationMode === "normal"}
           presentation={presentation}
           renderPanePlaceholder={renderPanePlaceholder}
           restPictureFade={restPictureFade}
@@ -438,6 +438,7 @@ function usePaneContentState({
   presentationMode,
   runtimeState,
   restPictureFade,
+  placeholderInput,
 }: Pick<
   OnirigiriPaneContentProps,
   | "pictures"
@@ -447,7 +448,7 @@ function usePaneContentState({
   | "presentationMode"
   | "runtimeState"
   | "restPictureFade"
->) {
+> & { placeholderInput: boolean }) {
   const [readiness] = useState(() => new PaneContentReadiness());
   useSyncExternalStore(
     readiness.subscribe,
@@ -466,8 +467,8 @@ function usePaneContentState({
       (pictures.isLive(pane.paneId) && pictures.acceptsContentInput()
         ? 32
         : 0) |
-      (restPictureFade &&
-      pictures.isLive(pane.paneId) &&
+      (((restPictureFade && pictures.isLive(pane.paneId)) ||
+        (placeholderInput && pictures.getPresentation(pane.paneId).covered)) &&
       pictures.isInteractive()
         ? 64
         : 0) |
@@ -477,7 +478,7 @@ function usePaneContentState({
         : pictures.isPreloading(pane.paneId)
           ? 2
           : 0),
-    [pictures, pane.paneId, restPictureFade],
+    [pictures, pane.paneId, restPictureFade, placeholderInput],
   );
   const warming = useSyncExternalStore(
     subscribe,
