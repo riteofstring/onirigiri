@@ -852,9 +852,13 @@ phase delivery retain their usual rules.
 
 Content covers also reuse unchanged inputs. Their interaction eligibility includes
 visibility and normal presentation, so an invisible custom placeholder stays inert without
-rerendering merely because the workspace enters overview. Mounted applications
-still receive every public presentation-mode update. Placeholder content, errors,
-pictures and theme changes retain their usual updates and native input identity.
+rerendering merely because the workspace enters overview. Custom-placeholder input
+eligibility reads the subscribed pane-local snapshot so React Compiler consumers
+observe motion and rest. Only visible, covered custom placeholders in normal
+presentation add this motion observation; hidden and uncovered placeholders do
+not. Mounted applications still receive every public presentation-mode update.
+Placeholder content, errors, pictures and theme changes retain their usual updates
+and native input identity.
 
 Reserved-cell queries check for actual reserved blanks before resolving pane
 geometry. Empty results need no scene copy for world-coordinate conversion.
