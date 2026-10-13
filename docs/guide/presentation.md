@@ -209,8 +209,9 @@ source retains its last accepted picture. Removing the pane or replacing its
 surface releases that picture. A supplied picture otherwise stands in for
 capture; mark it `replaceable: true` when it only seeds the pane, such as a
 picture saved from an earlier session, and the engine still captures the pane
-when it can. A seed is dropped when the pane's content revision changes and is
-never accepted again once a capture has replaced it.
+when it can. A changed content revision retires the seed as a fresh source;
+its accepted pixels can remain as cover until a replacement is ready. The same
+seed is never accepted again once a capture has replaced it.
 `onPanePictureCaptured(pane, pngBlob, receipt)` reports accepted captures that
 still match the pane when preparation finishes.
 Save `receipt.bounds.width` and `receipt.bounds.height` as the image's `cssSize`
@@ -308,9 +309,10 @@ function DocumentPane({ ready, documentId }) {
 ```
 
 All readiness sources within a pane must be ready before Onirigiri reveals its live
-content or captures it. A changed revision invalidates pending work and releases
-a picture captured from the previous revision, so the placeholder covers the pane
-until the new content is ready and captured. Ordinary
+content or captures it. A changed revision invalidates pending work and marks
+the previous picture stale. Its accepted pixels remain available as cover until
+a replacement is ready; a pane without a retained picture uses its placeholder.
+Ordinary
 synchronous HTML needs no hook. Frame adapters validate their own messages and
 combine document identity, load and application readiness. Onirigiri does not interpret
 application protocols. The `pane-picture` and `pane-placeholder` styling slots,

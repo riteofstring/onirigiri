@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased (beta)
+
+### Added
+
+- `onFocusedPaneFrame(frame, moving)` reports displayed pane geometry and the
+  motion boundary so hosts can defer expensive work until navigation rests.
+- `useOnirigiriPaneInteractive()` reports when live content accepts input.
+- `cursorTargets="panes"` skips empty cells. `focusPane` can exit overview,
+  and `restoreLayout` can retain the current presentation mode.
+- Supplied pictures accept their captured `cssSize`. Images remain anchored
+  at the top-left, clip when panes shrink, and expose the background when
+  panes grow. `onPanePictureCaptured` provides a PNG and its capture bounds
+  for host-managed persistence. Replaceable pictures can seed later captures.
+- Optional `restPictureFade` briefly fades a saved picture over ready, interactive
+  live content after navigation settles. It does not animate pictures in motion.
+
+### Fixed
+
+- Changing overview card width constraints updates the mounted workspace,
+  including the follow camera, without replacing pane content.
+- Restoring a layout preserves current workspace and pane-type defaults.
+- Background picture preparation retains useful accepted images while new
+  content becomes ready, and yields to navigation and visible interaction.
+
 ## 0.2.0
 
 Changes since 0.1.0. All 0.1.0 exports, props, defaults, styling slots and
@@ -7,8 +31,6 @@ saved-layout formats still work; layouts saved by 0.1.0 restore unchanged.
 
 ### Added
 
-- The `moving` argument of `onFocusedPaneFrame` reports the actual presentation
-  boundary so hosts can defer expensive work until navigation rests.
 - `paneLink` on `OnirigiriWorkspace` (off by default). With it, `?pane=<id>`
   opens the workspace on that pane wherever it sits, the URL follows focus
   once it settles (keeping other query parameters and the hash, with

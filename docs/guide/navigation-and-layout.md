@@ -14,6 +14,18 @@ pane remains under the pointer during active resizing. Controlled hosts can choo
 alignment with `"start"`, and imperative hosts can call
 `workspaceRef.current?.setFocusAnchor("center" | "start")`.
 
+Use `overviewCardMinWidthPx` and `overviewCardMaxWidthPx` to constrain pane
+widths in overview. Passing the same value to both sets the overview card width
+in CSS pixels. Changes apply to an already-mounted workspace and reset its
+overview camera to the new baseline while preserving the cursor and pane content.
+Omitting both retains the default overview fit. These constraints work with
+both follow and fixed cameras.
+
+`paneDefaults.height` sets the default row height in CSS pixels and updates
+existing panes that have no explicit height. Manually resized panes keep their
+overrides. `resizePanes("full")` expands all panes to the viewport;
+`resizePanes("default")` removes sizing overrides and uses the current defaults.
+
 ## Camera and focus highlight motion
 
 `cameraMotion` sets the curve for each kind of camera move: `navigation` for normal-view focus
@@ -157,8 +169,7 @@ nearest occupied column in the same row, Up/Down to the nearest pane in the colu
 nearest occupied column in the nearest row that has one, and a move with no pane in its direction does
 nothing. The default `"cells"` keeps adjacent empty-cell navigation.
 In overview, `focusPane(paneId)` moves the overview cursor; `focusPane(paneId, { exitOverview: true })`
-leaves overview and zooms into the pane, as a pointer selection does. Zooming the overview keeps the
-point under the zoom focus in place.
+leaves overview and zooms into the pane, as a pointer selection does.
 One decorative `grid-cursor` surface draws the selected cell in normal and overview presentation; it
 is not a Tab stop or assistive-technology target, while the workspace status region announces the
 coordinates and selected pane title or `Empty cell`.
