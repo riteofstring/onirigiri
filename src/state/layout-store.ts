@@ -849,7 +849,6 @@ export class WorkspaceLayoutStore {
     if (!this.engine.renamePane(paneId, title)) {
       return false;
     }
-    this.setCursorForPane(paneId);
     this.notify();
     return true;
   }

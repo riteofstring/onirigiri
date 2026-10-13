@@ -7,6 +7,65 @@ import {
   serializeWorkspaceLayout,
 } from "../src/workspace/workspace-scene";
 
+describe("workspace pane titles", () => {
+  it.each([
+    { presentation: "normal", selection: "pane" },
+    { presentation: "normal", selection: "empty cell" },
+    { presentation: "overview", selection: "pane" },
+    { presentation: "overview", selection: "empty cell" },
+  ] as const)(
+    "renames another pane without moving the $selection in $presentation",
+    ({ presentation, selection }) => {
+      const result = createWorkspaceScene({
+        gridAxes: "spatial",
+        panes: [0, 1].map((index) => ({
+          paneId: `pane-${index}`,
+          slotIndex: index,
+          surfaceKind: "test",
+          title: `Pane ${index}`,
+        })),
+      });
+      const engine = new WorkspaceLikeLayoutEngine(result.scene);
+      const store = new WorkspaceLayoutStore(engine, result.scene, result.cursor);
+      const viewport = { height: 800, width: 1280, x: 0, y: 0 };
+      store.ensureFocusedPaneVisible(viewport);
+      store.focusPane("pane-1");
+      if (selection === "empty cell") {
+        expect(store.moveFocus("down", viewport)).toBe(true);
+      }
+      if (presentation === "overview") store.toggleOverviewMode();
+      store.snapAnimationsToTarget();
+      const before = store.getSnapshot();
+      expect(before.focusedPaneId).toBe(selection === "pane" ? "pane-1" : null);
+      const selectedCell = () =>
+        engine.gridCursorRenderItem({
+          ...store.getSnapshot(),
+          movementPhase: "idle",
+          viewport,
+        });
+      const beforeCell = selectedCell();
+
+      expect(store.renamePane("pane-0", "Updated title")).toBe(true);
+
+      expect(store.toScene().paneById.get("pane-0")?.title).toBe("Updated title");
+      expect(store.getSnapshot()).toMatchObject({
+        cursor: before.cursor,
+        focusedPaneId: before.focusedPaneId,
+        presentationMode: presentation,
+        scrollColumn: before.scrollColumn,
+        scrollRow: before.scrollRow,
+        targetScrollColumn: before.targetScrollColumn,
+        targetScrollRow: before.targetScrollRow,
+        horizontalAnchorOffset: before.horizontalAnchorOffset,
+        verticalAnchorOffset: before.verticalAnchorOffset,
+        targetHorizontalAnchorOffset: before.targetHorizontalAnchorOffset,
+        targetVerticalAnchorOffset: before.targetVerticalAnchorOffset,
+      });
+      expect(selectedCell()).toEqual(beforeCell);
+    },
+  );
+});
+
 describe("workspace overview scale", () => {
   it("keeps current row defaults and explicit sizes through layout restoration", () => {
     const result = createWorkspaceScene({

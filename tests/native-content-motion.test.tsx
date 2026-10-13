@@ -589,6 +589,7 @@ describe("OnirigiriWorkspace native content motion", () => {
           .filter(([props]) => props.action.pane.paneId === "pane-40")
           .at(-1)![0].action.pane.title,
       ).toBe("Updated pane");
+      await act(async () => workspace.focusPane("pane-40"));
       const oldWidth = pane.style.width;
       await act(async () => workspace.resizePanes("minimum"));
       expect(pane.style.width).not.toBe(oldWidth);
