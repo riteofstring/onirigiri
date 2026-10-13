@@ -1,4 +1,5 @@
 import { columnSlotIndex } from "./column-slots.js";
+import { hasOverviewCardSizeConstraint } from "./overview-scale.js";
 import {
   applyOverviewZoom,
   clamp,
@@ -144,6 +145,7 @@ function includeFocusedColumn(
 export interface OverviewLayoutMetrics {
   baseXOffset: number;
   baseYOffset: number;
+  cardSizeConstrained: boolean;
   contentHeight: number;
   contentWidth: number;
   fitScale: number;
@@ -174,6 +176,7 @@ export function overviewLayoutMetrics(
   const {
     baseXOffset,
     baseYOffset,
+    cardSizeConstrained,
     contentHeight,
     contentWidth,
     fitScale,
@@ -184,6 +187,7 @@ export function overviewLayoutMetrics(
   return {
     baseXOffset,
     baseYOffset,
+    cardSizeConstrained,
     contentHeight,
     contentWidth,
     fitScale,
@@ -251,6 +255,7 @@ export function overviewLayoutGeometry({
   return {
     baseXOffset,
     baseYOffset,
+    cardSizeConstrained: hasOverviewCardSizeConstraint(cardSizeConstraints),
     contentHeight,
     contentWidth,
     fitScale,

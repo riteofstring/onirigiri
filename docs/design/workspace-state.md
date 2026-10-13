@@ -77,6 +77,18 @@ Boundary tests cover complete command notifications, immutable prior snapshots,
 unsubscription, independent workspaces, layout restoration, and continuous camera
 motion. Browser tests cover keyboard navigation and retained pane presentation.
 
+Overview card width constraints can change on a mounted workspace. Updating them
+invalidates the existing geometry revision and reapplies the current overview
+camera mode around the same selected pane. This deliberately resets manual
+overview pan and zoom to the new baseline, while preserving the layout, normal
+camera and original pane content. Unchanged constraints publish no command;
+updates outside overview take effect on its next entry.
+Explicit width constraints set the initial overview scale in both camera modes.
+Without them, the existing fitted or stable following baseline is unchanged.
+Users can still zoom relative to either baseline using the existing controls.
+Layout restoration reads the current scene configuration so runtime default
+sizes remain authoritative while explicit saved pane sizes retain precedence.
+
 Workspace navigation is driven by keyboard commands, explicit controls and pane
 selection. Wheel events retain browser and consumer-content semantics in both
 normal and overview presentation. This keeps nested scrolling independent of

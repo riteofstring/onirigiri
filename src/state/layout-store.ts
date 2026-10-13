@@ -800,6 +800,15 @@ export class WorkspaceLayoutStore {
     this.notify();
   }
 
+  setOverviewCardWidths(
+    minWidthPx: number | undefined,
+    maxWidthPx: number | undefined,
+  ): void {
+    if (!this.engine.setOverviewCardWidths(minWidthPx, maxWidthPx)) return;
+    this.overviewCamera.configureForMode(this.overviewCameraInput());
+    this.notify(false);
+  }
+
   resetFocusedColumnWidth(): boolean {
     return this.sizing.resetFocusedColumnWidth();
   }
@@ -855,7 +864,7 @@ export class WorkspaceLayoutStore {
     layout: OnirigiriLayout,
     options: OnirigiriRestoreLayoutOptions = {},
   ): void {
-    const restored = restoredWorkspaceScene(this.scene, layout);
+    const restored = restoredWorkspaceScene(this.toScene(), layout);
     const maximizedPaneId = this.getSnapshot().maximizedPaneId;
     this.engine.restoreScene(restored.scene);
     this.scene = restored.scene;

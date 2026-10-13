@@ -198,6 +198,8 @@
           "src/layout/layout-engine-base.ts",
           "src/layout/layout-engine-helpers.ts",
           "src/layout/layout-engine-rendering.ts",
+          "src/layout/overview-camera.ts",
+          "src/layout/overview-scale.ts",
           "src/layout/layout-engine.ts",
           "src/state/layout-store-animation.ts",
           "src/state/layout-store.ts",

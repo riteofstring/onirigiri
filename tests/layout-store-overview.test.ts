@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { WorkspaceLikeLayoutEngine } from "../src/layout/layout-engine";
 import { WorkspaceLayoutStore } from "../src/state/layout-store";
@@ -8,6 +8,92 @@ import {
 } from "../src/workspace/workspace-scene";
 
 describe("workspace overview scale", () => {
+  it("keeps current row defaults and explicit sizes through layout restoration", () => {
+    const result = createWorkspaceScene({
+      gridAxes: "spatial",
+      panes: [0, 1, 2].map((index) => ({
+        paneId: `pane-${index}`,
+        planeIndex: index,
+        slotIndex: 0,
+        surfaceKind: index === 2 ? "notes" : "test",
+        title: `Pane ${index}`,
+      })),
+    });
+    const engine = new WorkspaceLikeLayoutEngine(result.scene);
+    const store = new WorkspaceLayoutStore(engine, result.scene, result.cursor);
+    const viewport = { height: 1000, width: 1280, x: 0, y: 0 };
+    store.ensureFocusedPaneVisible(viewport);
+    store.resizePaneRow("pane-0", 600);
+    store.setPaneDefaults({
+      paneDefaults: { height: 420 },
+      paneTypeDefaults: { notes: { height: 380 } },
+    });
+    const expected = engine.paneWorldBoxes(viewport);
+    expect(expected.map((pane) => pane.height)).toEqual([600, 420, 380]);
+    const layout = serializeWorkspaceLayout(
+      store.toScene(),
+      store.getSnapshot().cursor,
+    );
+    store.restoreLayout(layout, { keepPresentation: true });
+    expect(engine.paneWorldBoxes(viewport)).toEqual(expected);
+  });
+
+  it.each(["follow", "fixed"] as const)(
+    "refreshes %s overview geometry when its width constraints change",
+    (overview) => {
+      const result = createWorkspaceScene({
+        panes: Array.from({ length: 12 }, (_, index) => ({
+          paneId: `pane-${index}`,
+          columnWidth: { unit: "px" as const, value: 520 },
+          surfaceKind: "test",
+          title: `Pane ${index}`,
+        })),
+      });
+      const engine = new WorkspaceLikeLayoutEngine(result.scene);
+      const store = new WorkspaceLayoutStore(
+        engine,
+        result.scene,
+        result.cursor,
+        {
+          initialCameraModes: { normal: "follow", compact: "follow", overview },
+        },
+      );
+      const viewport = { height: 800, width: 1280, x: 0, y: 0 };
+      store.ensureFocusedPaneVisible(viewport);
+      store.focusPane("pane-6");
+      store.snapAnimationsToTarget();
+      store.setOverviewCardWidths(80, 80);
+      store.toggleOverviewMode();
+      store.snapAnimationsToTarget();
+      const scale = () =>
+        engine.gridCursorRenderItem({
+          ...store.getSnapshot(),
+          movementPhase: "idle",
+          viewport,
+        }).scale;
+      const farScale = scale();
+      expect(farScale).toBeCloseTo(80 / 520, 6);
+      const cursor = store.getSnapshot().cursor;
+      const layoutRevision = store.getSnapshot().layoutRevision;
+      store.setOverviewCardWidths(240, 240);
+      expect(scale()).toBeCloseTo(240 / 520, 6);
+      expect(store.getSnapshot().cursor).toEqual(cursor);
+      expect(store.getSnapshot().layoutRevision).toBe(layoutRevision);
+      const changed = vi.fn();
+      const unsubscribe = store.subscribe(changed);
+      store.setOverviewCardWidths(240, 240);
+      expect(changed).not.toHaveBeenCalled();
+      unsubscribe();
+      store.toggleOverviewMode();
+      store.snapAnimationsToTarget();
+      store.setOverviewCardWidths(80, 80);
+      store.toggleOverviewMode();
+      store.snapAnimationsToTarget();
+      expect(scale()).toBeCloseTo(farScale, 6);
+      store.setOverviewCardWidths(undefined, undefined);
+      if (overview === "follow") expect(scale()).toBe(0.68);
+    },
+  );
   it("keeps a large following overview close at one stable scale", () => {
     const panes = Array.from({ length: 500 }, (_, index) => ({
       columnId: `overview-column-${String(index)}`,

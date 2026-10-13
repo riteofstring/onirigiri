@@ -84,7 +84,7 @@ export abstract class WorkspaceLayoutEngineBase {
 
   constructor(
     scene: WorkspaceScene,
-    protected readonly options: WorkspaceLayoutEngineOptions = {},
+    protected options: WorkspaceLayoutEngineOptions = {},
   ) {
     this.scene = scene;
     this.restoreScene(scene);
@@ -140,6 +140,24 @@ export abstract class WorkspaceLayoutEngineBase {
       paneTypeDefaults: configuration.paneTypeDefaults,
     };
     this.compactRenderScene = null;
+    this.renderConfigurationVersion += 1;
+    return true;
+  }
+
+  setOverviewCardWidths(
+    minWidthPx: number | undefined,
+    maxWidthPx: number | undefined,
+  ): boolean {
+    if (
+      Object.is(this.options.overviewCardMinWidthPx, minWidthPx) &&
+      Object.is(this.options.overviewCardMaxWidthPx, maxWidthPx)
+    )
+      return false;
+    this.options = {
+      ...this.options,
+      overviewCardMinWidthPx: minWidthPx,
+      overviewCardMaxWidthPx: maxWidthPx,
+    };
     this.renderConfigurationVersion += 1;
     return true;
   }

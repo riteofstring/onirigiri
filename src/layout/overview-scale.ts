@@ -59,10 +59,10 @@ export function applyOverviewZoom(
   );
 }
 
-function hasOverviewCardSizeConstraint({
+export function hasOverviewCardSizeConstraint({
   maxWidthPx,
   minWidthPx,
-}: OverviewCardSizeConstraints): boolean {
+}: OverviewCardSizeConstraints = {}): boolean {
   return (
     isPositiveFiniteNumber(minWidthPx) || isPositiveFiniteNumber(maxWidthPx)
   );

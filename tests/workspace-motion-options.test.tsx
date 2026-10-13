@@ -125,4 +125,42 @@ describe("workspace motion options", () => {
     await advanceFrames(20, 16);
     expect(workspace.getSnapshot().scrollColumn).toBe(target);
   });
+
+  it("updates overview distance without replacing native content or the layout", async () => {
+    const props = {
+      liveContent: true,
+      renderPane: () => <input aria-label="Draft" defaultValue="Original" />,
+    };
+    const workspace = await renderWorkspace({
+      ...props,
+      overviewCardMinWidthPx: 80,
+      overviewCardMaxWidthPx: 80,
+    });
+    const input = container.querySelector("input")!;
+    input.value = "Keep this draft";
+    const layout = workspace.getLayout();
+    await act(async () => workspace.toggleOverview());
+    await advanceFrames(60, 16);
+    const farScale = workspace.getSnapshot().overviewFixedScale!;
+
+    await renderWorkspace({
+      ...props,
+      overviewCardMinWidthPx: 240,
+      overviewCardMaxWidthPx: 240,
+    });
+    await advanceFrames(60, 16);
+    expect(workspace.getSnapshot().overviewFixedScale).toBeGreaterThan(
+      farScale,
+    );
+    expect(workspace.getSnapshot().presentationMode).toBe("overview");
+    expect(workspace.getLayout()).toEqual(layout);
+    expect(container.querySelector("input")).toBe(input);
+    expect(input.value).toBe("Keep this draft");
+
+    await act(async () => workspace.toggleOverview());
+    await advanceFrames(60, 16);
+    expect(input.closest("[inert]")).toBeNull();
+    input.focus();
+    expect(document.activeElement).toBe(input);
+  });
 });

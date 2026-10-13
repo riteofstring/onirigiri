@@ -199,6 +199,12 @@ export const OnirigiriWorkspace = forwardRef<
     runtime.store.setPaneDefaults(defaultsConfiguration);
   }, [defaultsConfiguration, runtime]);
   useLayoutEffect(() => {
+    runtime.store.setOverviewCardWidths(
+      overviewCardMinWidthPx,
+      overviewCardMaxWidthPx,
+    );
+  }, [overviewCardMinWidthPx, overviewCardMaxWidthPx, runtime]);
+  useLayoutEffect(() => {
     runtime.store.setCursorRunway(cursorRunway);
   }, [cursorRunway, runtime]);
   useLayoutEffect(() => {

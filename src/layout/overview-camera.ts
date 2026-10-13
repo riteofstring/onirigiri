@@ -337,7 +337,9 @@ export class WorkspaceOverviewCamera {
         1,
         input.cursor,
       );
-      this.fixedScale = Math.max(baseline.fitScale, fixedOverviewMaximumScale);
+      this.fixedScale = baseline.cardSizeConstrained
+        ? baseline.fitScale
+        : Math.max(baseline.fitScale, fixedOverviewMaximumScale);
       this.zoom = clampRange(
         this.fixedScale / baseline.fitScale,
         OVERVIEW_MIN_ZOOM,
@@ -375,6 +377,7 @@ export class WorkspaceOverviewCamera {
       1,
       input.cursor,
     );
+    if (baseline.cardSizeConstrained) return 1;
     return clampRange(
       overviewBaselineZoom,
       1,
