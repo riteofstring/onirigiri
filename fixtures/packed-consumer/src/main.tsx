@@ -15,6 +15,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./consumer.css";
+import { PictureGeometryConsumer } from "./picture-geometry";
 
 const panes = [
   {
@@ -186,7 +187,14 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    {new URLSearchParams(location.search).has("capture") ? (
+    {new URLSearchParams(location.search).has("picture-geometry") ? (
+      <PictureGeometryConsumer
+        grid={
+          new URLSearchParams(location.search).get("picture-geometry") ===
+          "grid"
+        }
+      />
+    ) : new URLSearchParams(location.search).has("capture") ? (
       <CaptureApp />
     ) : (
       <ConsumerApp />

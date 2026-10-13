@@ -16,6 +16,7 @@ import path from "node:path";
 import { repositoryRoot, run, runPnpm } from "./lib/process.mjs";
 import { chromeLaunchOptions } from "../tests/browser/chrome-launch.ts";
 import { requireHardwareWebGpu } from "../tests/browser/hardware-webgpu.ts";
+import { verifyPackedPictureGeometry } from "./verify-packed-picture-geometry.mjs";
 
 const fixtureRoot = path.join(repositoryRoot, "fixtures/packed-consumer");
 const fixtureManifestPath = path.join(fixtureRoot, "package.template.json");
@@ -192,6 +193,17 @@ async function verifyConsumerInBrowser(consumerRoot, mode) {
     await expect(note).toBeHidden();
     await expect.poll(() => savedPicturePixels(page, picture)).toBe(true);
     await expect(picture).toHaveCSS("border-radius", "8px");
+    const unsized = await picture.evaluate((element) => {
+      const image = element.getBoundingClientRect();
+      const content = element
+        .closest('[data-onirigiri-slot="pane-content"]')
+        .getBoundingClientRect();
+      return {
+        image: [image.width, image.height],
+        content: [content.width, content.height],
+      };
+    });
+    expect(unsized.image).toEqual(unsized.content);
     await page.emulateMedia({ forcedColors: "active" });
     await page.getByRole("button", { name: "Show live content" }).click();
     await expect(note).toHaveValue("Preserved through picture presentation");
@@ -202,6 +214,8 @@ async function verifyConsumerInBrowser(consumerRoot, mode) {
     await page.screenshot({
       path: path.join(consumerRoot, `consumer-${mode}.png`),
     });
+    await page.emulateMedia({ forcedColors: "none" });
+    await verifyPackedPictureGeometry(page, origin);
     await page.close();
     await verifyBackgroundCapture(browser, origin, mode);
   } finally {
