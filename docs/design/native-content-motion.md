@@ -630,6 +630,12 @@ validation still checks content dimensions. Neighbor-only admission
 continues to check the actual viewport margin.
 Continuous presentation waits for input and camera motion to be idle before
 background preparation, including after typing inside a stationary pane.
+With `liveContent`, new background admissions also wait for content readiness.
+Retained applications and consumers own initialization, so an unready host does
+not occupy the serial preparation slot ahead of ready content. Readiness changes
+wake acquisition. A pending preparation keeps its bounded readiness retry;
+ordinary and custom presentation without `liveContent` still admit cold content
+to mount it before readiness.
 Programmatic scrolling inside the current hidden preparation is not user
 activity. Preparing an application can trigger its own scroll adjustments;
 treating those events as input would repeatedly cancel that same capture. The picture

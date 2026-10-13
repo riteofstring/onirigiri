@@ -700,7 +700,7 @@ describe("engine pane pictures", () => {
       mounted: (value: boolean) => {
         mounted = value;
       },
-      ready: () => readiness.update(key, true, 1),
+      ready: (value = true) => readiness.update(key, value, 1),
       loaded: () => neighbor.dispatchEvent(new Event("load")),
     };
   }
@@ -732,6 +732,7 @@ describe("engine pane pictures", () => {
 
   it("waits for typing to stop before preparing hidden continuous content", async () => {
     const f = adjacentFixture();
+    f.ready();
     f.pictures.configure({
       ...f.config,
       liveContent: true,
@@ -745,9 +746,98 @@ describe("engine pane pictures", () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
       await vi.advanceTimersByTimeAsync(100);
       expect(f.pictures.getStatus().preloadingPaneId).toBeNull();
+      expect(capture).not.toHaveBeenCalled();
     }
     await vi.advanceTimersByTimeAsync(250);
+    expect(f.pictures.get("b")?.capture).toBeTruthy();
+    expect(capture).toHaveBeenCalledOnce();
+  });
+
+  it("captures ready retained content without waiting for another host's readiness", async () => {
+    const f = adjacentFixture();
+    const content = document.createElement("div");
+    f.content.parentElement!.append(content);
+    vi.spyOn(content, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(4000, 60, 200, 100),
+    );
+    cleanups.push(
+      f.pictures.register("c", content, new PaneContentReadiness()),
+    );
+    f.pictures.configure({
+      ...f.config,
+      liveContent: true,
+      panes: new Map([
+        ...f.config.panes,
+        ["c", { ...f.config.panes.get("b")!, paneId: "c" }],
+      ]),
+      items: [
+        ...f.config.items,
+        renderItem({ paneId: "b", x: 1040, visible: false }),
+        renderItem({ paneId: "c", x: 4000, visible: false }),
+      ],
+    });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("c")?.capture).toBeTruthy();
+    expect(f.pictures.get("b")).toBeNull();
+    expect(f.pictures.getStatus().preloadingPaneId).toBeNull();
+    expect(capture).toHaveBeenCalledOnce();
+    f.ready();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("b")?.capture).toBeTruthy();
+    expect(capture).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([undefined, "auto"] as const)(
+    "mounts cold content through background preparation with presentation %s",
+    async (presentation) => {
+      const f = adjacentFixture();
+      f.mounted(false);
+      cleanups.push(
+        f.pictures.subscribe("b", () => {
+          if (!f.pictures.isPreloading("b")) return;
+          f.mounted(true);
+          f.ready();
+        }),
+      );
+      f.pictures.configure({
+        ...f.config,
+        presentation,
+        preloadMarginPanes: 1,
+        items: [
+          ...f.config.items,
+          renderItem({ paneId: "b", visible: false }),
+        ],
+      });
+      await vi.advanceTimersByTimeAsync(300);
+      expect(f.pictures.get("b")?.capture).toBeTruthy();
+      expect(capture).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("keeps pending retained content eligible through a temporary readiness loss", async () => {
+    const f = adjacentFixture();
+    const pending = deferred<CanvasPicture>();
+    capture.mockImplementationOnce(() => pending.promise);
+    f.ready();
+    f.pictures.configure({
+      ...f.config,
+      liveContent: true,
+      items: [
+        ...f.config.items,
+        renderItem({ paneId: "b", visible: false }),
+      ],
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    expect(capture).toHaveBeenCalledOnce();
+    f.ready(false);
+    pending.resolve({ image: png(), width: 200, height: 100 });
+    await vi.advanceTimersByTimeAsync(200);
+    expect(f.pictures.get("b")).toBeNull();
     expect(f.pictures.getStatus().preloadingPaneId).toBe("b");
+    f.ready();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("b")?.capture).toBeTruthy();
+    expect(capture).toHaveBeenCalledTimes(2);
   });
 
   it("finishes a hidden pane picture when its prepared content scrolls itself", async () => {

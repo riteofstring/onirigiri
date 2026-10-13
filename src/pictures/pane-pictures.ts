@@ -1242,6 +1242,9 @@ export class PanePictures {
         this.decision(item.paneId).requested,
       ) ||
       (this.isContinuous() && this.isLive(item.paneId)) ||
+      (this.configuration.liveContent &&
+        !this.isPreloading(item.paneId) &&
+        !host.readiness.getSnapshot()) ||
       this.pictureMatchesContent(item.paneId, host) ||
       this.preloadWouldCoverContent(item, host)
     )
