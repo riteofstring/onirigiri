@@ -276,7 +276,7 @@ export function constrainSplitHeights({
   lower: PaneDefaults;
   availableHeight: number;
 }): [number, number] {
-  const floor = Math.min(96, total / 2);
+  const floor = Math.max(1, Math.min(96, total / 2));
   const upperMinimum = constrainPaneDimension(
     0,
     upper.minHeight,
@@ -291,6 +291,9 @@ export function constrainSplitHeights({
     availableHeight,
     floor,
   );
+  if (total < upperMinimum + lowerMinimum) {
+    return [upperMinimum, lowerMinimum];
+  }
   const upperMaximum = Math.min(
     availableHeight,
     upper.maxHeight ?? availableHeight,

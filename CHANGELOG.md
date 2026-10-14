@@ -4,6 +4,8 @@
 
 ### Added
 
+- `keepHeightWhenSplitting` optionally divides a pane's current height when
+  splitting up or down. It is off by default and preserves neighboring panes.
 - `togglePaneMaximized(paneId)` lets host controls maximize or restore a pane
   through the same behavior as its titlebar button.
 - `onFocusedPaneFrame(frame, moving)` reports displayed pane geometry and the
@@ -20,6 +22,8 @@
 
 ### Fixed
 
+- Split dividers retain positive sizes that satisfy both panes' minimum heights
+  when those minimums need more space than the original pair.
 - Changing overview card width constraints updates the mounted workspace,
   including the follow camera, without replacing pane content.
 - Restoring a layout preserves current workspace and pane-type defaults.

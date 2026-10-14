@@ -137,6 +137,7 @@ export interface OnirigiriMinimapPlacement {
 
 export interface OnirigiriWorkspaceProps extends PaneDefaultsConfiguration {
   allowResizedPanesToOverflowViewport?: boolean;
+  keepHeightWhenSplitting?: boolean;
   ariaLabel?: string;
   chromeComponents?: OnirigiriChromeComponents;
   cameraMotion?: OnirigiriCameraMotion;

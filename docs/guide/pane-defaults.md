@@ -43,6 +43,13 @@ By default, even an oversized minimum is clamped to the available workspace view
 when their constraints conflict, the stricter maximum wins. The existing
 `allowResizedPanesToOverflowViewport` option explicitly permits wider panes.
 
+Splitting a pane up or down normally gives each half its share of the full available height, so a
+pane held below that height by `maxHeight` or a preferred size grows taller once split. With
+`keepHeightWhenSplitting`, the split instead divides the pane's current height between the two
+halves, and its row keeps its height. Flexible neighbors in the same stack keep their current
+heights as explicit sizes. Both halves still respect their own minimums and maximums; if their
+minimums need more space, the row grows to fit them.
+
 `content.fit` is independent of outer pane sizing: `contain` centers the complete content with
 letterboxing, `cover` fills and crops, and `fill` stretches. A known `content.aspectRatio` fits
 responsive iframe, canvas or application content. Direct video and image elements can also use
