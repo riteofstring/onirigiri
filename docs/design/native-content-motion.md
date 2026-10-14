@@ -127,6 +127,14 @@ attributes describe completed presentation for developer badges. Native
 presentation keeps the consumer's scrollbars through motion; only recorded
 content suppresses them.
 
+Live native surfaces request transform promotion during pane or camera movement
+and throughout overview, independently of recording and scrollbar suppression.
+The selector follows each pane's completed live renderer and applies only to its
+own native host, so an outer moving workspace does not promote a nested workspace's
+stationary surfaces. Normal rest and inactive retained content release this hint.
+Promotion can increase compositor memory and boundary work; it is not a frame-rate
+guarantee.
+
 Input blocking during normal camera motion avoids inherited style changes in
 consumer content. Applications can mount
 thousands of elements per pane, and a style change that reaches every

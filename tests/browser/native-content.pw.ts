@@ -678,10 +678,10 @@ for (const continuous of [false, true]) {
   });
 }
 
-test("native presentation keeps content scrollbars through motion", async ({
+test("native live promotion follows motion and overview without changing scrollbars", async ({
   page,
-}) => {
-  await openNativeFixture(page, false, false, { count: 6, preloadMargin: 0 });
+}, info) => {
+  await openNativeFixture(page, false, false, { count: 12, preloadMargin: 0 });
   await page.evaluate(() => {
     window.__nativeMotionFixture.setLiveContent(true);
     window.__nativeMotionFixture.setPresentation("pane-1", "dom");
@@ -695,26 +695,159 @@ test("native presentation keeps content scrollbars through motion", async ({
       scroller.innerHTML = '<div style="height: 400px"></div>';
       content.prepend(scroller);
     });
-  const scrollbarColor = () =>
-    page.evaluate(
-      () =>
-        getComputedStyle(document.getElementById("scrollbar-probe")!)
-          .scrollbarColor,
-    );
-  expect(await scrollbarColor()).toBe("auto");
+  const pane = page.locator('[data-onirigiri-pane-id="pane-1"]');
+  const state = () =>
+    pane.evaluate((element) => {
+      const pane = element as HTMLElement;
+      const content = pane.querySelector<HTMLElement>(
+        ".onirigiri-pane__live-content",
+      )!;
+      const native = content.parentElement!;
+      const frame = content.querySelector("iframe")!;
+      const scroller = content.querySelector("#scrollbar-probe")!;
+      return {
+        moving: pane.dataset.moving,
+        mode: pane.dataset.presentationMode,
+        live: pane.dataset.onirigiriPresentationLive,
+        renderer: pane.dataset.onirigiriRenderer,
+        visible: pane.dataset.visible,
+        native: native.classList.contains("onirigiri-pane__native-surface"),
+        ownSurface:
+          native.parentElement?.classList.contains(
+            "onirigiri-pane__content-surface",
+          ) === true &&
+          native.parentElement.parentElement?.classList.contains(
+            "onirigiri-pane__content",
+          ) === true &&
+          native.parentElement.parentElement.parentElement === pane,
+        hidden: native.hidden,
+        willChange: getComputedStyle(native).willChange,
+        recording: native.hasAttribute("data-onirigiri-recording"),
+        scrollbarColor: getComputedStyle(scroller).scrollbarColor,
+        frameScrollbarColor: frame.contentWindow!.getComputedStyle(
+          frame.contentDocument!.documentElement,
+        ).scrollbarColor,
+        frameScrollbarOverride: [
+          ...frame.contentDocument!.querySelectorAll("style"),
+        ].some((style) =>
+          style.textContent?.includes("scrollbar-color: transparent"),
+        ),
+      };
+    });
+  const record = async (label: string) => {
+    const value = await state();
+    await info.attach(label, {
+      body: JSON.stringify(value),
+      contentType: "application/json",
+    });
+    return value;
+  };
+  const stableContent = {
+    native: true,
+    ownSurface: true,
+    hidden: false,
+    recording: false,
+    scrollbarColor: "auto",
+    frameScrollbarColor: "auto",
+    frameScrollbarOverride: false,
+  };
+  await expect.poll(state).toMatchObject({
+    ...stableContent,
+    moving: "false",
+    mode: "normal",
+    live: "true",
+    renderer: "dom",
+  });
+  expect(await record("normal-rest")).toMatchObject({
+    ...stableContent,
+    willChange: "auto",
+  });
   const release = await holdClock(page);
   try {
     await page.evaluate(() =>
       window.__nativeMotionFixture.handle.current!.focusPane("pane-2"),
     );
     await stepClock(page, 3);
-    await expect(
-      page.locator('[data-onirigiri-pane-id="pane-1"]'),
-    ).toHaveAttribute("data-moving", "true");
-    expect(await scrollbarColor()).toBe("auto");
+    expect(await record("normal-motion")).toMatchObject({
+      ...stableContent,
+      moving: "true",
+      mode: "normal",
+      live: "true",
+      renderer: "dom",
+      willChange: "transform",
+    });
   } finally {
     await release();
   }
+  await expect
+    .poll(state)
+    .toMatchObject({ moving: "false", willChange: "auto" });
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.toggleOverview(),
+  );
+  await expect.poll(state).toMatchObject({ moving: "false", mode: "overview" });
+  expect(await record("overview-rest")).toMatchObject({
+    ...stableContent,
+    live: "true",
+    renderer: "dom",
+    willChange: "transform",
+  });
+  const releaseOverview = await holdClock(page);
+  try {
+    await page.evaluate(() =>
+      window.__nativeMotionFixture.handle.current!.focusPane("pane-3"),
+    );
+    await stepClock(page, 3);
+    expect(await record("overview-motion")).toMatchObject({
+      ...stableContent,
+      moving: "true",
+      mode: "overview",
+      live: "true",
+      renderer: "dom",
+      willChange: "transform",
+    });
+  } finally {
+    await releaseOverview();
+  }
+  await expect.poll(state).toMatchObject({ moving: "false", mode: "overview" });
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.focusPane("pane-1"),
+  );
+  await expect.poll(state).toMatchObject({ moving: "false", mode: "overview" });
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.toggleOverview(),
+  );
+  await expect.poll(state).toMatchObject({ moving: "false", mode: "normal" });
+  expect(await record("returned-normal-rest")).toMatchObject({
+    ...stableContent,
+    live: "true",
+    willChange: "auto",
+  });
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.focusPane("pane-12"),
+  );
+  await expect.poll(state).toMatchObject({
+    moving: "false",
+    visible: "false",
+    live: "false",
+  });
+  expect(await record("retained-offscreen")).toMatchObject({
+    ...stableContent,
+    willChange: "auto",
+  });
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.toggleOverview(),
+  );
+  await expect.poll(state).toMatchObject({
+    moving: "false",
+    mode: "overview",
+    visible: "false",
+    live: "false",
+  });
+  expect(await record("retained-offscreen-overview")).toMatchObject({
+    ...stableContent,
+    willChange: "auto",
+  });
 });
 
 for (const canvas of [false, true]) {
