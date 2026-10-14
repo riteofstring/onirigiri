@@ -31,11 +31,6 @@ the moving viewport. Settled presentation releases excess width or height,
 including after overview exit or an idle viewport resize. A contained normal
 translation does not recenter the grid at settlement. The grid's position and
 pattern phase change together, keeping the dots registered to world coordinates.
-Overview retargeting also retains covered bounds instead of forcing a recenter
-at every motion boundary. Coverage includes both the nominal camera sweep and
-the presented viewport, so custom easing overshoot can extend the background
-without changing pane visibility or motion. Reversals, viewport resizing and
-snapping use the same coverage and settled-shrink rules.
 
 Each workspace owns one GPU device and each content host owns a capture surface.
 Native presentation displays the original subtree without requiring a successful
