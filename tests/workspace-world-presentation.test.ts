@@ -140,7 +140,7 @@ describe("WorkspaceWorldPresentation", () => {
     expect(sweepGrid.height).toBeGreaterThan(settledDestinationGrid.height);
   });
 
-  it.each([1, 0.3077])(
+  it.each([1, 0.3077, 4 / 13])(
     "retains covered overview retargets and reversals at scale %s",
     (scale) => {
       const presenter = new WorkspaceWorldPresentation();
@@ -205,10 +205,8 @@ describe("WorkspaceWorldPresentation", () => {
     presenter.apply(source);
     presenter.retarget(source, overview);
     presenter.advanceMotion(40);
-    expectRectContains(
-      gridPaintRect(grid),
-      presenter.apply(overview, true).grid,
-    );
+    const zooming = presenter.apply(overview, true);
+    expectRectContains(gridPaintRect(grid), zooming.grid);
     presenter.retarget(overview, destination);
     const resized = {
       ...destination,
