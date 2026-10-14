@@ -114,7 +114,7 @@ describe("workspace overview scale", () => {
         result.scene,
         result.cursor,
         {
-          initialCameraModes: { normal: "follow", compact: "follow", overview },
+          initialCameraModes: { normal: "follow", overview },
         },
       );
       const viewport = { height: 800, width: 1280, x: 0, y: 0 };
