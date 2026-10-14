@@ -39,7 +39,6 @@ interface WorldBinding {
   motionGrid: Rect | null;
   motionProgress: number;
   presentedFrame: WorkspaceWorldFrame | null;
-  recenterGrid: boolean;
 }
 
 export class WorkspaceWorldPresentation {
@@ -78,7 +77,7 @@ export class WorkspaceWorldPresentation {
       binding.lastWillChange = willChange;
       binding.host.style.willChange = willChange;
     }
-    writeWorldGrid(binding, frame, moving || binding.motion !== null);
+    writeWorldGrid(binding, presented, moving || binding.motion !== null);
     return presented;
   }
 
@@ -114,7 +113,6 @@ export class WorkspaceWorldPresentation {
       binding.motion = null;
       binding.motionGrid = null;
       binding.motionProgress = 1;
-      binding.recenterGrid = true;
       this.timeline.finish();
       this.apply(to);
       return false;
@@ -124,7 +122,6 @@ export class WorkspaceWorldPresentation {
     binding.motionGrid = worldMotionGrid(current, from, to);
     binding.motionProgress = 0;
     binding.presentedFrame = to;
-    binding.recenterGrid = true;
     this.timeline.restart(curve);
     this.apply(to, true);
     return true;
@@ -142,7 +139,6 @@ export class WorkspaceWorldPresentation {
       this.binding.motion = null;
       this.binding.motionGrid = null;
       this.binding.motionProgress = 1;
-      this.binding.recenterGrid = true;
     }
     return this.hasActiveMotion();
   }
@@ -170,7 +166,6 @@ export class WorkspaceWorldPresentation {
     this.binding.motion = null;
     this.binding.motionGrid = null;
     this.binding.motionProgress = 1;
-    this.binding.recenterGrid = true;
     if (this.binding.presentedFrame) {
       this.apply(this.binding.presentedFrame);
     }
@@ -195,7 +190,6 @@ function createWorldBinding(
     motionGrid: null,
     motionProgress: 1,
     presentedFrame: null,
-    recenterGrid: true,
   };
 }
 
@@ -293,11 +287,13 @@ function writeWorldGrid(
   frame: WorkspaceWorldFrame,
   moving: boolean,
 ): void {
-  const grid = nextWorldGrid(binding, binding.motionGrid ?? frame.grid, moving);
+  const requiredGrid = binding.motionGrid
+    ? unionRects(binding.motionGrid, frame.grid)
+    : frame.grid;
+  const grid = nextWorldGrid(binding, requiredGrid, moving);
   if (!grid) {
     return;
   }
-  binding.recenterGrid = false;
   const left = grid.x;
   const top = grid.y;
   const width = grid.width;
@@ -337,10 +333,7 @@ function nextWorldGrid(
   requiredGrid: Rect,
   moving: boolean,
 ): Rect | null {
-  if (
-    binding.recenterGrid ||
-    worldGridNeedsRecentering(binding, requiredGrid)
-  ) {
+  if (worldGridNeedsRecentering(binding, requiredGrid)) {
     return paddedRect(requiredGrid);
   }
   if (moving) {
