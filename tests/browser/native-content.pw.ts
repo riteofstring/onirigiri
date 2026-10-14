@@ -678,7 +678,7 @@ for (const continuous of [false, true]) {
   });
 }
 
-test("native live promotion releases at rest without changing scrollbars", async ({
+test("native live promotion follows motion and overview without changing scrollbars", async ({
   page,
 }, info) => {
   await openNativeFixture(page, false, false, { count: 12, preloadMargin: 0 });
@@ -790,7 +790,7 @@ test("native live promotion releases at rest without changing scrollbars", async
     ...stableContent,
     live: "true",
     renderer: "dom",
-    willChange: "auto",
+    willChange: "transform",
   });
   const releaseOverview = await holdClock(page);
   try {
@@ -810,12 +810,6 @@ test("native live promotion releases at rest without changing scrollbars", async
     await releaseOverview();
   }
   await expect.poll(state).toMatchObject({ moving: "false", mode: "overview" });
-  expect(await record("returned-overview-rest")).toMatchObject({
-    ...stableContent,
-    live: "true",
-    renderer: "dom",
-    willChange: "auto",
-  });
   await page.evaluate(() =>
     window.__nativeMotionFixture.handle.current!.focusPane("pane-1"),
   );
