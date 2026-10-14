@@ -147,6 +147,23 @@ export class WorkspaceWorldPresentation {
     return this.binding !== null && this.binding.motion !== null;
   }
 
+  isMovingTo(frame: WorkspaceWorldFrame): boolean {
+    const motion = this.binding?.motion;
+    return (
+      motion !== undefined &&
+      motion !== null &&
+      sameTransform(motion.to, frameTransform(frame)) &&
+      Math.abs(motion.focalWorldX - finiteCoordinate(frame.focalWorldX)) <=
+        0.001 &&
+      Math.abs(motion.focalWorldY - finiteCoordinate(frame.focalWorldY)) <=
+        0.001 &&
+      Math.abs(motion.toFocalScreenX - finiteCoordinate(frame.focalScreenX)) <=
+        0.001 &&
+      Math.abs(motion.toFocalScreenY - finiteCoordinate(frame.focalScreenY)) <=
+        0.001
+    );
+  }
+
   presentedScale(fallback = 1): number {
     const binding = this.binding;
     return binding?.presentedFrame

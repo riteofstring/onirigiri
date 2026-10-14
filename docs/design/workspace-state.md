@@ -53,7 +53,11 @@ The focus outline animates between selected cells, maximized states and pane
 rearrangements. Other layout changes within the same selection, including column,
 row and split resizing, update its bounds on the same frame as the pane. Such
 geometry changes cancel any unfinished focus transition so the outline cannot
-trail the resize gesture.
+trail the resize gesture. A layout revision whose rendered destination is
+unchanged, such as a pane rename, preserves the camera and outline timelines.
+Titles and serialized layouts still publish immediately. Each command compares
+its destination with the active motion's endpoint, so a rename cannot conceal
+a resize before the next animation frame.
 
 Moving the focus outline alone does not mark stationary panes as moving. Content
 stays live and accepts the original pointer gesture when focus changes without

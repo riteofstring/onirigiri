@@ -35,7 +35,7 @@ interface CursorBinding {
   lastWidth: number;
   lastX: number;
   lastY: number;
-  motion: { from: CursorBox; fromScale: number } | null;
+  motion: { from: CursorBox; fromScale: number; to: CursorBox } | null;
   motionProgress: number;
 }
 
@@ -117,6 +117,7 @@ export class WorkspaceGridCursorPresentation {
     binding.motion = {
       from,
       fromScale: binding.lastScale,
+      to,
     };
     binding.motionProgress = 0;
     this.timeline.restart(curve);
@@ -140,6 +141,15 @@ export class WorkspaceGridCursorPresentation {
 
   hasActiveMotion(): boolean {
     return this.binding !== null && this.binding.motion !== null;
+  }
+
+  isMovingTo(item: WorkspaceGridCursorRenderItem): boolean {
+    const motion = this.binding?.motion;
+    return (
+      motion !== undefined &&
+      motion !== null &&
+      sameCursorBox(motion.to, cursorBoxForItem(item))
+    );
   }
 
   snapMotion(): void {

@@ -9,7 +9,10 @@ import {
 import { WorkspaceWorldPresentation } from "../src/presentation/workspace-world-presentation";
 import { paneWorldBoxIntersectsRect } from "../src/presentation/workspace-sweep-geometry";
 import { WorkspaceGridCursorPresentation } from "../src/workspace/workspace-grid-cursor-presentation";
-import { createWorkspaceScene } from "../src/workspace/workspace-scene";
+import {
+  createWorkspaceScene,
+  serializeWorkspaceLayout,
+} from "../src/workspace/workspace-scene";
 import type { FocusDirection, Rect } from "../src/types";
 
 import {
@@ -23,8 +26,8 @@ import {
 
 const paneIdsInRow = ["a", "b", "c", "d", "e", "f"];
 
-function createOverviewHarness() {
-  const { cursor, scene } = createWorkspaceScene({
+function rowScene() {
+  return createWorkspaceScene({
     panes: paneIdsInRow.map((paneId, index) => ({
       columnId: `column-${paneId}`,
       columnWidth: { unit: "px" as const, value: 300 },
@@ -34,6 +37,38 @@ function createOverviewHarness() {
       title: paneId.toUpperCase(),
     })),
   });
+}
+
+function negativeSpatialScene() {
+  const initial = createWorkspaceScene({
+    gridAxes: "spatial",
+    panes: paneIdsInRow.map((paneId, index) => ({
+      columnId: `column-${paneId}`,
+      columnWidth: { unit: "px" as const, value: 280 + 40 * index },
+      heightPx: 220 + 35 * index,
+      paneId,
+      planeIndex: Math.floor(index / 2),
+      slotIndex: index % 2,
+      surfaceKind: "test",
+      title: paneId.toUpperCase(),
+    })),
+  });
+  const layout = serializeWorkspaceLayout(initial.scene, initial.cursor);
+  return createWorkspaceScene({
+    gridAxes: "spatial",
+    initialLayout: {
+      ...layout,
+      columns: layout.columns.map((column) => ({
+        ...column,
+        planeIndex: column.planeIndex - 3,
+        slotIndex: (column.slotIndex ?? column.index) - 2,
+      })),
+      cursor: { column: -2, row: -3, split: 0 },
+    },
+  });
+}
+
+function createOverviewHarness({ cursor, scene } = rowScene()) {
   const engine = new WorkspaceLikeLayoutEngine(scene);
   const store = schedulerTestStore(engine, scene, cursor);
   store.ensureFocusedPaneVisible(viewport);
@@ -67,6 +102,7 @@ function createOverviewHarness() {
   });
   return {
     cursorHost,
+    cursorPresentation,
     engine,
     frameHost,
     hosts,
@@ -125,6 +161,59 @@ function fraction(value: number, start: number, end: number): number {
 }
 
 type OverviewHarness = ReturnType<typeof createOverviewHarness>;
+
+const motionLayouts = [
+  {
+    name: "horizontal",
+    scene: rowScene,
+    direction: "right",
+    target: "b",
+  },
+  {
+    name: "negative 2D",
+    scene: negativeSpatialScene,
+    direction: "down",
+    target: "c",
+  },
+] as const;
+
+function startFocusMotion(
+  harness: OverviewHarness,
+  mode: "normal" | "overview",
+  direction: FocusDirection,
+  frames: number,
+): void {
+  harness.scheduler.start();
+  harness.store.setCameraModes(cameraModes("follow", "follow"));
+  harness.store.setOverviewCardWidths(160, 160);
+  if (mode === "overview") harness.store.toggleOverviewMode();
+  harness.frameHost.flushAll();
+  expect(harness.store.moveFocus(direction, viewport)).toBe(true);
+  harness.frameHost.flushFrames(frames);
+}
+
+function expectSamePresentation(left: OverviewHarness, right: OverviewHarness) {
+  expect(left.world.style.transform).toBe(right.world.style.transform);
+  expect(left.cursorHost.style.transform).toBe(
+    right.cursorHost.style.transform,
+  );
+  expect(left.cursorHost.style.width).toBe(right.cursorHost.style.width);
+  expect(left.cursorHost.style.height).toBe(right.cursorHost.style.height);
+}
+
+function expectMatchingMotion(
+  actual: OverviewHarness,
+  control: OverviewHarness,
+) {
+  expectSamePresentation(actual, control);
+  while (control.frameHost.pendingFrameCount() > 0) {
+    expect(actual.frameHost.pendingFrameCount()).toBe(1);
+    control.frameHost.flushFrames(1);
+    actual.frameHost.flushFrames(1);
+    expectSamePresentation(actual, control);
+  }
+  expect(actual.frameHost.pendingFrameCount()).toBe(0);
+}
 
 interface MotionSample {
   cursor: number;
@@ -209,6 +298,120 @@ function moveOverviewFocus(
 }
 
 describe("overview camera motion registration", () => {
+  const renameCases = motionLayouts.flatMap((layout) =>
+    (["normal", "overview"] as const).flatMap((mode) =>
+      [0, 4].map((frames) => ({ layout, mode, frames })),
+    ),
+  );
+
+  it.each(renameCases)(
+    "keeps $layout.name $mode motion registered when renamed after $frames frames",
+    ({ layout, mode, frames }) => {
+      const control = createOverviewHarness(layout.scene());
+      const renamed = createOverviewHarness(layout.scene());
+      try {
+        for (const harness of [control, renamed]) {
+          startFocusMotion(harness, mode, layout.direction, frames);
+        }
+        const worldBeforeRename = renamed.world.style.transform;
+        const cursorBeforeRename = renamed.cursorHost.style.transform;
+        const revision = renamed.store.getSnapshot().layoutRevision;
+        expect(renamed.frameHost.pendingFrameCount()).toBe(1);
+
+        expect(renamed.store.renamePane("f", "Changed title")).toBe(true);
+        expect(renamed.store.renamePane(layout.target, "Focused title")).toBe(
+          true,
+        );
+
+        const snapshot = renamed.store.getSnapshot();
+        const saved = serializeWorkspaceLayout(
+          renamed.store.toScene(),
+          snapshot.cursor,
+        );
+        expect(snapshot.layoutRevision).toBe(revision + 2);
+        expect(snapshot.layoutChangeKind).toBe("user");
+        expect(saved.panes.find((pane) => pane.paneId === "f")?.title).toBe(
+          "Changed title",
+        );
+        expect(
+          saved.panes.find((pane) => pane.paneId === layout.target)?.title,
+        ).toBe("Focused title");
+        expect(renamed.world.style.transform).toBe(worldBeforeRename);
+        expect(renamed.cursorHost.style.transform).toBe(cursorBeforeRename);
+        expectMatchingMotion(renamed, control);
+        expect(renamed.store.getSnapshot().focusedPaneId).toBe(layout.target);
+      } finally {
+        control.scheduler.teardown();
+        renamed.scheduler.teardown();
+      }
+    },
+  );
+
+  const resizeCases = motionLayouts.flatMap((layout) =>
+    (["normal", "overview"] as const).flatMap((mode) =>
+      ["resize then rename", "rename then resize"].map((order) => ({
+        layout,
+        mode,
+        order,
+      })),
+    ),
+  );
+
+  it.each(resizeCases)(
+    "applies coalesced $order during $layout.name $mode motion",
+    ({ layout, mode, order }) => {
+      const control = createOverviewHarness(layout.scene());
+      const renamed = createOverviewHarness(layout.scene());
+      try {
+        for (const harness of [control, renamed]) {
+          startFocusMotion(harness, mode, layout.direction, 4);
+          expect(harness.cursorPresentation.hasActiveMotion()).toBe(true);
+        }
+        const notifications: { revision: number; title: string | undefined }[] =
+          [];
+        const revision = renamed.store.getSnapshot().layoutRevision;
+        const unsubscribe = renamed.store.subscribe((snapshot) => {
+          notifications.push({
+            revision: snapshot.layoutRevision,
+            title: serializeWorkspaceLayout(
+              renamed.store.toScene(),
+              snapshot.cursor,
+            ).panes.find((pane) => pane.paneId === "f")?.title,
+          });
+        });
+        const rename = () =>
+          expect(renamed.store.renamePane("f", "Changed title")).toBe(true);
+        if (order === "rename then resize") rename();
+        for (const harness of [control, renamed]) {
+          if (layout.direction === "right") {
+            harness.store.resizeColumn(`column-${layout.target}`, {
+              unit: "px",
+              value: 487,
+            });
+          } else {
+            expect(harness.store.resizePaneRow(layout.target, 376)).toBe(true);
+          }
+        }
+        if (order === "resize then rename") rename();
+        unsubscribe();
+
+        expect(notifications).toEqual([
+          {
+            revision: revision + 1,
+            title: order === "resize then rename" ? "F" : "Changed title",
+          },
+          { revision: revision + 2, title: "Changed title" },
+        ]);
+        expect(renamed.cursorPresentation.hasActiveMotion()).toBe(false);
+        expectMatchingMotion(renamed, control);
+        expect(renamed.store.getSnapshot().focusedPaneId).toBe(layout.target);
+      } finally {
+        control.scheduler.teardown();
+        renamed.scheduler.teardown();
+      }
+    },
+  );
+
   it("presents pane content, pane frames and the grid cursor from one camera state on every frame", () => {
     const harness = createOverviewHarness();
     harness.scheduler.start();

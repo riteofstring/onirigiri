@@ -594,6 +594,13 @@ export class WorkspaceFrameScheduler {
     ) {
       if (!sameOverviewCameraFrame(previous, snapshot)) {
         if (this.options.worldPresentation?.hasActiveMotion()) {
+          if (
+            this.options.worldPresentation.isMovingTo(
+              this.renderWorldFrameForSnapshot(snapshot),
+            )
+          ) {
+            return;
+          }
           this.options.worldPresentation.snapMotion();
         }
         this.overviewCameraMotionInitialFramePending = false;
@@ -618,6 +625,17 @@ export class WorkspaceFrameScheduler {
       snapshot.maximizedPaneId === previous.maximizedPaneId &&
       snapshot.paneRearrangementRevision === previous.paneRearrangementRevision
     ) {
+      if (
+        this.options.cursorPresentation?.hasActiveMotion() &&
+        this.options.cursorPresentation.isMovingTo(
+          this.renderCursorForSnapshot(
+            snapshot,
+            workspaceSnapshotIsMoving(snapshot),
+          ),
+        )
+      ) {
+        return;
+      }
       this.options.cursorPresentation?.snapMotion();
       this.cursorMotionInitialFramePending = false;
       return;
