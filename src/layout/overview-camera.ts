@@ -32,6 +32,8 @@ interface OverviewCameraInput extends OverviewCameraState {
 interface OverviewPanInput extends OverviewCameraInput {
   deltaX: number;
   deltaY: number;
+  followOffsetX: number;
+  followOffsetY: number;
 }
 
 interface OverviewZoomInput extends OverviewCameraInput {
@@ -60,7 +62,9 @@ interface OverviewCameraPanRequest extends Omit<
 
 function panOverviewCamera(
   input: OverviewPanInput,
-): OverviewCameraState | null {
+):
+  | (OverviewCameraState & { followOffsetX: number; followOffsetY: number })
+  | null {
   const bounds = input.engine.overviewContentBounds(
     input.viewport,
     input.maximizedPaneId,
@@ -68,11 +72,31 @@ function panOverviewCamera(
     input.cursor,
     input.fixedScale,
   );
-  const panX = clampPan(input.panX + input.deltaX, bounds.maxPanX);
-  const panY = clampPan(input.panY + input.deltaY, bounds.maxPanY);
-  return panX === input.panX && panY === input.panY
+  const effectivePanX =
+    clampPan(input.panX, bounds.maxPanX) - input.followOffsetX;
+  const effectivePanY =
+    clampPan(input.panY, bounds.maxPanY) - input.followOffsetY;
+  const nextPanX = clampRange(
+    effectivePanX + input.deltaX,
+    Math.min(0, effectivePanX),
+    Math.max(bounds.maxPanX, effectivePanX),
+  );
+  const nextPanY = clampRange(
+    effectivePanY + input.deltaY,
+    Math.min(0, effectivePanY),
+    Math.max(bounds.maxPanY, effectivePanY),
+  );
+  const panX = clampPan(nextPanX, bounds.maxPanX);
+  const panY = clampPan(nextPanY, bounds.maxPanY);
+  return nextPanX === effectivePanX && nextPanY === effectivePanY
     ? null
-    : { panX, panY, zoom: input.zoom };
+    : {
+        followOffsetX: panX - nextPanX,
+        followOffsetY: panY - nextPanY,
+        panX,
+        panY,
+        zoom: input.zoom,
+      };
 }
 
 function zoomOverviewCamera(
@@ -248,6 +272,8 @@ export class WorkspaceOverviewCamera {
       deltaY,
       cursor,
       engine,
+      followOffsetX: this.followOffsetX,
+      followOffsetY: this.followOffsetY,
       maximizedPaneId,
       panX: this.panX,
       panY: this.panY,
@@ -258,6 +284,8 @@ export class WorkspaceOverviewCamera {
     if (!camera) {
       return false;
     }
+    this.followOffsetX = camera.followOffsetX;
+    this.followOffsetY = camera.followOffsetY;
     this.panX = camera.panX;
     this.panY = camera.panY;
     return true;

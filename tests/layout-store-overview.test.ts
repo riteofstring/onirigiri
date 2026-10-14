@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { WorkspaceLikeLayoutEngine } from "../src/layout/layout-engine";
+import { workspaceWorldRenderFrame } from "../src/presentation/workspace-render-items";
 import { WorkspaceLayoutStore } from "../src/state/layout-store";
 import {
   createWorkspaceScene,
@@ -26,7 +27,11 @@ describe("workspace pane titles", () => {
         })),
       });
       const engine = new WorkspaceLikeLayoutEngine(result.scene);
-      const store = new WorkspaceLayoutStore(engine, result.scene, result.cursor);
+      const store = new WorkspaceLayoutStore(
+        engine,
+        result.scene,
+        result.cursor,
+      );
       const viewport = { height: 800, width: 1280, x: 0, y: 0 };
       store.ensureFocusedPaneVisible(viewport);
       store.focusPane("pane-1");
@@ -47,7 +52,9 @@ describe("workspace pane titles", () => {
 
       expect(store.renamePane("pane-0", "Updated title")).toBe(true);
 
-      expect(store.toScene().paneById.get("pane-0")?.title).toBe("Updated title");
+      expect(store.toScene().paneById.get("pane-0")?.title).toBe(
+        "Updated title",
+      );
       expect(store.getSnapshot()).toMatchObject({
         cursor: before.cursor,
         focusedPaneId: before.focusedPaneId,
@@ -64,6 +71,210 @@ describe("workspace pane titles", () => {
       expect(selectedCell()).toEqual(beforeCell);
     },
   );
+});
+
+describe("workspace overview pan recovery", () => {
+  const viewport = { height: 800, width: 1280, x: 0, y: 0 };
+
+  function workspace(overview: "fixed" | "follow", count = 1) {
+    const result = createWorkspaceScene({
+      gridAxes: "spatial",
+      panes: Array.from({ length: count }, (_, index) => ({
+        columnId: `pan-column-${index}`,
+        columnWidth: { unit: "px" as const, value: 384 },
+        paneId: `pan-pane-${index}`,
+        planeIndex: Math.floor(index / 8),
+        slotIndex: index % 8,
+        surfaceKind: "test",
+        title: `Pan pane ${index}`,
+      })),
+    });
+    const engine = new WorkspaceLikeLayoutEngine(result.scene);
+    const store = new WorkspaceLayoutStore(
+      engine,
+      result.scene,
+      result.cursor,
+      {
+        initialCameraModes: { normal: "follow", overview },
+      },
+    );
+    store.ensureFocusedPaneVisible(viewport);
+    store.snapAnimationsToTarget();
+    store.toggleOverviewMode();
+    store.snapAnimationsToTarget();
+    return {
+      store,
+      world: () =>
+        workspaceWorldRenderFrame({
+          engine,
+          moving: false,
+          snapshot: store.getSnapshot(),
+          viewport,
+        }),
+      selected: () =>
+        engine.gridCursorRenderItem({
+          ...store.getSnapshot(),
+          movementPhase: "idle",
+          viewport,
+        }),
+    };
+  }
+
+  it.each([
+    { overview: "fixed", direction: 1 },
+    { overview: "fixed", direction: -1 },
+    { overview: "follow", direction: 1 },
+    { overview: "follow", direction: -1 },
+  ] as const)(
+    "recovers a displaced $overview view in direction $direction through incremental pans",
+    ({ overview, direction }) => {
+      const { store, world, selected } = workspace(overview);
+      const initial = world();
+      const near = { x: 100, y: 100 };
+      const far = { x: 1180, y: 700 };
+      const from = direction === 1 ? near : far;
+      const to = direction === 1 ? far : near;
+      expect(store.zoomOverviewBy(0.5, from.x, from.y, viewport)).toBe(true);
+      expect(store.zoomOverviewBy(2, to.x, to.y, viewport)).toBe(true);
+      const displaced = world();
+      expect(displaced.scale).toBeCloseTo(initial.scale, 6);
+      expect(displaced.x).toBeCloseTo(initial.x - direction * 1080, 6);
+      expect(displaced.y).toBeCloseTo(initial.y - direction * 600, 6);
+
+      expect(store.panOverviewBy(0, 0, viewport)).toBe(false);
+      expect(store.panOverviewBy(direction * 40, 0, viewport)).toBe(false);
+      expect(store.panOverviewBy(0, direction * 30, viewport)).toBe(false);
+      expect(world()).toEqual(displaced);
+
+      expect(store.panOverviewBy(-direction * 40, 0, viewport)).toBe(true);
+      expect(world().x).toBeCloseTo(displaced.x + direction * 40, 6);
+      expect(world().y).toBeCloseTo(displaced.y, 6);
+      expect(store.panOverviewBy(0, -direction * 30, viewport)).toBe(true);
+      const recovering = world();
+      expect(recovering.x).toBeCloseTo(displaced.x + direction * 40, 6);
+      expect(recovering.y).toBeCloseTo(displaced.y + direction * 30, 6);
+      expect(recovering.scale).toBeCloseTo(initial.scale, 6);
+      expect(
+        store.panOverviewBy(direction * 40, direction * 30, viewport),
+      ).toBe(false);
+      expect(world()).toEqual(recovering);
+
+      const focal = { x: 420, y: 300 };
+      const point = {
+        x: (focal.x - recovering.x) / recovering.scale,
+        y: (focal.y - recovering.y) / recovering.scale,
+      };
+      expect(store.zoomOverviewBy(0.8, focal.x, focal.y, viewport)).toBe(true);
+      const zoomed = world();
+      expect(zoomed.x + point.x * zoomed.scale).toBeCloseTo(focal.x, 6);
+      expect(zoomed.y + point.y * zoomed.scale).toBeCloseTo(focal.y, 6);
+      expect(store.zoomOverviewBy(1.25, focal.x, focal.y, viewport)).toBe(true);
+      expect(world().x).toBeCloseTo(recovering.x, 6);
+      expect(world().y).toBeCloseTo(recovering.y, 6);
+
+      expect(
+        store.panOverviewBy(-direction * 100000, -direction * 100000, viewport),
+      ).toBe(true);
+      const recovered = world();
+      expect(Math.abs(recovered.x - initial.x)).toBeLessThan(1);
+      expect(Math.abs(recovered.y - initial.y)).toBeLessThan(1);
+      expect(recovered.scale).toBeCloseTo(initial.scale, 6);
+      const pane = selected();
+      expect(pane.x).toBeGreaterThanOrEqual(0);
+      expect(pane.y).toBeGreaterThanOrEqual(0);
+      expect(pane.x + pane.width * pane.scale).toBeLessThanOrEqual(
+        viewport.width,
+      );
+      expect(pane.y + pane.height * pane.scale).toBeLessThanOrEqual(
+        viewport.height,
+      );
+      expect(store.panOverviewBy(-100, -100, viewport)).toBe(false);
+      expect(store.panOverviewBy(100, 100, viewport)).toBe(false);
+      expect(world()).toEqual(recovered);
+    },
+  );
+
+  it("preserves ordinary bounded panning on both axes without a zoom offset", () => {
+    const { store, world } = workspace("fixed", 24);
+    const initial = world();
+    expect(store.panOverviewBy(-100, -100, viewport)).toBe(false);
+    expect(world()).toEqual(initial);
+    expect(store.panOverviewBy(80, 60, viewport)).toBe(true);
+    expect(world().x).toBeCloseTo(initial.x - 80, 6);
+    expect(world().y).toBeCloseTo(initial.y - 60, 6);
+    expect(store.panOverviewBy(-40, -20, viewport)).toBe(true);
+    expect(world().x).toBeCloseTo(initial.x - 40, 6);
+    expect(world().y).toBeCloseTo(initial.y - 40, 6);
+    expect(store.panOverviewBy(100000, 100000, viewport)).toBe(true);
+    const edge = world();
+    expect(edge.x).toBeCloseTo(initial.x - 304, 6);
+    expect(edge.y).toBeCloseTo(initial.y - 398, 6);
+    expect(store.panOverviewBy(1, 1, viewport)).toBe(false);
+    expect(world()).toEqual(edge);
+    expect(store.panOverviewBy(-20, -30, viewport)).toBe(true);
+    expect(world().x).toBeCloseTo(edge.x + 20, 6);
+    expect(world().y).toBeCloseTo(edge.y + 30, 6);
+    expect(store.panOverviewBy(-100000, -100000, viewport)).toBe(true);
+    expect(world()).toEqual(initial);
+  });
+
+  it.each([
+    { overview: "fixed", deltaX: 800, deltaY: 300 },
+    { overview: "follow", deltaX: 2200, deltaY: 1000 },
+  ] as const)(
+    "crosses back into the ordinary $overview pan range without skipping part of the gesture",
+    ({ overview, deltaX, deltaY }) => {
+      const { store, world } = workspace(overview, 24);
+      store.focusPane("pan-pane-23");
+      store.snapAnimationsToTarget();
+      store.zoomOverviewBy(0.5, 100, 100, viewport);
+      store.zoomOverviewBy(2, 1180, 700, viewport);
+      const before = world();
+      expect(store.panOverviewBy(-deltaX, -deltaY, viewport)).toBe(true);
+      const inside = world();
+      expect(inside.x).toBeCloseTo(before.x + deltaX, 6);
+      expect(inside.y).toBeCloseTo(before.y + deltaY, 6);
+      expect(inside.scale).toBeCloseTo(before.scale, 6);
+      expect(store.panOverviewBy(10, 15, viewport)).toBe(true);
+      expect(world().x).toBeCloseTo(inside.x - 10, 6);
+      expect(world().y).toBeCloseTo(inside.y - 15, 6);
+      expect(store.panOverviewBy(100000, 100000, viewport)).toBe(true);
+      const edge = world();
+      expect(store.panOverviewBy(10, 15, viewport)).toBe(false);
+      expect(world()).toEqual(edge);
+    },
+  );
+
+  it("keeps a distant empty cell under the zoom focus", () => {
+    const { store, world, selected } = workspace("follow");
+    for (let index = 0; index < 6; index += 1) {
+      store.moveFocus("right", viewport);
+      store.moveFocus("down", viewport);
+    }
+    store.snapAnimationsToTarget();
+    expect(store.getSnapshot().focusedPaneId).toBeNull();
+    const cursor = selected();
+    const focal = {
+      x: cursor.x + (cursor.width * cursor.scale) / 2,
+      y: cursor.y + (cursor.height * cursor.scale) / 2,
+    };
+    const before = world();
+    const point = {
+      x: (focal.x - before.x) / before.scale,
+      y: (focal.y - before.y) / before.scale,
+    };
+    expect(store.zoomOverviewBy(0.5, focal.x, focal.y, viewport)).toBe(true);
+    const after = world();
+    expect(after.x + point.x * after.scale).toBeCloseTo(focal.x, 6);
+    expect(after.y + point.y * after.scale).toBeCloseTo(focal.y, 6);
+    const zoomedCursor = selected();
+    expect(
+      zoomedCursor.x + (zoomedCursor.width * zoomedCursor.scale) / 2,
+    ).toBeCloseTo(focal.x, 6);
+    expect(
+      zoomedCursor.y + (zoomedCursor.height * zoomedCursor.scale) / 2,
+    ).toBeCloseTo(focal.y, 6);
+  });
 });
 
 describe("workspace overview scale", () => {

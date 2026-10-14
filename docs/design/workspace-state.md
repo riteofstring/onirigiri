@@ -93,6 +93,13 @@ Users can still zoom relative to either baseline using the existing controls.
 Layout restoration reads the current scene configuration so runtime default
 sizes remain authoritative while explicit saved pane sizes retain precedence.
 
+Overview zoom preserves the point under its focus, keeping any translation that
+the bounded pan cannot absorb in the follow offset. Manual pan uses the displayed
+translation, including that offset. A view outside the ordinary pan range can
+move incrementally back toward that range without snapping or moving farther
+away; once inside, the existing pan limits apply. Zoom focal stability and
+unbounded cursor navigation remain unchanged.
+
 Workspace navigation is driven by keyboard commands, explicit controls and pane
 selection. Wheel events retain browser and consumer-content semantics in both
 normal and overview presentation. This keeps nested scrolling independent of
