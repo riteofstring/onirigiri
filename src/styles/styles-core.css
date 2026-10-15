@@ -669,14 +669,7 @@
   }
 
   .onirigiri-pane[data-onirigiri-presentation-live="true"]
-    .onirigiri-pane__native-surface[data-onirigiri-recording],
-  .onirigiri-pane[data-onirigiri-presentation-live="true"][data-onirigiri-renderer="dom"]:is(
-      [data-moving="true"],
-      [data-presentation-mode="overview"]
-    )
-    > .onirigiri-pane__content
-    > .onirigiri-pane__content-surface
-    > .onirigiri-pane__native-surface:not([hidden]) {
+    .onirigiri-pane__native-surface[data-onirigiri-recording] {
     will-change: transform;
   }
 

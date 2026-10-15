@@ -678,7 +678,7 @@ for (const continuous of [false, true]) {
   });
 }
 
-test("native live promotion follows motion and overview without changing scrollbars", async ({
+test("native presentation preserves scrollbars through motion and overview", async ({
   page,
 }, info) => {
   await openNativeFixture(page, false, false, { count: 12, preloadMargin: 0 });
@@ -774,7 +774,7 @@ test("native live promotion follows motion and overview without changing scrollb
       mode: "normal",
       live: "true",
       renderer: "dom",
-      willChange: "transform",
+      willChange: "auto",
     });
   } finally {
     await release();
@@ -790,7 +790,7 @@ test("native live promotion follows motion and overview without changing scrollb
     ...stableContent,
     live: "true",
     renderer: "dom",
-    willChange: "transform",
+    willChange: "auto",
   });
   const releaseOverview = await holdClock(page);
   try {
@@ -804,7 +804,7 @@ test("native live promotion follows motion and overview without changing scrollb
       mode: "overview",
       live: "true",
       renderer: "dom",
-      willChange: "transform",
+      willChange: "auto",
     });
   } finally {
     await releaseOverview();
