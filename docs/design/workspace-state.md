@@ -41,6 +41,16 @@ camera and outline progress identically and the outline stays fixed on screen.
 An explicit outline curve keeps its own timeline instead. Disabling the outline
 removes its element; cursor geometry and announcements are unchanged.
 
+Following overview preserves the displayed world and outline when a navigation
+command retargets an unfinished move. A new motion still presents its starting
+pose once, but retargeting an active overview move does not restart that delay.
+The camera and outline can therefore advance between repeated target changes.
+When the default camera-following outline joins an existing overview pan, or the
+camera joins an existing outline move, they share any owed starting frame.
+Pane rearrangements retain their shared initial frame so their geometry, world
+and outline start together. Normal navigation and independently timed normal-view
+outlines retain their existing timing.
+
 Store-driven navigation resets the overview presenter only when that presenter
 has an active motion to cancel. Resetting an idle presenter would reapply its
 previous frame, recenter the grid and clear the world's movement promotion hint

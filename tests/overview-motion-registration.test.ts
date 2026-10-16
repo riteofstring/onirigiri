@@ -298,6 +298,163 @@ function moveOverviewFocus(
 }
 
 describe("overview camera motion registration", () => {
+  it.each(motionLayouts)(
+    "advances $name overview focus retargets while keeping the cursor registered",
+    ({ scene }) => {
+      const harness = createOverviewHarness(scene());
+      const cursorCenter = () => {
+        const world = transformParts(harness.world.style.transform);
+        const cursor = transformParts(harness.cursorHost.style.transform);
+        return {
+          x:
+            world.x +
+            world.scale *
+              (cursor.x +
+                (Number.parseFloat(harness.cursorHost.style.width) *
+                  cursor.scale) /
+                  2),
+          y:
+            world.y +
+            world.scale *
+              (cursor.y +
+                (Number.parseFloat(harness.cursorHost.style.height) *
+                  cursor.scale) /
+                  2),
+        };
+      };
+      try {
+        harness.scheduler.start();
+        harness.store.setCameraModes(cameraModes("follow", "follow"));
+        harness.store.setOverviewCardWidths(160, 160);
+        harness.store.toggleOverviewMode();
+        harness.frameHost.flushAll();
+        const initialWorld = harness.world.style.transform;
+        const initialCursor = harness.cursorHost.style.transform;
+        const initialCenter = cursorCenter();
+
+        expect(harness.store.focusPane("b")).toBe(true);
+        expect(harness.store.focusPane("c")).toBe(true);
+        harness.frameHost.flushFrames(1);
+        expect(harness.world.style.transform).toBe(initialWorld);
+        expect(harness.cursorHost.style.transform).toBe(initialCursor);
+
+        for (const paneId of ["b", "c", "b", "c", "b", "c"]) {
+          const worldBefore = harness.world.style.transform;
+          const cursorBefore = harness.cursorHost.style.transform;
+          expect(harness.store.focusPane(paneId)).toBe(true);
+          expect(harness.world.style.transform).toBe(worldBefore);
+          expect(harness.cursorHost.style.transform).toBe(cursorBefore);
+          harness.frameHost.flushFrames(1);
+          expect(harness.world.style.transform).not.toBe(worldBefore);
+          const center = cursorCenter();
+          expect(Math.abs(center.x - initialCenter.x)).toBeLessThan(0.05);
+          expect(Math.abs(center.y - initialCenter.y)).toBeLessThan(0.05);
+        }
+
+        expect(harness.store.focusPane("a")).toBe(true);
+        harness.frameHost.flushAll();
+        expect(harness.world.style.transform).toBe(initialWorld);
+        expect(harness.cursorHost.style.transform).toBe(initialCursor);
+        expect(harness.worldPresentation.hasActiveMotion()).toBe(false);
+        expect(harness.cursorPresentation.hasActiveMotion()).toBe(false);
+      } finally {
+        harness.scheduler.teardown();
+      }
+    },
+  );
+
+  it.each(motionLayouts)(
+    "cancels $name overview focus returned before the first advancing frame",
+    ({ scene }) => {
+      const harness = createOverviewHarness(scene());
+      try {
+        harness.scheduler.start();
+        harness.store.setCameraModes(cameraModes("follow", "follow"));
+        harness.store.setOverviewCardWidths(160, 160);
+        harness.store.toggleOverviewMode();
+        harness.frameHost.flushAll();
+        const initialWorld = harness.world.style.transform;
+        const initialCursor = harness.cursorHost.style.transform;
+
+        expect(harness.store.focusPane("b")).toBe(true);
+        harness.frameHost.flushFrames(1);
+        expect(harness.store.focusPane("a")).toBe(true);
+        expect(harness.worldPresentation.hasActiveMotion()).toBe(false);
+        expect(harness.cursorPresentation.hasActiveMotion()).toBe(false);
+        harness.frameHost.flushAll();
+        expect(harness.world.style.transform).toBe(initialWorld);
+        expect(harness.cursorHost.style.transform).toBe(initialCursor);
+      } finally {
+        harness.scheduler.teardown();
+      }
+    },
+  );
+
+  it.each(["camera", "cursor"] as const)(
+    "shares the initial frame when only the %s was moving before overview focus",
+    (initialMotion) => {
+      const harness = createOverviewHarness();
+      try {
+        harness.scheduler.start();
+        harness.store.setCameraModes(cameraModes("follow", "follow"));
+        harness.store.setOverviewCardWidths(160, 160);
+        harness.store.toggleOverviewMode();
+        harness.frameHost.flushAll();
+        if (initialMotion === "camera") {
+          expect(harness.store.panOverviewBy(80, 0, viewport)).toBe(true);
+          harness.frameHost.flushFrames(1);
+        } else {
+          harness.store.setCameraModes(cameraModes("follow", "fixed"));
+          harness.frameHost.flushAll();
+          expect(harness.store.focusPane("b")).toBe(true);
+          harness.frameHost.flushFrames(4);
+        }
+        expect(harness.worldPresentation.hasActiveMotion()).toBe(
+          initialMotion === "camera",
+        );
+        expect(harness.cursorPresentation.hasActiveMotion()).toBe(
+          initialMotion === "cursor",
+        );
+        const worldBefore = harness.world.style.transform;
+        const cursorBefore = harness.cursorHost.style.transform;
+        if (initialMotion === "cursor") {
+          harness.store.setCameraModes(cameraModes("follow", "follow"));
+        }
+        expect(harness.store.focusPane("c")).toBe(true);
+        expect(harness.world.style.transform).toBe(worldBefore);
+        expect(harness.cursorHost.style.transform).toBe(cursorBefore);
+        harness.frameHost.flushFrames(1);
+        expect(harness.world.style.transform).toBe(worldBefore);
+        expect(harness.cursorHost.style.transform).toBe(cursorBefore);
+
+        harness.frameHost.flushFrames(1);
+        const advancedWorld = transformParts(harness.world.style.transform);
+        const advancedCursor = transformParts(harness.cursorHost.style.transform);
+        expect(harness.world.style.transform).not.toBe(worldBefore);
+        expect(harness.cursorHost.style.transform).not.toBe(cursorBefore);
+        harness.frameHost.flushAll();
+        expect(
+          fraction(
+            advancedCursor.x,
+            transformParts(cursorBefore).x,
+            transformParts(harness.cursorHost.style.transform).x,
+          ),
+        ).toBeCloseTo(
+          fraction(
+            advancedWorld.x,
+            transformParts(worldBefore).x,
+            transformParts(harness.world.style.transform).x,
+          ),
+          3,
+        );
+        expect(harness.worldPresentation.hasActiveMotion()).toBe(false);
+        expect(harness.cursorPresentation.hasActiveMotion()).toBe(false);
+      } finally {
+        harness.scheduler.teardown();
+      }
+    },
+  );
+
   const renameCases = motionLayouts.flatMap((layout) =>
     (["normal", "overview"] as const).flatMap((mode) =>
       [0, 4].map((frames) => ({ layout, mode, frames })),

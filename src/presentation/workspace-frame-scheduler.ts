@@ -607,12 +607,19 @@ export class WorkspaceFrameScheduler {
       }
       return;
     }
-    this.overviewCameraMotionInitialFramePending =
+    const wasActive = this.options.worldPresentation?.hasActiveMotion() ?? false;
+    const initialFramePending = this.overviewCameraMotionInitialFramePending;
+    const retargeted =
       this.options.worldPresentation?.retarget(
         this.renderWorldFrameForSnapshot(previous),
         this.renderWorldFrameForSnapshot(snapshot),
         this.motionOptions().camera.overview,
       ) ?? false;
+    this.overviewCameraMotionInitialFramePending =
+      retargeted &&
+      (initialFramePending ||
+        !wasActive ||
+        this.paneRearrangementInitialFramePending);
   }
 
   private retargetCursor(snapshot: WorkspaceLayoutSnapshot): void {
@@ -641,6 +648,8 @@ export class WorkspaceFrameScheduler {
       return;
     }
     const { curve, followsStoreCamera } = this.cursorMotion(snapshot);
+    const wasActive = this.options.cursorPresentation?.hasActiveMotion() ?? false;
+    const initialFramePending = this.cursorMotionInitialFramePending;
     const retargeted =
       this.options.cursorPresentation?.retarget(
         this.renderCursorForSnapshot(
@@ -649,7 +658,25 @@ export class WorkspaceFrameScheduler {
         ),
         curve,
       ) ?? false;
-    this.cursorMotionInitialFramePending = retargeted && !followsStoreCamera;
+    this.cursorMotionInitialFramePending =
+      retargeted &&
+      !followsStoreCamera &&
+      (initialFramePending ||
+        !wasActive ||
+        this.paneRearrangementInitialFramePending ||
+        snapshot.presentationMode !== "overview");
+    if (
+      retargeted &&
+      snapshot.presentationMode === "overview" &&
+      this.motionOptions().highlight === "camera" &&
+      this.options.worldPresentation?.hasActiveMotion()
+    ) {
+      const holdInitialFrame =
+        this.overviewCameraMotionInitialFramePending ||
+        this.cursorMotionInitialFramePending;
+      this.overviewCameraMotionInitialFramePending = holdInitialFrame;
+      this.cursorMotionInitialFramePending = holdInitialFrame;
+    }
   }
 
   private cursorMotion(snapshot: WorkspaceLayoutSnapshot): {

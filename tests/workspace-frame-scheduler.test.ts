@@ -1390,8 +1390,12 @@ describe("WorkspaceFrameScheduler", () => {
     expect(displayedBeforeReversal.x).not.toBeCloseTo(initial.x, 3);
 
     expect(harness.store.moveFocus("left", viewport)).toBe(true);
-    harness.frameHost.flushFrames(1);
     expectVisualWorldPaneBox(pane, worldHost, displayedBeforeReversal);
+    harness.frameHost.flushFrames(1);
+    const returning = visualWorldPaneBox(pane, worldHost);
+    expect(returning.x).toBeGreaterThan(displayedBeforeReversal.x);
+    expect(returning.x).toBeLessThan(initial.x);
+    expect(returning.width).toBeCloseTo(initial.width, 3);
 
     harness.frameHost.flushAll();
     expectVisualWorldPaneBox(pane, worldHost, initial);
