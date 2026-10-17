@@ -4,8 +4,6 @@
 
 ### Added
 
-- `keepHeightWhenSplitting` optionally divides a pane's current height when
-  splitting up or down. It is off by default and preserves neighboring panes.
 - `togglePaneMaximized(paneId)` lets host controls maximize or restore a pane
   through the same behavior as its titlebar button.
 - `onFocusedPaneFrame(frame, moving)` reports displayed pane geometry and the
@@ -22,13 +20,25 @@
 
 ### Fixed
 
-- Split dividers retain positive sizes that satisfy both panes' minimum heights
-  when those minimums need more space than the original pair.
 - Changing overview card width constraints updates the mounted workspace,
   including the follow camera, without replacing pane content.
 - Restoring a layout preserves current workspace and pane-type defaults.
 - Background picture preparation retains useful accepted images while new
   content becomes ready, and yields to navigation and visible interaction.
+
+## 0.3.0 - 2026-10-10
+
+### Added
+
+- `keepHeightWhenSplitting` on `OnirigiriWorkspace` (off by default). With
+  it, splitting a pane up or down divides the pane's current height between
+  the two halves, so a height-limited pane's row keeps its height. Without
+  it, each half takes its share of the full available height as before.
+
+### Fixed
+
+- Keep layouts restorable when a height-preserving split cannot fit both panes'
+  minimum heights, and preserve neighboring panes and reserved cells in the stack.
 
 ## 0.2.0
 
