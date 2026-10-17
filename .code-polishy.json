@@ -768,6 +768,25 @@
     "preferredNewDependencyAgeDays": 90,
     "auditLevel": "low",
     "allowedDependencyProtocols": ["workspace:", "file:"],
+    "vulnerabilityAssessments": [
+      {
+        "id": "ghsa-68fv-2mgg-jv7q-unreachable",
+        "ecosystem": "pnpm",
+        "advisory": "GHSA-68fv-2mgg-jv7q",
+        "package": "source-map-js",
+        "affectedVersion": "1.2.1",
+        "scope": "pnpm-lock.yaml",
+        "severity": "high",
+        "status": "not-affected",
+        "basis": "unreachable",
+        "reason": "The resolved callers are PostCSS and css-tree. PostCSS uses SourceMapConsumer and SourceMapGenerator; css-tree imports only SourceMapGenerator. Neither calls SourceNode.fromStringWithSourceMap, whose generated-line loop is the reported denial-of-service sink.",
+        "impact": "No enabled caller reaches the unbounded SourceNode loop; build maps also originate in checked-in sources and locked tools, not uploaded or remotely supplied maps.",
+        "evidence": "https://github.com/riteofstring/onirigiri/blob/main/docs/security/dependency-assessments.md",
+        "owner": "Codex",
+        "reviewed": "2026-10-10",
+        "expires": "2026-10-31"
+      }
+    ],
     "allowedLicenses": [
       "0BSD",
       "Apache-2.0",
@@ -780,25 +799,6 @@
       "MIT-0",
       "MPL-2.0",
       "Python-2.0"
-    ],
-    "vulnerabilityAssessments": [
-      {
-        "id": "development-source-maps-2026-10",
-        "ecosystem": "pnpm",
-        "advisory": "GHSA-68fv-2mgg-jv7q",
-        "package": "source-map-js",
-        "affectedVersion": "1.2.1",
-        "scope": "pnpm-lock.yaml",
-        "severity": "high",
-        "status": "not-affected",
-        "basis": "unreachable",
-        "reason": "PostCSS consumes maps from repository-owned CSS and build inputs; no untrusted indexed maps enter the build. css-tree only uses SourceMapGenerator.",
-        "impact": "The indexed-map offset denial of service is not reachable from application or fixture user input. source-map-js is absent from the runtime package.",
-        "evidence": "https://github.com/riteofstring/onirigiri/blob/beta/docs/quality-and-supply-chain-tooling.md",
-        "owner": "Codex",
-        "reviewed": "2026-10-10",
-        "expires": "2026-11-09"
-      }
     ]
   }
 }
