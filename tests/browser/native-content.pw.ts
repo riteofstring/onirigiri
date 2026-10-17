@@ -687,7 +687,7 @@ for (const continuous of [false, true]) {
 
 test("native presentation preserves scrollbars through motion and overview", async ({
   page,
-}, info) => {
+}) => {
   await openNativeFixture(page, false, false, { count: 12, preloadMargin: 0 });
   await page.evaluate(() => {
     window.__nativeMotionFixture.setLiveContent(true);
@@ -741,14 +741,6 @@ test("native presentation preserves scrollbars through motion and overview", asy
         ),
       };
     });
-  const record = async (label: string) => {
-    const value = await state();
-    await info.attach(label, {
-      body: JSON.stringify(value),
-      contentType: "application/json",
-    });
-    return value;
-  };
   const stableContent = {
     native: true,
     ownSurface: true,
@@ -758,103 +750,49 @@ test("native presentation preserves scrollbars through motion and overview", asy
     frameScrollbarColor: "auto",
     frameScrollbarOverride: false,
   };
-  await expect.poll(state).toMatchObject({
+  const stable = { ...stableContent, willChange: "auto" };
+  const rest = async (settled: object, current: object = {}) => {
+    await expect.poll(state).toMatchObject({ moving: "false", ...settled });
+    expect(await state()).toMatchObject({ ...stable, ...current });
+  };
+  const move = async (paneId: string, mode: string) => {
+    const release = await holdClock(page);
+    try {
+      await focusNativePane(page, paneId);
+      await stepClock(page, 3);
+      expect(await state()).toMatchObject({
+        ...stable,
+        moving: "true",
+        mode,
+        live: "true",
+        renderer: "dom",
+      });
+    } finally {
+      await release();
+    }
+  };
+  await rest({
     ...stableContent,
-    moving: "false",
     mode: "normal",
     live: "true",
     renderer: "dom",
   });
-  expect(await record("normal-rest")).toMatchObject({
-    ...stableContent,
-    willChange: "auto",
-  });
-  const release = await holdClock(page);
-  try {
-    await page.evaluate(() =>
-      window.__nativeMotionFixture.handle.current!.focusPane("pane-2"),
-    );
-    await stepClock(page, 3);
-    expect(await record("normal-motion")).toMatchObject({
-      ...stableContent,
-      moving: "true",
-      mode: "normal",
-      live: "true",
-      renderer: "dom",
-      willChange: "auto",
-    });
-  } finally {
-    await release();
-  }
+  await move("pane-2", "normal");
   await expect
     .poll(state)
     .toMatchObject({ moving: "false", willChange: "auto" });
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.toggleOverview(),
-  );
+  await toggleNativeOverview(page);
+  await rest({ mode: "overview" }, { live: "true", renderer: "dom" });
+  await move("pane-3", "overview");
   await expect.poll(state).toMatchObject({ moving: "false", mode: "overview" });
-  expect(await record("overview-rest")).toMatchObject({
-    ...stableContent,
-    live: "true",
-    renderer: "dom",
-    willChange: "auto",
-  });
-  const releaseOverview = await holdClock(page);
-  try {
-    await page.evaluate(() =>
-      window.__nativeMotionFixture.handle.current!.focusPane("pane-3"),
-    );
-    await stepClock(page, 3);
-    expect(await record("overview-motion")).toMatchObject({
-      ...stableContent,
-      moving: "true",
-      mode: "overview",
-      live: "true",
-      renderer: "dom",
-      willChange: "auto",
-    });
-  } finally {
-    await releaseOverview();
-  }
+  await focusNativePane(page, "pane-1");
   await expect.poll(state).toMatchObject({ moving: "false", mode: "overview" });
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.focusPane("pane-1"),
-  );
-  await expect.poll(state).toMatchObject({ moving: "false", mode: "overview" });
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.toggleOverview(),
-  );
-  await expect.poll(state).toMatchObject({ moving: "false", mode: "normal" });
-  expect(await record("returned-normal-rest")).toMatchObject({
-    ...stableContent,
-    live: "true",
-    willChange: "auto",
-  });
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.focusPane("pane-12"),
-  );
-  await expect.poll(state).toMatchObject({
-    moving: "false",
-    visible: "false",
-    live: "false",
-  });
-  expect(await record("retained-offscreen")).toMatchObject({
-    ...stableContent,
-    willChange: "auto",
-  });
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.toggleOverview(),
-  );
-  await expect.poll(state).toMatchObject({
-    moving: "false",
-    mode: "overview",
-    visible: "false",
-    live: "false",
-  });
-  expect(await record("retained-offscreen-overview")).toMatchObject({
-    ...stableContent,
-    willChange: "auto",
-  });
+  await toggleNativeOverview(page);
+  await rest({ mode: "normal" }, { live: "true" });
+  await focusNativePane(page, "pane-12");
+  await rest({ visible: "false", live: "false" });
+  await toggleNativeOverview(page);
+  await rest({ mode: "overview", visible: "false", live: "false" });
 });
 
 for (const canvas of [false, true]) {
