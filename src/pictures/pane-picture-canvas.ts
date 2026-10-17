@@ -705,12 +705,8 @@ export class PaneCanvasSurface {
 
   private applyRecordingScale(canvas: ElementCanvas = this.canvas): void {
     this.source.preserveScroll(() => {
-      this.canvas.style.setProperty(
-        "--_onirigiri-capture-scale",
-        String(this.recordingScale),
-      );
-      if (canvas !== this.canvas)
-        canvas.style.setProperty(
+      for (const target of new Set([this.canvas, canvas]))
+        target.style.setProperty(
           "--_onirigiri-capture-scale",
           String(this.recordingScale),
         );
@@ -722,6 +718,20 @@ export class PaneCanvasSurface {
     signal: AbortSignal,
   ): Promise<ElementImage> {
     signal.throwIfAborted();
+    return this.nextPaint(
+      canvas,
+      signal,
+      () => this.recordImage(canvas),
+      () => canvas.requestPaint(),
+    );
+  }
+
+  private nextPaint<T>(
+    canvas: ElementCanvas,
+    signal: AbortSignal,
+    record: () => T | null,
+    request: () => void,
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
       const cleanup = () => {
         canvas.removeEventListener("paint", paint);
@@ -734,10 +744,10 @@ export class PaneCanvasSurface {
       const paint = () => {
         try {
           signal.throwIfAborted();
-          const image = this.recordImage(canvas);
-          if (!image) return;
+          const result = record();
+          if (result === null) return;
           cleanup();
-          resolve(image);
+          resolve(result);
         } catch (error) {
           cleanup();
           reject(error);
@@ -745,7 +755,7 @@ export class PaneCanvasSurface {
       };
       canvas.addEventListener("paint", paint);
       signal.addEventListener("abort", abort, { once: true });
-      canvas.requestPaint();
+      request();
     });
   }
 
@@ -781,32 +791,17 @@ export class PaneCanvasSurface {
     signal: AbortSignal,
     staged: boolean,
     display: GPURenderPipeline | undefined,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const cleanup = () => {
-        this.canvas.removeEventListener("paint", paint);
-        signal.removeEventListener("abort", abort);
-      };
-      const abort = () => {
-        cleanup();
-        reject(signal.reason);
-      };
-      const paint = () => {
-        try {
-          signal.throwIfAborted();
-          if (!this.copyElement(texture, false)) return;
-          if (this.live && !staged) this.displayCapture(texture, display);
-          cleanup();
-          resolve();
-        } catch (error) {
-          cleanup();
-          reject(error);
-        }
-      };
-      this.canvas.addEventListener("paint", paint);
-      signal.addEventListener("abort", abort, { once: true });
-      this.requestPaint();
-    });
+  ): Promise<boolean> {
+    return this.nextPaint(
+      this.canvas,
+      signal,
+      () => {
+        if (!this.copyElement(texture, false)) return null;
+        if (this.live && !staged) this.displayCapture(texture, display);
+        return true;
+      },
+      this.requestPaint,
+    );
   }
 
   private displayCapture(
@@ -865,7 +860,6 @@ export class PaneCanvasSurface {
         this.prepareContent();
         canvas.className = this.canvas.className;
         canvas.style.cssText = this.canvas.style.cssText;
-        canvas.setAttribute("layoutsubtree", "");
         canvas.setAttribute("data-onirigiri-recording", "");
         this.canvas.after(canvas);
         canvas.moveBefore(this.content, null);

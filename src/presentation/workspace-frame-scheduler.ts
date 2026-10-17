@@ -4,7 +4,7 @@ import {
 } from "./workspace-overview-camera-state.js";
 import { AnimationClock, type AnimationFrameHost } from "./animation-clock.js";
 import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
-import { workspaceScrollRowIsSettled } from "../state/layout-store-animation.js";
+import { workspaceNavigationIsMoving } from "../state/layout-store-animation.js";
 import type {
   WorkspaceLayoutSnapshot,
   WorkspaceLayoutStore,
@@ -607,7 +607,8 @@ export class WorkspaceFrameScheduler {
       }
       return;
     }
-    const wasActive = this.options.worldPresentation?.hasActiveMotion() ?? false;
+    const wasActive =
+      this.options.worldPresentation?.hasActiveMotion() ?? false;
     const initialFramePending = this.overviewCameraMotionInitialFramePending;
     const retargeted =
       this.options.worldPresentation?.retarget(
@@ -648,7 +649,8 @@ export class WorkspaceFrameScheduler {
       return;
     }
     const { curve, followsStoreCamera } = this.cursorMotion(snapshot);
-    const wasActive = this.options.cursorPresentation?.hasActiveMotion() ?? false;
+    const wasActive =
+      this.options.cursorPresentation?.hasActiveMotion() ?? false;
     const initialFramePending = this.cursorMotionInitialFramePending;
     const retargeted =
       this.options.cursorPresentation?.retarget(
@@ -883,17 +885,7 @@ export function workspaceSnapshotIsMoving(
 ): boolean {
   const overviewTarget = snapshot.presentationMode === "overview" ? 1 : 0;
   return (
-    Math.abs(snapshot.scrollColumn - snapshot.targetScrollColumn) > 0.001 ||
-    Math.abs(
-      snapshot.horizontalAnchorOffset - snapshot.targetHorizontalAnchorOffset,
-    ) > 0.001 ||
-    !workspaceScrollRowIsSettled(
-      snapshot.scrollRow,
-      snapshot.targetScrollRow,
-    ) ||
-    Math.abs(
-      snapshot.verticalAnchorOffset - snapshot.targetVerticalAnchorOffset,
-    ) > 0.001 ||
+    workspaceNavigationIsMoving(snapshot) ||
     Math.abs(snapshot.overviewProgress - overviewTarget) > 0.001
   );
 }

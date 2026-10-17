@@ -779,11 +779,7 @@ export class PanePictures {
     } finally {
       clearTimeout(deadline);
       const id = batch.panes[0]?.paneId;
-      if (
-        id &&
-        this.isOverviewCapture(id) &&
-        (!this.pictures.has(id) || this.stalePictures.has(id))
-      )
+      if (id && this.isOverviewCapture(id) && this.pictureMissing(id))
         this.setOverviewPane(null);
     }
   }
@@ -826,8 +822,7 @@ export class PanePictures {
     if (!item.visible) return false;
     if (this.overview())
       return (
-        this.isOverviewCapture(item.paneId) &&
-        (!this.pictures.has(item.paneId) || this.stalePictures.has(item.paneId))
+        this.isOverviewCapture(item.paneId) && this.pictureMissing(item.paneId)
       );
     return !item.placeholderOnly && item.runtimeState === "live";
   }
@@ -898,29 +893,24 @@ export class PanePictures {
     );
   }
 
-  private captureRequest(batch: Batch) {
-    const pane = batch.panes[0]!;
-    return {
-      signal: batch.abort.signal,
-      stage: batch.preload || this.isOverviewCapture(pane.paneId),
-      maxEncodedBytes,
-      maxRasterBytes,
-      background: batch.preload
-        ? {
-            client: (this.captureWorker ??= new PanePictureCaptureClient(
-              pane.content.ownerDocument,
-            )),
-            id: batch.id,
-          }
-        : undefined,
-    };
-  }
-
   private async capture(batch: Batch): Promise<boolean> {
     try {
       if (!this.valid(batch)) return false;
       const pane = batch.panes[0]!;
-      const result = await pane.surface.capture(this.captureRequest(batch));
+      const result = await pane.surface.capture({
+        signal: batch.abort.signal,
+        stage: batch.preload || this.isOverviewCapture(pane.paneId),
+        maxEncodedBytes,
+        maxRasterBytes,
+        background: batch.preload
+          ? {
+              client: (this.captureWorker ??= new PanePictureCaptureClient(
+                pane.content.ownerDocument,
+              )),
+              id: batch.id,
+            }
+          : undefined,
+      });
       if (!this.valid(batch)) return false;
       const receipt: OnirigiriPaneCaptureReceipt = {
         id: batch.id,
@@ -1064,6 +1054,10 @@ export class PanePictures {
       return true;
     }
     return current?.image === image;
+  }
+
+  private pictureMissing(id: PaneId): boolean {
+    return !this.pictures.has(id) || this.stalePictures.has(id);
   }
 
   private suppliedOnly(pane: WorkspacePane): boolean {
@@ -1343,8 +1337,7 @@ export class PanePictures {
   private overviewPicturePending(item: PaneRenderItem): boolean {
     return (
       item.visible &&
-      (!this.pictures.has(item.paneId) ||
-        this.stalePictures.has(item.paneId)) &&
+      this.pictureMissing(item.paneId) &&
       !this.overviewAttempts.has(item.paneId)
     );
   }
