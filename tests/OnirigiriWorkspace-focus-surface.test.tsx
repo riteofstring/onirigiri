@@ -6,6 +6,7 @@ import { OnirigiriWorkspace } from "../src/workspace/OnirigiriWorkspace";
 import type { OnirigiriWorkspaceHandle } from "../src/workspace/onirigiri-workspace-types";
 
 import {
+  mountWorkspace,
   requiredElement,
   stubOnirigiriWorkspaceBrowserGlobals,
 } from "./onirigiri-workspace-test-support";
@@ -99,44 +100,29 @@ describe("OnirigiriWorkspace focus surface", () => {
   });
 
   it("leaves overview when a host focuses a pane with exitOverview", async () => {
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
-
-    await act(async () => {
-      root.render(
-        <OnirigiriWorkspace
-          initialPanes={[
-            { paneId: "first-pane", surfaceKind: "test", title: "First pane" },
-            {
-              paneId: "second-pane",
-              surfaceKind: "test",
-              title: "Second pane",
-            },
-          ]}
-          ref={workspaceRef}
-          renderPane={() => <div>Test content</div>}
-        />,
-      );
+    const { ref, unmount } = await mountWorkspace({
+      initialPanes: [
+        { paneId: "first-pane", surfaceKind: "test", title: "First pane" },
+        { paneId: "second-pane", surfaceKind: "test", title: "Second pane" },
+      ],
+      renderPane: () => <div>Test content</div>,
     });
 
-    await act(async () => workspaceRef.current?.toggleOverview());
-    await act(async () => workspaceRef.current?.focusPane("second-pane"));
-    expect(workspaceRef.current?.getSnapshot()).toMatchObject({
+    await act(async () => ref.current?.toggleOverview());
+    await act(async () => ref.current?.focusPane("second-pane"));
+    expect(ref.current?.getSnapshot()).toMatchObject({
       focusedPaneId: "second-pane",
       presentationMode: "overview",
     });
 
     await act(async () =>
-      workspaceRef.current?.focusPane("first-pane", { exitOverview: true }),
+      ref.current?.focusPane("first-pane", { exitOverview: true }),
     );
-    expect(workspaceRef.current?.getSnapshot()).toMatchObject({
+    expect(ref.current?.getSnapshot()).toMatchObject({
       focusedPaneId: "first-pane",
       presentationMode: "normal",
     });
 
-    await act(async () => root.unmount());
-    container.remove();
+    await unmount();
   });
 });

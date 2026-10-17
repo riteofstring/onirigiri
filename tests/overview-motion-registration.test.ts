@@ -177,17 +177,24 @@ const motionLayouts = [
   },
 ] as const;
 
-function startFocusMotion(
+function startFollowCamera(
   harness: OverviewHarness,
   mode: "normal" | "overview",
-  direction: FocusDirection,
-  frames: number,
 ): void {
   harness.scheduler.start();
   harness.store.setCameraModes(cameraModes("follow", "follow"));
   harness.store.setOverviewCardWidths(160, 160);
   if (mode === "overview") harness.store.toggleOverviewMode();
   harness.frameHost.flushAll();
+}
+
+function startFocusMotion(
+  harness: OverviewHarness,
+  mode: "normal" | "overview",
+  direction: FocusDirection,
+  frames: number,
+): void {
+  startFollowCamera(harness, mode);
   expect(harness.store.moveFocus(direction, viewport)).toBe(true);
   harness.frameHost.flushFrames(frames);
 }
@@ -323,11 +330,7 @@ describe("overview camera motion registration", () => {
         };
       };
       try {
-        harness.scheduler.start();
-        harness.store.setCameraModes(cameraModes("follow", "follow"));
-        harness.store.setOverviewCardWidths(160, 160);
-        harness.store.toggleOverviewMode();
-        harness.frameHost.flushAll();
+        startFollowCamera(harness, "overview");
         const initialWorld = harness.world.style.transform;
         const initialCursor = harness.cursorHost.style.transform;
         const initialCenter = cursorCenter();
@@ -368,11 +371,7 @@ describe("overview camera motion registration", () => {
     ({ scene }) => {
       const harness = createOverviewHarness(scene());
       try {
-        harness.scheduler.start();
-        harness.store.setCameraModes(cameraModes("follow", "follow"));
-        harness.store.setOverviewCardWidths(160, 160);
-        harness.store.toggleOverviewMode();
-        harness.frameHost.flushAll();
+        startFollowCamera(harness, "overview");
         const initialWorld = harness.world.style.transform;
         const initialCursor = harness.cursorHost.style.transform;
 
@@ -395,11 +394,7 @@ describe("overview camera motion registration", () => {
     (initialMotion) => {
       const harness = createOverviewHarness();
       try {
-        harness.scheduler.start();
-        harness.store.setCameraModes(cameraModes("follow", "follow"));
-        harness.store.setOverviewCardWidths(160, 160);
-        harness.store.toggleOverviewMode();
-        harness.frameHost.flushAll();
+        startFollowCamera(harness, "overview");
         if (initialMotion === "camera") {
           expect(harness.store.panOverviewBy(80, 0, viewport)).toBe(true);
           harness.frameHost.flushFrames(1);
@@ -429,7 +424,9 @@ describe("overview camera motion registration", () => {
 
         harness.frameHost.flushFrames(1);
         const advancedWorld = transformParts(harness.world.style.transform);
-        const advancedCursor = transformParts(harness.cursorHost.style.transform);
+        const advancedCursor = transformParts(
+          harness.cursorHost.style.transform,
+        );
         expect(harness.world.style.transform).not.toBe(worldBefore);
         expect(harness.cursorHost.style.transform).not.toBe(cursorBefore);
         harness.frameHost.flushAll();

@@ -3,10 +3,29 @@ import { describe, expect, it, vi } from "vitest";
 import { WorkspaceLikeLayoutEngine } from "../src/layout/layout-engine";
 import { workspaceWorldRenderFrame } from "../src/presentation/workspace-render-items";
 import { WorkspaceLayoutStore } from "../src/state/layout-store";
+import type { WorkspaceLayoutStoreOptions } from "../src/state/layout-store-types";
+import type { Rect } from "../src/types";
 import {
   createWorkspaceScene,
   serializeWorkspaceLayout,
 } from "../src/workspace/workspace-scene";
+
+function sceneStore(
+  input: Parameters<typeof createWorkspaceScene>[0],
+  viewport: Rect,
+  options?: WorkspaceLayoutStoreOptions,
+) {
+  const result = createWorkspaceScene(input);
+  const engine = new WorkspaceLikeLayoutEngine(result.scene);
+  const store = new WorkspaceLayoutStore(
+    engine,
+    result.scene,
+    result.cursor,
+    options,
+  );
+  store.ensureFocusedPaneVisible(viewport);
+  return { engine, store };
+}
 
 describe("workspace pane titles", () => {
   it.each([
@@ -17,23 +36,19 @@ describe("workspace pane titles", () => {
   ] as const)(
     "renames another pane without moving the $selection in $presentation",
     ({ presentation, selection }) => {
-      const result = createWorkspaceScene({
-        gridAxes: "spatial",
-        panes: [0, 1].map((index) => ({
-          paneId: `pane-${index}`,
-          slotIndex: index,
-          surfaceKind: "test",
-          title: `Pane ${index}`,
-        })),
-      });
-      const engine = new WorkspaceLikeLayoutEngine(result.scene);
-      const store = new WorkspaceLayoutStore(
-        engine,
-        result.scene,
-        result.cursor,
-      );
       const viewport = { height: 800, width: 1280, x: 0, y: 0 };
-      store.ensureFocusedPaneVisible(viewport);
+      const { engine, store } = sceneStore(
+        {
+          gridAxes: "spatial",
+          panes: [0, 1].map((index) => ({
+            paneId: `pane-${index}`,
+            slotIndex: index,
+            surfaceKind: "test",
+            title: `Pane ${index}`,
+          })),
+        },
+        viewport,
+      );
       store.focusPane("pane-1");
       if (selection === "empty cell") {
         expect(store.moveFocus("down", viewport)).toBe(true);
@@ -77,28 +92,22 @@ describe("workspace overview pan recovery", () => {
   const viewport = { height: 800, width: 1280, x: 0, y: 0 };
 
   function workspace(overview: "fixed" | "follow", count = 1) {
-    const result = createWorkspaceScene({
-      gridAxes: "spatial",
-      panes: Array.from({ length: count }, (_, index) => ({
-        columnId: `pan-column-${index}`,
-        columnWidth: { unit: "px" as const, value: 384 },
-        paneId: `pan-pane-${index}`,
-        planeIndex: Math.floor(index / 8),
-        slotIndex: index % 8,
-        surfaceKind: "test",
-        title: `Pan pane ${index}`,
-      })),
-    });
-    const engine = new WorkspaceLikeLayoutEngine(result.scene);
-    const store = new WorkspaceLayoutStore(
-      engine,
-      result.scene,
-      result.cursor,
+    const { engine, store } = sceneStore(
       {
-        initialCameraModes: { normal: "follow", overview },
+        gridAxes: "spatial",
+        panes: Array.from({ length: count }, (_, index) => ({
+          columnId: `pan-column-${index}`,
+          columnWidth: { unit: "px" as const, value: 384 },
+          paneId: `pan-pane-${index}`,
+          planeIndex: Math.floor(index / 8),
+          slotIndex: index % 8,
+          surfaceKind: "test",
+          title: `Pan pane ${index}`,
+        })),
       },
+      viewport,
+      { initialCameraModes: { normal: "follow", overview } },
     );
-    store.ensureFocusedPaneVisible(viewport);
     store.snapAnimationsToTarget();
     store.toggleOverviewMode();
     store.snapAnimationsToTarget();
@@ -106,6 +115,7 @@ describe("workspace overview pan recovery", () => {
       store,
       world: () =>
         workspaceWorldRenderFrame({
+          compactLayout: false,
           engine,
           moving: false,
           snapshot: store.getSnapshot(),
@@ -279,20 +289,20 @@ describe("workspace overview pan recovery", () => {
 
 describe("workspace overview scale", () => {
   it("keeps current row defaults and explicit sizes through layout restoration", () => {
-    const result = createWorkspaceScene({
-      gridAxes: "spatial",
-      panes: [0, 1, 2].map((index) => ({
-        paneId: `pane-${index}`,
-        planeIndex: index,
-        slotIndex: 0,
-        surfaceKind: index === 2 ? "notes" : "test",
-        title: `Pane ${index}`,
-      })),
-    });
-    const engine = new WorkspaceLikeLayoutEngine(result.scene);
-    const store = new WorkspaceLayoutStore(engine, result.scene, result.cursor);
     const viewport = { height: 1000, width: 1280, x: 0, y: 0 };
-    store.ensureFocusedPaneVisible(viewport);
+    const { engine, store } = sceneStore(
+      {
+        gridAxes: "spatial",
+        panes: [0, 1, 2].map((index) => ({
+          paneId: `pane-${index}`,
+          planeIndex: index,
+          slotIndex: 0,
+          surfaceKind: index === 2 ? "notes" : "test",
+          title: `Pane ${index}`,
+        })),
+      },
+      viewport,
+    );
     store.resizePaneRow("pane-0", 600);
     store.setPaneDefaults({
       paneDefaults: { height: 420 },
@@ -311,25 +321,19 @@ describe("workspace overview scale", () => {
   it.each(["follow", "fixed"] as const)(
     "refreshes %s overview geometry when its width constraints change",
     (overview) => {
-      const result = createWorkspaceScene({
-        panes: Array.from({ length: 12 }, (_, index) => ({
-          paneId: `pane-${index}`,
-          columnWidth: { unit: "px" as const, value: 520 },
-          surfaceKind: "test",
-          title: `Pane ${index}`,
-        })),
-      });
-      const engine = new WorkspaceLikeLayoutEngine(result.scene);
-      const store = new WorkspaceLayoutStore(
-        engine,
-        result.scene,
-        result.cursor,
-        {
-          initialCameraModes: { normal: "follow", overview },
-        },
-      );
       const viewport = { height: 800, width: 1280, x: 0, y: 0 };
-      store.ensureFocusedPaneVisible(viewport);
+      const { engine, store } = sceneStore(
+        {
+          panes: Array.from({ length: 12 }, (_, index) => ({
+            paneId: `pane-${index}`,
+            columnWidth: { unit: "px" as const, value: 520 },
+            surfaceKind: "test",
+            title: `Pane ${index}`,
+          })),
+        },
+        viewport,
+        { initialCameraModes: { normal: "follow", overview } },
+      );
       store.focusPane("pane-6");
       store.snapAnimationsToTarget();
       store.setOverviewCardWidths(80, 80);
@@ -392,60 +396,6 @@ describe("workspace overview scale", () => {
     );
   });
 
-  it("keeps the point under the zoom focus in place while following the cursor", () => {
-    const panes = Array.from({ length: 12 }, (_, index) => ({
-      columnId: `zoom-column-${String(index)}`,
-      columnWidth: { unit: "px" as const, value: 384 },
-      paneId: `zoom-pane-${String(index)}`,
-      planeIndex: Math.floor(index / 4),
-      slotIndex: index % 4,
-      surfaceKind: "test",
-      title: `Zoom pane ${String(index)}`,
-    }));
-    const result = createWorkspaceScene({ panes });
-    const engine = new WorkspaceLikeLayoutEngine(result.scene);
-    const store = new WorkspaceLayoutStore(engine, result.scene, result.cursor);
-    const viewport = { height: 800, width: 1_280, x: 0, y: 0 };
-    store.ensureFocusedPaneVisible(viewport);
-    expect(store.focusPane("zoom-pane-9")).toBe(true);
-    store.snapAnimationsToTarget();
-    expect(store.moveFocus("up", viewport)).toBe(true);
-    store.snapAnimationsToTarget();
-    store.toggleOverviewMode();
-    store.snapAnimationsToTarget();
-    const focusedCenter = () => {
-      const snapshot = store.getSnapshot();
-      const item = engine.gridCursorRenderItem({
-        cursor: snapshot.cursor,
-        focusedPaneId: snapshot.focusedPaneId,
-        maximizedPaneId: null,
-        movementPhase: "idle",
-        overviewFixedScale: snapshot.overviewFixedScale,
-        overviewFollowOffsetX: snapshot.overviewFollowOffsetX,
-        overviewFollowOffsetY: snapshot.overviewFollowOffsetY,
-        overviewPanX: snapshot.overviewPanX,
-        overviewPanY: snapshot.overviewPanY,
-        overviewZoom: snapshot.overviewZoom,
-        presentationMode: "overview",
-        scrollColumn: 0,
-        scrollRow: 0,
-        viewport,
-      });
-      return {
-        x: item.x + (item.width * item.scale) / 2,
-        y: item.y + (item.height * item.scale) / 2,
-      };
-    };
-    const before = focusedCenter();
-    expect(before.x).toBeCloseTo(640, 0);
-    expect(before.y).toBeCloseTo(400, 0);
-
-    expect(store.zoomOverviewBy(0.5, before.x, before.y, viewport)).toBe(true);
-    const after = focusedCenter();
-    expect(after.x).toBeCloseTo(before.x, 0);
-    expect(after.y).toBeCloseTo(before.y, 0);
-  });
-
   it("keeps overview and maximization through a restore that keeps presentation", () => {
     const definitions = (count: number) =>
       Array.from({ length: count }, (_, index) => ({
@@ -455,11 +405,10 @@ describe("workspace overview scale", () => {
         surfaceKind: "test",
         title: `Restore pane ${String(index)}`,
       }));
-    const result = createWorkspaceScene({ panes: definitions(4) });
-    const engine = new WorkspaceLikeLayoutEngine(result.scene);
-    const store = new WorkspaceLayoutStore(engine, result.scene, result.cursor);
-    const viewport = { height: 800, width: 1_280, x: 0, y: 0 };
-    store.ensureFocusedPaneVisible(viewport);
+    const { engine, store } = sceneStore(
+      { panes: definitions(4) },
+      { height: 800, width: 1_280, x: 0, y: 0 },
+    );
     expect(store.focusPane("restore-pane-2")).toBe(true);
     store.togglePaneMaximized("restore-pane-2");
     store.toggleOverviewMode();

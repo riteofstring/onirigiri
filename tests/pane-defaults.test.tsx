@@ -18,7 +18,10 @@ import {
 } from "../src/index";
 import { paneSizingTargets } from "../src/layout/pane-sizing";
 import type { PaneSizingMode } from "../src/types";
-import { stubOnirigiriWorkspaceBrowserGlobals } from "./onirigiri-workspace-test-support";
+import {
+  mountWorkspace,
+  stubOnirigiriWorkspaceBrowserGlobals,
+} from "./onirigiri-workspace-test-support";
 
 const viewport = { x: 0, y: 0, width: 1200, height: 900 };
 const video = { paneId: "video", surfaceKind: "video", title: "Video" };
@@ -760,29 +763,20 @@ describe("React pane defaults", () => {
   it("preserves a split's height only when opted in without remounting edited content", async () => {
     stubOnirigiriWorkspaceBrowserGlobals();
     for (const preserveHeight of [false, true]) {
-      const container = document.createElement("div");
-      document.body.append(container);
-      const root = createRoot(container);
-      const handle = createRef<OnirigiriWorkspaceHandle>();
+      const view = await mountWorkspace({
+        initialPanes: [video],
+        paneDefaults: { maxHeight: 600 },
+        ...(preserveHeight ? { keepHeightWhenSplitting: true } : {}),
+        renderPane: (pane) => (
+          <input
+            aria-label={`Notes for ${pane.paneId}`}
+            defaultValue="Original"
+          />
+        ),
+      });
+      const { container } = view;
       try {
-        await act(async () => {
-          root.render(
-            <OnirigiriWorkspace
-              ref={handle}
-              initialPanes={[video]}
-              paneDefaults={{ maxHeight: 600 }}
-              {...(preserveHeight ? { keepHeightWhenSplitting: true } : {})}
-              renderPane={(pane) => (
-                <input
-                  aria-label={`Notes for ${pane.paneId}`}
-                  defaultValue="Original"
-                />
-              )}
-            />,
-          );
-        });
-        const workspace = handle.current;
-        if (!workspace) throw new Error("Missing workspace handle");
+        const workspace = view.workspace();
         const before = box(new OnirigiriLayoutEngine(workspace.getScene()));
         expect(before.height).toBe(600);
         const field = container.querySelector<HTMLInputElement>(
@@ -813,8 +807,7 @@ describe("React pane defaults", () => {
         );
         expect(field.value).toBe("Keep this edit");
       } finally {
-        await act(async () => root.unmount());
-        container.remove();
+        await view.unmount();
       }
     }
   });

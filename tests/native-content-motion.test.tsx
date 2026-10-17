@@ -18,6 +18,7 @@ import type {
 } from "../src/workspace/onirigiri-workspace-types";
 
 import {
+  mountWorkspace,
   requiredElement,
   requiredWorkspaceHandle,
   stubOnirigiriWorkspaceBrowserGlobals,
@@ -218,29 +219,19 @@ describe("OnirigiriWorkspace native content motion", () => {
         PanePresentationEngine.prototype,
         "updatePaneHostBoundary",
       );
-      const container = document.createElement("div");
-      document.body.append(container);
-      const root = createRoot(container);
-      const ref = createRef<OnirigiriWorkspaceHandle>();
       const panes = columnPanes(16, 520);
-      const render = async (revision: string) => {
-        await act(async () => {
-          root.render(
-            <OnirigiriWorkspace
-              initialPanes={panes}
-              liveContent={liveContent}
-              preloadMarginPanes={0}
-              ref={ref}
-              renderPane={(pane) => (
-                <input data-revision={revision} aria-label={pane.title} />
-              )}
-            />,
-          );
-        });
-      };
+      const props = (revision: string): OnirigiriWorkspaceProps => ({
+        initialPanes: panes,
+        liveContent,
+        preloadMarginPanes: 0,
+        renderPane: (pane) => (
+          <input data-revision={revision} aria-label={pane.title} />
+        ),
+      });
+      const view = await mountWorkspace(props("initial"));
+      const { container } = view;
       try {
-        await render("initial");
-        const workspace = requiredWorkspaceHandle(ref.current);
+        const workspace = view.workspace();
         const hidden = requiredElement<HTMLElement>(
           container,
           '[data-onirigiri-pane-id="pane-16"]',
@@ -260,7 +251,7 @@ describe("OnirigiriWorkspace native content motion", () => {
         ).toHaveLength(0);
         expect(boundary.mock.calls.some(([id]) => id === "pane-2")).toBe(true);
 
-        await render("updated");
+        await view.render(props("updated"));
         await act(async () => workspace.renamePane("pane-16", "Updated title"));
         expect(hidden.getAttribute("aria-label")).toBe("Updated title");
         await act(async () => workspace.focusPane("pane-2"));
@@ -308,8 +299,7 @@ describe("OnirigiriWorkspace native content motion", () => {
         expect(Number.parseFloat(hidden.style.width)).toBe(180);
         expect(requiredElement(hidden, "input")).toBe(currentInput);
       } finally {
-        await act(async () => root.unmount());
-        container.remove();
+        await view.unmount();
       }
     },
   );
@@ -321,35 +311,25 @@ describe("OnirigiriWorkspace native content motion", () => {
         PanePresentationEngine.prototype,
         "updatePaneHostBoundary",
       );
-      const container = document.createElement("div");
-      document.body.append(container);
-      const root = createRoot(container);
-      const ref = createRef<OnirigiriWorkspaceHandle>();
       const panes = columnPanes(6, 520).map((pane, index) => ({
         ...pane,
         heightPx: 600,
         planeIndex: Math.floor(index / 3),
         slotIndex: index % 3,
       }));
-      const render = async (revision: string) => {
-        await act(async () => {
-          root.render(
-            <OnirigiriWorkspace
-              initialPanes={panes}
-              liveContent={liveContent}
-              preloadMarginPanes={0}
-              ref={ref}
-              renderPane={(pane) => (
-                <input data-revision={revision} aria-label={pane.title} />
-              )}
-            />,
-          );
-        });
-      };
+      const props = (revision: string): OnirigiriWorkspaceProps => ({
+        initialPanes: panes,
+        liveContent,
+        preloadMarginPanes: 0,
+        renderPane: (pane) => (
+          <input data-revision={revision} aria-label={pane.title} />
+        ),
+      });
+      const view = await mountWorkspace(props("initial"));
+      const { container } = view;
       try {
-        await render("initial");
         await flushAnimationFrames(animationFrames);
-        const workspace = requiredWorkspaceHandle(ref.current);
+        const workspace = view.workspace();
         const pane = requiredElement<HTMLElement>(
           container,
           '[data-onirigiri-pane-id="pane-2"]',
@@ -386,7 +366,7 @@ describe("OnirigiriWorkspace native content motion", () => {
           expect(requiredElement(pane, "input")).toBe(input);
           expect(input.value).toBe("retained overview draft");
         }
-        await render("updated");
+        await view.render(props("updated"));
         await act(async () => workspace.renamePane("pane-2", "Updated title"));
         expect(pane.getAttribute("aria-label")).toBe("Updated title");
         expect(input.getAttribute("aria-label")).toBe("Updated title");
@@ -411,8 +391,7 @@ describe("OnirigiriWorkspace native content motion", () => {
         expect(requiredElement(pane, "input")).toBe(input);
         expect(input.value).toBe("retained overview draft");
       } finally {
-        await act(async () => root.unmount());
-        container.remove();
+        await view.unmount();
       }
     },
   );
@@ -422,23 +401,15 @@ describe("OnirigiriWorkspace native content motion", () => {
       PanePresentationEngine.prototype,
       "updatePaneHostBoundary",
     );
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const ref = createRef<OnirigiriWorkspaceHandle>();
+    const view = await mountWorkspace({
+      initialPanes: gridPanes(4, 2, 520),
+      liveContent: true,
+      preloadMarginPanes: 0,
+      renderPane: (pane) => <input aria-label={pane.title} />,
+    });
+    const { container } = view;
     try {
-      await act(async () => {
-        root.render(
-          <OnirigiriWorkspace
-            initialPanes={gridPanes(4, 2, 520)}
-            liveContent
-            preloadMarginPanes={0}
-            ref={ref}
-            renderPane={(pane) => <input aria-label={pane.title} />}
-          />,
-        );
-      });
-      const workspace = requiredWorkspaceHandle(ref.current);
+      const workspace = view.workspace();
       await act(async () => workspace.focusPane("pane-5"));
       await flushAnimationFrames(animationFrames);
       await act(async () => workspace.toggleOverview());
@@ -479,16 +450,11 @@ describe("OnirigiriWorkspace native content motion", () => {
         previousHeight,
       );
     } finally {
-      await act(async () => root.unmount());
-      container.remove();
+      await view.unmount();
     }
   });
 
   it("reuses hidden covers and controls while keeping their updates and reentry current", async () => {
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const ref = createRef<OnirigiriWorkspaceHandle>();
     const renderPlaceholder = vi.fn<
       NonNullable<OnirigiriWorkspaceProps["renderPanePlaceholder"]>
     >((pane, presentation) => (
@@ -504,26 +470,23 @@ describe("OnirigiriWorkspace native content motion", () => {
       ),
     );
     const chromeComponents = { PaneActionButton: renderAction };
-    const renderWorkspace = (variant: string) =>
-      root.render(
-        <OnirigiriWorkspace
-          chromeComponents={chromeComponents}
-          initialPanes={initialPanes}
-          paneDefaults={{
-            minWidth: 240,
-            resizeEdges: ["right", "bottom", "left", "top"],
-          }}
-          panePresentation={{ kind: "placeholder", variant }}
-          preloadMarginPanes={0}
-          ref={ref}
-          renderPane={() => <div>Application</div>}
-          renderPanePlaceholder={renderPlaceholder}
-        />,
-      );
+    const props = (variant: string): OnirigiriWorkspaceProps => ({
+      chromeComponents,
+      initialPanes,
+      paneDefaults: {
+        minWidth: 240,
+        resizeEdges: ["right", "bottom", "left", "top"],
+      },
+      panePresentation: { kind: "placeholder", variant },
+      preloadMarginPanes: 0,
+      renderPane: () => <div>Application</div>,
+      renderPanePlaceholder: renderPlaceholder,
+    });
+    const view = await mountWorkspace(props("initial"));
+    const { container } = view;
     try {
-      await act(async () => renderWorkspace("initial"));
       await flushAnimationFrames(animationFrames);
-      const workspace = requiredWorkspaceHandle(ref.current);
+      const workspace = view.workspace();
       const pane = requiredElement<HTMLElement>(
         container,
         '[data-onirigiri-pane-id="pane-40"]',
@@ -567,7 +530,7 @@ describe("OnirigiriWorkspace native content motion", () => {
       expect(handles.every((handle) => handle.hidden)).toBe(true);
 
       expect(input.dataset.variant).toBe("initial");
-      await act(async () => renderWorkspace("updated"));
+      await view.render(props("updated"));
       expect(pane.dataset.visible).toBe("false");
       expect(input.dataset.variant).toBe("updated");
       expect(cover.hasAttribute("inert")).toBe(true);
@@ -622,8 +585,7 @@ describe("OnirigiriWorkspace native content motion", () => {
       expect(cover.hasAttribute("inert")).toBe(true);
       expect(actions.getAttribute("aria-hidden")).toBe("true");
     } finally {
-      await act(async () => root.unmount());
-      container.remove();
+      await view.unmount();
     }
   });
 
@@ -979,31 +941,26 @@ describe("OnirigiriWorkspace native content motion", () => {
     container.remove();
   });
 
-  it("keeps live input through reanchoring and releases it when another pane is selected", async () => {
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
-
-    await act(async () => {
-      root.render(
-        <OnirigiriWorkspace
-          focusAnchor="center"
-          initialPanes={columnPanes(3, 520)}
-          liveContent
-          ref={workspaceRef}
-          renderPane={(pane) => (
-            <>
-              <input data-field={pane.paneId} />
-              <InteractiveProbe paneId={pane.paneId} />
-            </>
-          )}
-        />,
-      );
+  it.each([
+    [
+      "keeps live input through reanchoring and releases it when another pane is selected",
+      true,
+    ],
+    ["moves focus out of content that freezes for camera motion", false],
+  ] as const)("%s", async (_name, live) => {
+    const view = await mountWorkspace({
+      ...(live ? { focusAnchor: "center" as const, liveContent: true } : {}),
+      initialPanes: columnPanes(3, 520),
+      renderPane: (pane) => (
+        <>
+          <input data-field={pane.paneId} />
+          {live && <InteractiveProbe paneId={pane.paneId} />}
+        </>
+      ),
     });
-    const workspace = requiredWorkspaceHandle(workspaceRef.current);
-    const probe = requiredElement<HTMLElement>(
-      container,
+    const { container } = view;
+    const workspace = view.workspace();
+    const probe = container.querySelector<HTMLElement>(
       '[data-interactive-probe="pane-1"]',
     );
     const pane = requiredElement<HTMLElement>(
@@ -1014,103 +971,59 @@ describe("OnirigiriWorkspace native content motion", () => {
       pane,
       ".onirigiri-pane__live-content",
     );
-    expect(probe.dataset.interactive).toBe("true");
-    const field = requiredElement<HTMLInputElement>(pane, "input");
-    field.focus();
-    expect(document.activeElement).toBe(field);
-    await act(async () => workspace.setFocusAnchor("start"));
-    expect(pane.dataset.moving).toBe("true");
-    expect(document.activeElement).toBe(field);
-    expect.soft(liveContent.getAttribute("aria-hidden")).toBe("false");
-    await flushAnimationFrames(animationFrames);
-
-    await act(async () => {
-      expect(workspace.focusPane("pane-2")).toBe(true);
-    });
-    expect(workspace.getSnapshot().scrollColumn).not.toBe(
-      workspace.getSnapshot().targetScrollColumn,
-    );
-    expect(pane.dataset.moving).toBe("true");
-    expect(probe.dataset.interactive).toBe("true");
-    expect(liveContent.hasAttribute("inert")).toBe(false);
-    expect(document.activeElement).toBe(pane);
-    expect(
-      requiredElement<HTMLElement>(pane, ".onirigiri-pane__content").dataset
-        .onirigiriShielded,
-    ).toBe("true");
-
-    await flushAnimationFrames(animationFrames);
-    await act(async () => root.unmount());
-    container.remove();
-  });
-
-  it("preserves focus claimed by a ready application in an initially unfocused pane", async () => {
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
-    function ReadyInput() {
-      return useOnirigiriPaneInteractive() ? <input autoFocus /> : null;
-    }
-    await act(async () => {
-      root.render(
-        <OnirigiriWorkspace
-          initialPanes={columnPanes(3, 520)}
-          liveContent
-          ref={workspaceRef}
-          renderPane={(pane) =>
-            pane.paneId === "pane-2" ? <ReadyInput /> : null
-          }
-        />,
-      );
-    });
-    const workspace = requiredWorkspaceHandle(workspaceRef.current);
-    expect(workspace.getSnapshot().focusedPaneId).toBe("pane-1");
-    expect(document.activeElement).toBe(requiredElement(container, "input"));
-    await act(async () => root.unmount());
-    container.remove();
-  });
-
-  it("moves focus out of content that freezes for camera motion", async () => {
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
-
-    await act(async () => {
-      root.render(
-        <OnirigiriWorkspace
-          initialPanes={columnPanes(3, 520)}
-          ref={workspaceRef}
-          renderPane={(pane) => <input data-field={pane.paneId} />}
-        />,
-      );
-    });
-    const workspace = requiredWorkspaceHandle(workspaceRef.current);
-    const pane = requiredElement<HTMLElement>(
-      container,
-      '[data-onirigiri-pane-id="pane-1"]',
-    );
+    if (live) expect(probe!.dataset.interactive).toBe("true");
     const field = requiredElement<HTMLInputElement>(
       pane,
       '[data-field="pane-1"]',
     );
     field.focus();
     expect(document.activeElement).toBe(field);
+    if (live) {
+      await act(async () => workspace.setFocusAnchor("start"));
+      expect(pane.dataset.moving).toBe("true");
+      expect(document.activeElement).toBe(field);
+      expect.soft(liveContent.getAttribute("aria-hidden")).toBe("false");
+      await flushAnimationFrames(animationFrames);
+    }
 
     await act(async () => {
       expect(workspace.focusPane("pane-2")).toBe(true);
     });
+    const content = requiredElement<HTMLElement>(
+      pane,
+      ".onirigiri-pane__content",
+    );
     expect(pane.dataset.moving).toBe("true");
-    expect(
-      requiredElement<HTMLElement>(pane, ".onirigiri-pane__content").dataset
-        .runtimeState,
-    ).toBe("frozen");
     expect(document.activeElement).toBe(pane);
+    if (live) {
+      expect(workspace.getSnapshot().scrollColumn).not.toBe(
+        workspace.getSnapshot().targetScrollColumn,
+      );
+      expect(probe!.dataset.interactive).toBe("true");
+      expect(liveContent.hasAttribute("inert")).toBe(false);
+      expect(content.dataset.onirigiriShielded).toBe("true");
+    } else {
+      expect(content.dataset.runtimeState).toBe("frozen");
+    }
 
     await flushAnimationFrames(animationFrames);
-    await act(async () => root.unmount());
-    container.remove();
+    await view.unmount();
+  });
+
+  it("preserves focus claimed by a ready application in an initially unfocused pane", async () => {
+    function ReadyInput() {
+      return useOnirigiriPaneInteractive() ? <input autoFocus /> : null;
+    }
+    const view = await mountWorkspace({
+      initialPanes: columnPanes(3, 520),
+      liveContent: true,
+      renderPane: (pane) => (pane.paneId === "pane-2" ? <ReadyInput /> : null),
+    });
+    expect(view.workspace().getSnapshot().focusedPaneId).toBe("pane-1");
+    expect(document.activeElement).toBe(
+      requiredElement(view.container, "input"),
+    );
+    await view.unmount();
   });
 
   it("mounts cold unfocused destination entrants during motion without mounting the corridor", async () => {

@@ -105,6 +105,27 @@ export function createSchedulerHarness(
   );
 }
 
+function focusedPaneRecorder() {
+  const focusedPaneFrames: (
+    (WorkspaceFocusedPaneFrame & { moving: boolean }) | null
+  )[] = [];
+  const focusedPaneMotion: {
+    frame: WorkspaceFocusedPaneFrame | null;
+    moving: boolean;
+  }[] = [];
+  return {
+    focusedPaneFrames,
+    focusedPaneMotion,
+    onFocusedPaneFrame(
+      frame: WorkspaceFocusedPaneFrame | null,
+      moving: boolean,
+    ) {
+      focusedPaneFrames.push(frame && { ...frame, moving });
+      focusedPaneMotion.push({ frame, moving });
+    },
+  };
+}
+
 export function createSchedulerHarnessFor(
   scene: WorkspaceScene,
   cursor: WorkspaceGridCursor,
@@ -128,13 +149,7 @@ export function createSchedulerHarnessFor(
   const frameHost = new ManualAnimationFrameHost();
   const boundaries = vi.fn();
   const samples: number[] = [];
-  const focusedPaneFrames: (
-    (WorkspaceFocusedPaneFrame & { moving: boolean }) | null
-  )[] = [];
-  const focusedPaneMotion: {
-    frame: WorkspaceFocusedPaneFrame | null;
-    moving: boolean;
-  }[] = [];
+  const { onFocusedPaneFrame, ...focusedPane } = focusedPaneRecorder();
   const hosts = new Map<string, HTMLElement>();
   for (const paneId of paneIds) {
     const host = document.createElement("section");
@@ -146,10 +161,7 @@ export function createSchedulerHarnessFor(
     engine,
     frameHost,
     onBoundary: boundaries,
-    onFocusedPaneFrame: (frame, moving) => {
-      focusedPaneFrames.push(frame && { ...frame, moving });
-      focusedPaneMotion.push({ frame, moving });
-    },
+    onFocusedPaneFrame,
     onFrame: () => samples.push(store.getSnapshot().scrollColumn),
     cursorPresentation,
     motionProvider: motion ? () => motion : undefined,
@@ -162,8 +174,7 @@ export function createSchedulerHarnessFor(
   return {
     boundaries,
     engine,
-    focusedPaneFrames,
-    focusedPaneMotion,
+    ...focusedPane,
     frameHost,
     hosts,
     presentation,
@@ -222,13 +233,7 @@ export function createTwoDimensionalSchedulerHarness(
   const frameHost = new ManualAnimationFrameHost();
   const boundaries = vi.fn();
   const samples: number[] = [];
-  const focusedPaneFrames: (
-    (WorkspaceFocusedPaneFrame & { moving: boolean }) | null
-  )[] = [];
-  const focusedPaneMotion: {
-    frame: WorkspaceFocusedPaneFrame | null;
-    moving: boolean;
-  }[] = [];
+  const { onFocusedPaneFrame, ...focusedPane } = focusedPaneRecorder();
   const hosts = new Map<string, HTMLElement>();
   for (const paneId of ["source", "right", "lower"]) {
     const host = document.createElement("section");
@@ -240,10 +245,7 @@ export function createTwoDimensionalSchedulerHarness(
     engine,
     frameHost,
     onBoundary: boundaries,
-    onFocusedPaneFrame: (frame, moving) => {
-      focusedPaneFrames.push(frame && { ...frame, moving });
-      focusedPaneMotion.push({ frame, moving });
-    },
+    onFocusedPaneFrame,
     onFrame: () => samples.push(store.getSnapshot().scrollColumn),
     presentation,
     reducedMotionQuery,
@@ -254,8 +256,7 @@ export function createTwoDimensionalSchedulerHarness(
   return {
     boundaries,
     engine,
-    focusedPaneFrames,
-    focusedPaneMotion,
+    ...focusedPane,
     frameHost,
     hosts,
     presentation,
