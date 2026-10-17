@@ -41,7 +41,6 @@ import type {
   WorkspaceFocusedPaneFrame,
   WorkspaceFocusAnchor,
   OnirigiriRestoreLayoutOptions,
-  WorkspaceCursorTargets,
   WorkspaceGridAxes,
   WorkspacePane,
   WorkspacePresentationMode,
@@ -146,7 +145,6 @@ export interface OnirigiriWorkspaceProps extends PaneDefaultsConfiguration {
   compactBreakpoint?: number;
   compactPanePeek?: number;
   cursorRunway?: number;
-  cursorTargets?: WorkspaceCursorTargets;
   desktopControlsContainer?: Element | null;
   directionControlMode?: WorkspaceDirectionControlMode;
   focusAnchor?: WorkspaceFocusAnchor;
