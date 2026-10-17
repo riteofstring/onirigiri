@@ -800,7 +800,7 @@ export class PaneCanvasSurface {
         if (this.live && !staged) this.displayCapture(texture, display);
         return true;
       },
-      this.requestPaint,
+      () => this.requestPaint(),
     );
   }
 
@@ -860,6 +860,7 @@ export class PaneCanvasSurface {
         this.prepareContent();
         canvas.className = this.canvas.className;
         canvas.style.cssText = this.canvas.style.cssText;
+        canvas.setAttribute("layoutsubtree", "");
         canvas.setAttribute("data-onirigiri-recording", "");
         this.canvas.after(canvas);
         canvas.moveBefore(this.content, null);
