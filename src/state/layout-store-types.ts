@@ -5,7 +5,6 @@ import type {
   PaneRearrangementSelection,
   SurfaceKind,
   WorkspaceCameraModes,
-  WorkspaceCursorTargets,
   WorkspaceFocusAnchor,
   WorkspaceGridCursor,
   WorkspacePresentationMode,
@@ -16,7 +15,6 @@ export type WorkspaceLayoutChangeKind = "initial" | "restore" | "user";
 
 export interface WorkspaceLayoutStoreOptions {
   cursorRunway?: number;
-  cursorTargets?: WorkspaceCursorTargets;
   initialCameraModes?: WorkspaceCameraModes;
   initialFocusAnchor?: WorkspaceFocusAnchor;
   initialMaximizedPaneId?: PaneId | null;

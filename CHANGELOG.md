@@ -9,8 +9,8 @@
 - `onFocusedPaneFrame(frame, moving)` reports displayed pane geometry and the
   motion boundary so hosts can defer expensive work until navigation rests.
 - `useOnirigiriPaneInteractive()` reports when live content accepts input.
-- `cursorTargets="panes"` skips empty cells. `focusPane` can exit overview,
-  and `restoreLayout` can retain the current presentation mode.
+- `focusPane` can exit overview, and `restoreLayout` can retain the current
+  presentation mode.
 - Supplied pictures accept their captured `cssSize`. Images remain anchored
   at the top-left, clip when panes shrink, and expose the background when
   panes grow. `onPanePictureCaptured` provides a PNG and its capture bounds

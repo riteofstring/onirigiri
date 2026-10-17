@@ -28,7 +28,6 @@ import type {
 } from "./layout-store-types.js";
 import { WorkspaceOverviewCamera } from "../layout/overview-camera.js";
 import {
-  nextPaneGridCursor,
   nextWorkspaceGridCursor,
   normalizeWorkspaceGridCursor,
   paneIdAtWorkspaceGridCursor,
@@ -57,7 +56,6 @@ import type {
   WorkspaceCameraMode,
   WorkspaceCameraModes,
   WorkspaceFocusAnchor,
-  WorkspaceCursorTargets,
   WorkspaceGridCursor,
   WorkspaceScene,
 } from "../types.js";
@@ -97,7 +95,6 @@ export class WorkspaceLayoutStore {
   };
   private readonly cameraMotion = new WorkspaceCameraMotion();
   private cursorRunway: number | null;
-  private cursorTargets: WorkspaceCursorTargets;
   private cursorRunwayBounds: WorkspaceCursorRunwayBounds | null;
   private readonly homePaneId: PaneId;
   private readonly paneRearrangement: PaneRearrangementController;
@@ -122,7 +119,6 @@ export class WorkspaceLayoutStore {
   ) {
     this.scene = scene;
     this.cursorRunway = resolveWorkspaceCursorRunway(options.cursorRunway);
-    this.cursorTargets = options.cursorTargets ?? "cells";
     this.cursorRunwayBounds = workspacePaneCursorRunwayBounds(scene);
     this.homePaneId =
       paneIdAtWorkspaceGridCursor(scene, initialCursor) ??
@@ -326,7 +322,7 @@ export class WorkspaceLayoutStore {
 
   canMoveFocus(direction: FocusDirection, scene?: WorkspaceScene): boolean {
     const current = this.getSnapshot().cursor;
-    if (this.cursorRunway === null && this.cursorTargets === "cells") {
+    if (this.cursorRunway === null) {
       const availability = unboundedFocusMoveAvailability(
         current,
         direction,
@@ -337,7 +333,11 @@ export class WorkspaceLayoutStore {
       }
     }
     const currentScene = scene ?? this.toScene();
-    const next = this.nextCursor(current, direction, currentScene);
+    const next = nextWorkspaceGridCursor({
+      cursor: current,
+      direction,
+      scene: currentScene,
+    });
     return (
       next !== null &&
       workspaceCursorMoveIsWithinRunway({
@@ -349,20 +349,14 @@ export class WorkspaceLayoutStore {
     );
   }
 
-  private nextCursor(
-    cursor: WorkspaceGridCursor,
-    direction: FocusDirection,
-    scene: WorkspaceScene,
-  ): WorkspaceGridCursor | null {
-    return this.cursorTargets === "panes"
-      ? nextPaneGridCursor({ cursor, direction, scene })
-      : nextWorkspaceGridCursor({ cursor, direction, scene });
-  }
-
   private moveCursor(direction: FocusDirection): boolean {
     const current = this.getSnapshot().cursor;
     const scene = this.toScene();
-    const nextCursor = this.nextCursor(current, direction, scene);
+    const nextCursor = nextWorkspaceGridCursor({
+      cursor: current,
+      direction,
+      scene,
+    });
     if (
       !nextCursor ||
       !workspaceCursorMoveIsWithinRunway({
@@ -390,12 +384,6 @@ export class WorkspaceLayoutStore {
     return this.overviewCamera.mode === "overview"
       ? this.focusOverviewPane(paneId, viewport)
       : this.focusPane(paneId);
-  }
-
-  setCursorTargets(cursorTargets: WorkspaceCursorTargets): void {
-    if (cursorTargets === this.cursorTargets) return;
-    this.cursorTargets = cursorTargets;
-    this.notify(false);
   }
 
   setCursorRunway(cursorRunway: number | undefined): void {

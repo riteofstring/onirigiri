@@ -30,7 +30,6 @@ export interface OnirigiriFocusHighlightOptions {
   motion?: OnirigiriFocusHighlightMotion;
 }
 export type WorkspaceGridAxes = "horizontal" | "spatial";
-export type WorkspaceCursorTargets = "cells" | "panes";
 
 export interface OnirigiriRestoreLayoutOptions {
   keepPresentation?: boolean;
