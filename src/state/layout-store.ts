@@ -872,6 +872,7 @@ export class WorkspaceLayoutStore {
     this.focusRevealSuppressed = false;
     this.clearPaneRearrangementSource();
     if (options.keepPresentation) {
+      const cameraWasMoving = this.navigationCameraIsMoving();
       this.state.current.setState({
         maximizedPaneId:
           maximizedPaneId && restored.scene.paneById.has(maximizedPaneId)
@@ -879,10 +880,10 @@ export class WorkspaceLayoutStore {
             : null,
       });
       this.setCursor(restored.cursor);
-      if (this.overviewCamera.mode === "normal") {
-        this.snapScrollToTarget();
-      } else {
+      if (this.overviewCamera.mode !== "normal") {
         this.retargetOverviewFollowCamera();
+      } else if (!cameraWasMoving) {
+        this.snapScrollToTarget();
       }
       this.notify(true, "restore");
       return;
@@ -892,6 +893,22 @@ export class WorkspaceLayoutStore {
     this.setCursor(restored.cursor);
     this.snapAnimationsToTarget();
     this.notify(true, "restore");
+  }
+  private navigationCameraIsMoving(): boolean {
+    const snapshot = this.getSnapshot();
+    return (
+      Math.abs(snapshot.scrollColumn - snapshot.targetScrollColumn) > 0.001 ||
+      !workspaceScrollRowIsSettled(
+        snapshot.scrollRow,
+        snapshot.targetScrollRow,
+      ) ||
+      Math.abs(
+        snapshot.horizontalAnchorOffset - snapshot.targetHorizontalAnchorOffset,
+      ) > 0.001 ||
+      Math.abs(
+        snapshot.verticalAnchorOffset - snapshot.targetVerticalAnchorOffset,
+      ) > 0.001
+    );
   }
   snapScrollToTarget(): void {
     this.state.current.setState({

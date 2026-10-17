@@ -84,8 +84,14 @@ A restore normally starts a fresh presentation: it leaves overview, clears
 maximization and snaps the camera to the restored cursor. A host that rebuilds
 the layout because its panes came or went asks the restore to keep the
 presentation instead. Overview stays open and follows the restored cursor, a
-maximized pane that survives stays maximized, and the normal camera lands on
-the restored cursor, so a host's membership changes do not undo the user's view.
+maximized pane that survives stays maximized, and a settled normal camera lands
+on the restored cursor, so a host's membership changes do not undo the user's
+view. A normal camera that is still travelling keeps travelling toward the
+restored cursor instead of landing at once; landing would finish the camera in
+one frame while the focus outline's own motion continued, so the two would
+separate. The travel continues from the current column coordinates, which a
+column inserted before the camera reinterprets; hosts that must avoid that
+jump can defer the restore until the camera settles.
 
 Boundary tests cover complete command notifications, immutable prior snapshots,
 unsubscription, independent workspaces, layout restoration, and continuous camera

@@ -9,7 +9,10 @@ import { PanePresentationEngine } from "../src/presentation/pane-presentation-en
 import { WorkspaceFrameScheduler } from "../src/presentation/workspace-frame-scheduler";
 import { WorkspaceGridCursorPresentation } from "../src/workspace/workspace-grid-cursor-presentation";
 import { WorkspaceWorldPresentation } from "../src/presentation/workspace-world-presentation";
-import { createWorkspaceScene } from "../src/workspace/workspace-scene";
+import {
+  createWorkspaceScene,
+  serializeWorkspaceLayout,
+} from "../src/workspace/workspace-scene";
 import { workspaceGridCursorForPane } from "../src/workspace/workspace-grid-cursor";
 
 import {
@@ -143,6 +146,45 @@ describe("WorkspaceFrameScheduler", () => {
     harness.frameHost.flushAll();
     expect(cursorHost.style.transform).toBe(initialTransform);
     expect(cursorHost.dataset.cellKind).toBe("occupied");
+    harness.scheduler.teardown();
+  });
+
+  it("keeps the camera gliding with the focus outline when a membership-preserving restore lands mid-motion", () => {
+    const cursorPresentation = new WorkspaceGridCursorPresentation();
+    const cursorHost = document.createElement("div");
+    cursorPresentation.bindCursorHost(cursorHost);
+    const harness = createSchedulerHarness(undefined, cursorPresentation);
+    harness.scheduler.start();
+    harness.frameHost.flushOne(0);
+
+    expect(harness.store.focusPane("c")).toBe(true);
+    harness.frameHost.flushFrames(3);
+    const scrollBeforeRestore = harness.store.getSnapshot().scrollColumn;
+    expect(scrollBeforeRestore).toBeGreaterThan(0);
+    expect(scrollBeforeRestore).toBeLessThan(2);
+
+    harness.store.restoreLayout(
+      serializeWorkspaceLayout(
+        harness.store.toScene(),
+        harness.store.getSnapshot().cursor,
+      ),
+      { keepPresentation: true },
+    );
+    harness.frameHost.flushFrames(1);
+    const scrollAfterRestore = harness.store.getSnapshot().scrollColumn;
+    expect(scrollAfterRestore).toBeGreaterThan(scrollBeforeRestore);
+    expect(scrollAfterRestore).toBeLessThan(2);
+    expect(cursorPresentation.hasActiveMotion()).toBe(true);
+
+    harness.samples.length = 0;
+    harness.frameHost.flushAll();
+    expectIntermediateMonotonicTrajectory(
+      harness.samples,
+      scrollAfterRestore,
+      2,
+    );
+    expect(harness.store.getSnapshot().scrollColumn).toBe(2);
+    expect(cursorPresentation.hasActiveMotion()).toBe(false);
     harness.scheduler.teardown();
   });
 
