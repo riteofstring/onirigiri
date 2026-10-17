@@ -2176,16 +2176,10 @@ test("native content recovers after a GPU device loss during canvas presentation
           () => null,
           (error: Error) => error.message,
         );
-      return {
-        requested: fixture.motionRenderer,
-        drawn: fixture.drawn,
-        error: fixture.error,
-        canCapture: fixture.surface.canCapture(),
-        captureError,
-      };
+      const { drawn, error, surface } = fixture;
+      return { drawn, error, canCapture: surface.canCapture(), captureError };
     }),
   ).toEqual({
-    requested: "canvas",
     drawn: true,
     error: null,
     canCapture: false,

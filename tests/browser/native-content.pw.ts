@@ -278,9 +278,7 @@ test("device loss preserves native workspace input and later pane activation", a
   expect(
     await page.locator('[data-onirigiri-pane-id="pane-12"] iframe').count(),
   ).toBe(0);
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.focusPane("pane-12"),
-  );
+  await focusNativePane(page, "pane-12");
   const later = page.locator('[data-onirigiri-pane-id="pane-12"]');
   await expect(later).toHaveAttribute("data-moving", "false");
   await expect(later).toHaveAttribute("data-onirigiri-renderer", "dom");
@@ -532,6 +530,19 @@ async function stepClock(page: Page, count: number): Promise<void> {
   }
 }
 
+function focusNativePane(page: Page, paneId: string) {
+  return page.evaluate(
+    (id) => window.__nativeMotionFixture.handle.current!.focusPane(id),
+    paneId,
+  );
+}
+
+function toggleNativeOverview(page: Page) {
+  return page.evaluate(() =>
+    window.__nativeMotionFixture.handle.current!.toggleOverview(),
+  );
+}
+
 for (const continuous of [false, true]) {
   test(`motion shields input while preserving consumer styles and nodes (continuous=${continuous})`, async ({
     page,
@@ -610,9 +621,7 @@ for (const continuous of [false, true]) {
       .toMatchObject({ ready: "true", inert: false });
     const release = await holdClock(page);
     try {
-      await page.evaluate(() =>
-        window.__nativeMotionFixture.handle.current!.focusPane("pane-2"),
-      );
+      await focusNativePane(page, "pane-2");
       await stepClock(page, 3);
       expect(await motionState()).toMatchObject({
         moving: "true",
@@ -633,9 +642,7 @@ for (const continuous of [false, true]) {
       shielded: false,
       animation: 1,
     });
-    await page.evaluate(() =>
-      window.__nativeMotionFixture.handle.current!.toggleOverview(),
-    );
+    await toggleNativeOverview(page);
     await expect.poll(motionState).toMatchObject({
       moving: "false",
       shielded: true,
@@ -883,9 +890,7 @@ for (const canvas of [false, true]) {
       );
     const releaseClock = await holdClock(page);
     try {
-      await page.evaluate(() =>
-        window.__nativeMotionFixture.handle.current!.focusPane("pane-7"),
-      );
+      await focusNativePane(page, "pane-7");
       for (let step = 0; step < 90; step++) {
         await stepClock(page, 1);
         const bounds = await destination
@@ -1253,13 +1258,9 @@ for (const hidden of [true, false]) {
       await expect
         .poll(() => page.evaluate(() => window.__hiddenCaptureProbe.attempts))
         .toBeGreaterThan(0);
-      await page.evaluate(() =>
-        window.__nativeMotionFixture.handle.current!.toggleOverview(),
-      );
+      await toggleNativeOverview(page);
     }
-    await page.evaluate(() =>
-      window.__nativeMotionFixture.handle.current!.focusPane("pane-1"),
-    );
+    await focusNativePane(page, "pane-1");
     await expect(pane.locator(".onirigiri-pane__live-content")).toHaveAttribute(
       "data-onirigiri-live",
       "true",
@@ -1319,9 +1320,7 @@ test("restores hidden captured content before reentry with retained scroll and i
   expect(await retained.evaluate(({ scroller }) => scroller.scrollTop)).toBe(
     137,
   );
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.focusPane("pane-8"),
-  );
+  await focusNativePane(page, "pane-8");
   await expect(pane.locator(".onirigiri-pane__content")).toHaveAttribute(
     "data-runtime-state",
     "hidden",
@@ -1371,9 +1370,7 @@ test("restores hidden captured content before reentry with retained scroll and i
     });
     return { ...retained, state, observer };
   });
-  await page.evaluate(() =>
-    window.__nativeMotionFixture.handle.current!.focusPane("pane-1"),
-  );
+  await focusNativePane(page, "pane-1");
   await expect(content).toHaveAttribute("data-onirigiri-live", "true");
   await expect(pane).toHaveAttribute("data-moving", "false");
   expect(
