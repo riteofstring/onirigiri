@@ -42,9 +42,7 @@ interface CaptureQueue extends GPUQueue {
 }
 
 interface CaptureSource {
-  adapter: GPUAdapter;
   device: GPUDevice;
-  context: GPUCanvasContext;
   canvas: OffscreenCanvas;
 }
 
@@ -80,7 +78,7 @@ async function prepare(canvas: OffscreenCanvas): Promise<void> {
     alphaMode: "premultiplied",
     usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
   });
-  source = { adapter, device, context, canvas };
+  source = { device, canvas };
   device.addEventListener("uncapturederror", (event) => failed(event.error));
   void device.lost.then((info) => {
     if (info.reason !== "destroyed") failed(new Error(info.message));

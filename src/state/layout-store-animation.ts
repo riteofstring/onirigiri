@@ -5,6 +5,7 @@ import {
   MotionTimeline,
   type ResolvedCameraMotion,
 } from "../presentation/motion-curve.js";
+import type { WorkspaceLayoutSnapshot } from "./layout-store-types.js";
 
 interface WorkspaceCameraAnimationInput {
   deltaMs: number;
@@ -296,4 +297,22 @@ export function workspaceScrollRowIsSettled(
   targetScrollRow: number,
 ): boolean {
   return Math.abs(scrollRow - targetScrollRow) <= scrollRowSettleThreshold;
+}
+
+export function workspaceNavigationIsMoving(
+  snapshot: WorkspaceLayoutSnapshot,
+): boolean {
+  return (
+    Math.abs(snapshot.scrollColumn - snapshot.targetScrollColumn) > 0.001 ||
+    Math.abs(
+      snapshot.horizontalAnchorOffset - snapshot.targetHorizontalAnchorOffset,
+    ) > 0.001 ||
+    !workspaceScrollRowIsSettled(
+      snapshot.scrollRow,
+      snapshot.targetScrollRow,
+    ) ||
+    Math.abs(
+      snapshot.verticalAnchorOffset - snapshot.targetVerticalAnchorOffset,
+    ) > 0.001
+  );
 }

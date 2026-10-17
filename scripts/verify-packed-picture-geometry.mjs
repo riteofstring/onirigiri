@@ -1,10 +1,6 @@
 import { expect } from "@playwright/test";
 
-export async function verifyPackedPictureGeometry(
-  page,
-  origin,
-  observe = async () => {},
-) {
+export async function verifyPackedPictureGeometry(page, origin) {
   for (const layout of ["strip", "grid"]) {
     await page.goto(`${origin}/?picture-geometry=${layout}`);
     const pane = page.locator('[data-onirigiri-pane-id="sized-picture"]');
@@ -176,7 +172,6 @@ export async function verifyPackedPictureGeometry(
         ).toBe(true);
         await expect(input).toHaveValue(`Retained ${layout} input`);
         await expect(sibling).toHaveValue(`Retained ${layout} sibling`);
-        await observe({ layout, width, height, boxes, pixels });
       }
       await page.getByRole("button", { name: "Restore live input" }).click();
       await expect(picture).toBeHidden();

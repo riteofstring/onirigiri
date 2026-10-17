@@ -8,6 +8,7 @@ import {
 import type { WorkspaceLikeLayoutEngine } from "../layout/layout-engine.js";
 import {
   WorkspaceCameraMotion,
+  workspaceNavigationIsMoving,
   workspaceScrollRowIsSettled,
 } from "./layout-store-animation.js";
 import type { ResolvedCameraMotion } from "../presentation/motion-curve.js";
@@ -860,7 +861,7 @@ export class WorkspaceLayoutStore {
     this.focusRevealSuppressed = false;
     this.clearPaneRearrangementSource();
     if (options.keepPresentation) {
-      const cameraWasMoving = this.navigationCameraIsMoving();
+      const cameraWasMoving = workspaceNavigationIsMoving(this.getSnapshot());
       this.state.current.setState({
         maximizedPaneId:
           maximizedPaneId && restored.scene.paneById.has(maximizedPaneId)
@@ -881,22 +882,6 @@ export class WorkspaceLayoutStore {
     this.setCursor(restored.cursor);
     this.snapAnimationsToTarget();
     this.notify(true, "restore");
-  }
-  private navigationCameraIsMoving(): boolean {
-    const snapshot = this.getSnapshot();
-    return (
-      Math.abs(snapshot.scrollColumn - snapshot.targetScrollColumn) > 0.001 ||
-      !workspaceScrollRowIsSettled(
-        snapshot.scrollRow,
-        snapshot.targetScrollRow,
-      ) ||
-      Math.abs(
-        snapshot.horizontalAnchorOffset - snapshot.targetHorizontalAnchorOffset,
-      ) > 0.001 ||
-      Math.abs(
-        snapshot.verticalAnchorOffset - snapshot.targetVerticalAnchorOffset,
-      ) > 0.001
-    );
   }
   snapScrollToTarget(): void {
     this.state.current.setState({
