@@ -327,6 +327,23 @@ describe("engine pane pictures", () => {
       bounds: (next: DOMRect) => {
         bounds = next;
       },
+      evict: async () => {
+        config.items = [];
+        config.budgetBytes = 0;
+        pictures.configure(config);
+        await vi.advanceTimersByTimeAsync(300);
+      },
+    };
+  }
+
+  function uncapturableFixture() {
+    const f = fixture(capture);
+    canvasMock.uncapturable.add(f.content);
+    const source = {};
+    f.readiness.update(source, true, 1);
+    return {
+      ...f,
+      revise: (revision: number) => f.readiness.update(source, true, revision),
     };
   }
 
@@ -803,10 +820,7 @@ describe("engine pane pictures", () => {
         ...f.config,
         presentation,
         preloadMarginPanes: 1,
-        items: [
-          ...f.config.items,
-          renderItem({ paneId: "b", visible: false }),
-        ],
+        items: [...f.config.items, renderItem({ paneId: "b", visible: false })],
       });
       await vi.advanceTimersByTimeAsync(300);
       expect(f.pictures.get("b")?.capture).toBeTruthy();
@@ -822,10 +836,7 @@ describe("engine pane pictures", () => {
     f.pictures.configure({
       ...f.config,
       liveContent: true,
-      items: [
-        ...f.config.items,
-        renderItem({ paneId: "b", visible: false }),
-      ],
+      items: [...f.config.items, renderItem({ paneId: "b", visible: false })],
     });
     await vi.advanceTimersByTimeAsync(200);
     expect(capture).toHaveBeenCalledOnce();
@@ -1585,7 +1596,7 @@ describe("engine pane pictures", () => {
     );
     expect(captured.mock.lastCall?.[2]).toBe(accepted?.capture);
     f.pictures.activity();
-    await vi.advanceTimersByTimeAsync(300);
+    await vi.advanceTimersByTimeAsync(500);
     expect(f.pictures.get("a")).toBe(accepted);
     expect(accepted?.cssSize).toBeUndefined();
   });
@@ -1670,33 +1681,10 @@ describe("engine pane pictures", () => {
     );
   });
 
-  it("retains a seed as coverage across content changes without accepting it again", async () => {
-    const f = fixture(capture);
-    canvasMock.uncapturable.add(f.content);
-    const source = {};
-    f.readiness.update(source, true, 1);
-    const seed = png();
-    f.config.resolver = () => ({ image: seed, replaceable: true });
-    f.pictures.configure(f.config);
-    await vi.advanceTimersByTimeAsync(500);
-    expect(f.pictures.get("a")?.image).toBe(seed);
-    const accepted = f.pictures.getStatus().accepted;
-    f.readiness.update(source, true, 2);
-    await vi.advanceTimersByTimeAsync(0);
-    expect(f.pictures.get("a")?.image).toBe(seed);
-    f.pictures.activity();
-    await vi.advanceTimersByTimeAsync(500);
-    expect(f.pictures.get("a")?.image).toBe(seed);
-    expect(f.pictures.getStatus().accepted).toBe(accepted);
-  });
-
   it.each([false, true])(
     "releases a withdrawn seed, including retired coverage (%s)",
     async (retired) => {
-      const f = fixture(capture);
-      canvasMock.uncapturable.add(f.content);
-      const source = {};
-      f.readiness.update(source, true, 1);
+      const f = uncapturableFixture();
       const seed = png();
       let offered = true;
       f.config.resolver = () =>
@@ -1704,7 +1692,7 @@ describe("engine pane pictures", () => {
       f.pictures.configure(f.config);
       await vi.advanceTimersByTimeAsync(500);
       expect(f.pictures.get("a")?.image).toBe(seed);
-      if (retired) f.readiness.update(source, true, 2);
+      if (retired) f.revise(2);
       offered = false;
       f.config.resolver = () =>
         offered ? { image: seed, replaceable: true } : null;
@@ -1740,20 +1728,6 @@ describe("engine pane pictures", () => {
     expect(f.pictures.get("a")?.image).toBe(replacement);
   });
 
-  it("keeps a capture over the seed it replaced after navigation", async () => {
-    const f = fixture(capture);
-    const seed = png();
-    f.config.resolver = () => ({ image: seed, replaceable: true });
-    f.pictures.configure(f.config);
-    await vi.advanceTimersByTimeAsync(500);
-    const captured = f.pictures.get("a");
-    expect(captured?.capture).not.toBeNull();
-    f.pictures.activity();
-    await vi.advanceTimersByTimeAsync(500);
-    expect(f.pictures.get("a")?.image).toBe(captured?.image);
-    expect(f.pictures.get("a")?.capture).not.toBeNull();
-  });
-
   it("restores an evicted supplied picture when its pane is revisited", async () => {
     const f = fixture(capture);
     const image = png();
@@ -1761,10 +1735,7 @@ describe("engine pane pictures", () => {
     f.pictures.configure(f.config);
     await vi.advanceTimersByTimeAsync(300);
     expect(f.pictures.get("a")?.image).toBe(image);
-    f.config.items = [];
-    f.config.budgetBytes = 0;
-    f.pictures.configure(f.config);
-    await vi.advanceTimersByTimeAsync(300);
+    await f.evict();
     expect(f.pictures.get("a")).toBeNull();
     f.config.budgetBytes = 1000;
     f.config.items = [
@@ -1780,10 +1751,7 @@ describe("engine pane pictures", () => {
   it.each(["unchanged", "withdrawn", "replaced"] as const)(
     "restores an evicted retired seed only while its source remains current (%s)",
     async (sourceChange) => {
-      const f = fixture(capture);
-      canvasMock.uncapturable.add(f.content);
-      const source = {};
-      f.readiness.update(source, true, 1);
+      const f = uncapturableFixture();
       const seed = png();
       let image: Blob | null = seed;
       f.config.resolver = (pane) =>
@@ -1792,17 +1760,16 @@ describe("engine pane pictures", () => {
       await vi.advanceTimersByTimeAsync(300);
       expect(f.pictures.get("a")?.image).toBe(seed);
       const accepted = f.pictures.getStatus().accepted;
-      f.readiness.update(source, true, 2);
+      f.revise(2);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f.pictures.get("a")?.image).toBe(seed);
       f.pictures.activity();
-      await vi.advanceTimersByTimeAsync(300);
+      await vi.advanceTimersByTimeAsync(500);
       expect(f.pictures.get("a")?.image).toBe(seed);
       expect(f.pictures.getStatus().accepted).toBe(accepted);
 
       const items = f.config.items;
-      f.config.items = [];
-      f.config.budgetBytes = 0;
-      f.pictures.configure(f.config);
-      await vi.advanceTimersByTimeAsync(300);
+      await f.evict();
       expect(f.pictures.get("a")).toBeNull();
       expect(f.pictures.getStatus().pictureBytes).toBe(0);
 
@@ -1845,21 +1812,15 @@ describe("engine pane pictures", () => {
   });
 
   it("refreshes restored stale seed coverage during overview", async () => {
-    const f = fixture(capture);
-    canvasMock.uncapturable.add(f.content);
-    const source = {};
-    f.readiness.update(source, true, 1);
+    const f = uncapturableFixture();
     const seed = png();
     f.config.resolver = (pane) =>
       pane.paneId === "a" ? { image: seed, replaceable: true } : null;
     f.pictures.configure(f.config);
     await vi.advanceTimersByTimeAsync(300);
     expect(f.pictures.get("a")?.image).toBe(seed);
-    f.readiness.update(source, true, 2);
-    f.config.items = [];
-    f.config.budgetBytes = 0;
-    f.pictures.configure(f.config);
-    await vi.advanceTimersByTimeAsync(300);
+    f.revise(2);
+    await f.evict();
     expect(f.pictures.get("a")).toBeNull();
 
     f.config.budgetBytes = 1000;

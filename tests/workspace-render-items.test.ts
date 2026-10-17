@@ -89,12 +89,7 @@ describe("workspace world render items", () => {
     expect(renderer.render(changedLayout)).toEqual(
       workspaceWorldRenderFrame(changedLayout),
     );
-    const dynamic = new Proxy({} as LayoutEngine, {
-      get(_target, field) {
-        const value = Reflect.get(engine, field);
-        return typeof value === "function" ? value.bind(engine) : value;
-      },
-    });
+    const dynamic = dynamicEngine(engine);
     const customInput = {
       ...input,
       engine: dynamic,
@@ -109,12 +104,7 @@ describe("workspace world render items", () => {
 
   it("preserves custom-engine overview interpolation and refreshes dynamic endpoints", () => {
     const { engine, store } = workspace();
-    const dynamic = new Proxy({} as LayoutEngine, {
-      get(_target, field) {
-        const value = Reflect.get(engine, field);
-        return typeof value === "function" ? value.bind(engine) : value;
-      },
-    });
+    const dynamic = dynamicEngine(engine);
     const renderer = new WorkspaceWorldFrameRenderer();
     for (const presentationMode of ["overview", "normal"] as const) {
       for (const overviewProgress of [0.25, 0.5, 0.75]) {
@@ -507,6 +497,15 @@ describe("workspace world render items", () => {
     expectSharedReservedProjection(engine, store.getSnapshot(), false);
   });
 });
+
+function dynamicEngine(engine: LayoutEngine): LayoutEngine {
+  return new Proxy({} as LayoutEngine, {
+    get(_target, field) {
+      const value = Reflect.get(engine, field);
+      return typeof value === "function" ? value.bind(engine) : value;
+    },
+  });
+}
 
 function workspace(): {
   engine: WorkspaceLikeLayoutEngine;

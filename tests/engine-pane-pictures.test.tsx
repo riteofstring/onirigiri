@@ -6,34 +6,15 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { OnirigiriWorkspace } from "../src/workspace/OnirigiriWorkspace";
 import { useOnirigiriPaneContentReady } from "../src/panes/pane-content-readiness";
+import type { PaneCanvasSurface } from "../src/pictures/pane-picture-canvas";
+import type { PaneCaptureRequest } from "../src/pictures/pane-picture-capture-worker";
 import type { OnirigiriWorkspaceHandle } from "../src/workspace/onirigiri-workspace-types";
 import { stubOnirigiriWorkspaceBrowserGlobals } from "./onirigiri-workspace-test-support";
 
 const canvasMock = vi.hoisted(() => ({ capture: vi.fn() }));
 
-interface CaptureRequest {
-  signal: AbortSignal;
-  background?: {
-    id: string;
-    client: {
-      prepare(signal: AbortSignal): Promise<unknown>;
-      capture(
-        id: string,
-        image: { width: number; close(): void },
-        size: { width: number; height: number },
-        signal: AbortSignal,
-      ): Promise<Blob>;
-    };
-  };
-}
-
-interface WorkerCapture {
-  type: "capture";
-  id: string;
-  width: number;
-  height: number;
-  image: object;
-}
+type CaptureRequest = Parameters<PaneCanvasSurface["capture"]>[0];
+type WorkerCapture = Extract<PaneCaptureRequest, { type: "capture" }>;
 
 class CaptureWorker {
   static instances: CaptureWorker[] = [];
@@ -46,10 +27,7 @@ class CaptureWorker {
     CaptureWorker.instances.push(this);
   }
 
-  postMessage(
-    message: { type: "prepare" } | WorkerCapture,
-    transfer: unknown[],
-  ) {
+  postMessage(message: PaneCaptureRequest, transfer: unknown[]) {
     if (message.type === "prepare")
       this.onmessage?.({ data: { type: "prepared", limit: 8192 } });
     else {

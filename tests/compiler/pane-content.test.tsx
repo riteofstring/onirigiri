@@ -2,11 +2,11 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { OnirigiriPaneContent } from "../../src/panes/onirigiri-pane-content";
-import type { PanePictures } from "../../src/pictures/pane-pictures";
 import type { PanePresentationState } from "../../src/presentation/pane-presentation-policy";
-import type { WorkspacePane } from "../../src/types";
 import { OnirigiriWorkspace } from "../../src/workspace/OnirigiriWorkspace";
 import {
+  editorPane,
+  panePicturesStub,
   requiredElement,
   stubOnirigiriWorkspaceBrowserGlobals,
 } from "../onirigiri-workspace-test-support";
@@ -66,7 +66,6 @@ it.each([false, true])(
   "updates retained placeholder input across motion when initially moving=%s",
   async (initiallyMoving) => {
     let moving = initiallyMoving;
-    const listeners = new Set<() => void>();
     const presentation: PanePresentationState = {
       requested: "placeholder",
       kind: "placeholder",
@@ -77,33 +76,13 @@ it.each([false, true])(
       covered: true,
       live: false,
     };
-    const pictures = {
-      subscribe: (_id: string, listener: () => void) => {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
-      },
+    const { pictures, notify } = panePicturesStub({
       isLive: () => false,
-      isContinuous: () => true,
       isInteractive: () => !moving,
-      acceptsContentInput: () => true,
       isDrawn: () => false,
-      isOverviewCapture: () => false,
-      isPreloading: () => false,
       getPaneError: () => null,
       getPresentation: () => presentation,
-      presentCover: vi.fn(),
-      register: () => () => {},
-    } as unknown as PanePictures;
-    const pane: WorkspacePane = {
-      paneId: "editor",
-      columnId: "column",
-      sequence: 0,
-      surfaceId: "editor",
-      surfaceKind: "editor",
-      title: "Editor",
-      subtitle: "",
-      tone: "slate",
-    };
+    });
     const clicked = vi.fn();
     await act(async () => {
       root.render(
@@ -112,7 +91,7 @@ it.each([false, true])(
           maximized={false}
           pictures={pictures}
           picture={null}
-          pane={pane}
+          pane={editorPane}
           placeholderOnly={false}
           presentationMode="normal"
           renderPane={() => <input aria-label="Retained draft" />}
@@ -135,7 +114,7 @@ it.each([false, true])(
     for (const next of [!initiallyMoving, initiallyMoving, false]) {
       await act(async () => {
         moving = next;
-        for (const listener of listeners) listener();
+        notify();
       });
       expect(placeholder.hasAttribute("inert")).toBe(next);
       expect(placeholder.dataset.onirigiriPlaceholderInteractive).toBe(

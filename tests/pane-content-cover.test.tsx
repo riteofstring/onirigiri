@@ -7,7 +7,11 @@ import { OnirigiriPaneContent } from "../src/panes/onirigiri-pane-content";
 import type { PanePictures } from "../src/pictures/pane-pictures";
 import type { PanePresentationState } from "../src/presentation/pane-presentation-policy";
 import type { WorkspacePane } from "../src/types";
-import { stubOnirigiriWorkspaceBrowserGlobals } from "./onirigiri-workspace-test-support";
+import {
+  editorPane,
+  panePicturesStub,
+  stubOnirigiriWorkspaceBrowserGlobals,
+} from "./onirigiri-workspace-test-support";
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -49,36 +53,15 @@ async function coverFixture({
     covered: true,
     live: false,
   };
-  const listeners = new Set<() => void>();
   const interactive = vi.fn(() => !moving);
-  const pictures = {
-    subscribe: (_id: string, listener: () => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
+  const { pictures, notify } = panePicturesStub({
     isLive: () => !presentation.covered,
-    isContinuous: () => true,
     isInteractive: interactive,
-    acceptsContentInput: () => true,
     isDrawn: () => !presentation.covered,
-    isOverviewCapture: () => false,
-    isPreloading: () => false,
     getPaneError: () => error,
     getPresentation: () => presentation,
-    presentCover: vi.fn(),
     finishOverviewCapture: vi.fn(),
-    register: () => () => {},
-  } as unknown as PanePictures;
-  const pane: WorkspacePane = {
-    paneId: "editor",
-    columnId: "column",
-    sequence: 0,
-    surfaceId: "editor",
-    surfaceKind: "editor",
-    title: "Editor",
-    subtitle: "",
-    tone: "slate",
-  };
+  });
   const clicked = vi.fn();
   const renderPane = () => <button onClick={clicked}>Live editor</button>;
   const renderPlaceholder = (
@@ -93,7 +76,7 @@ async function coverFixture({
           maximized={false}
           picture={picture}
           pictures={pictures}
-          pane={pane}
+          pane={editorPane}
           placeholderOnly={false}
           presentationMode="normal"
           renderPane={renderPane}
@@ -122,7 +105,7 @@ async function coverFixture({
         };
       if (next.moving !== undefined) moving = next.moving;
       if (next.error !== undefined) error = next.error;
-      for (const listener of listeners) listener();
+      notify();
     });
   const surface = () =>
     container.querySelector<HTMLElement>(".onirigiri-pane__picture-surface");

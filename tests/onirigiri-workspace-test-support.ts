@@ -1,6 +1,14 @@
+import { act, createElement, createRef } from "react";
+import { createRoot } from "react-dom/client";
 import { afterEach, vi } from "vitest";
 
-import type { OnirigiriWorkspaceHandle } from "../src/workspace/onirigiri-workspace-types";
+import type { PanePictures } from "../src/pictures/pane-pictures";
+import type { WorkspacePane } from "../src/types";
+import { OnirigiriWorkspace } from "../src/workspace/OnirigiriWorkspace";
+import type {
+  OnirigiriWorkspaceHandle,
+  OnirigiriWorkspaceProps,
+} from "../src/workspace/onirigiri-workspace-types";
 
 class ResizeObserverMock {
   disconnect() {}
@@ -43,6 +51,64 @@ export function stubOnirigiriWorkspaceBrowserGlobals(): void {
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
     viewportBounds(),
   );
+}
+
+export async function mountWorkspace(props: OnirigiriWorkspaceProps) {
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  const ref = createRef<OnirigiriWorkspaceHandle>();
+  const render = (next: OnirigiriWorkspaceProps) =>
+    act(async () =>
+      root.render(createElement(OnirigiriWorkspace, { ...next, ref })),
+    );
+  await render(props);
+  return {
+    container,
+    ref,
+    render,
+    workspace: () => requiredWorkspaceHandle(ref.current),
+    async unmount() {
+      await act(async () => root.unmount());
+      container.remove();
+    },
+  };
+}
+
+export const editorPane: WorkspacePane = {
+  paneId: "editor",
+  columnId: "column",
+  sequence: 0,
+  surfaceId: "editor",
+  surfaceKind: "editor",
+  title: "Editor",
+  subtitle: "",
+  tone: "slate",
+};
+
+export function panePicturesStub(
+  methods: Partial<Record<keyof PanePictures, unknown>>,
+) {
+  const listeners = new Set<() => void>();
+  const pictures = {
+    subscribe: (_id: string, listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    isContinuous: () => true,
+    acceptsContentInput: () => true,
+    isOverviewCapture: () => false,
+    isPreloading: () => false,
+    presentCover: vi.fn(),
+    register: () => () => {},
+    ...methods,
+  } as unknown as PanePictures;
+  return {
+    pictures,
+    notify() {
+      for (const listener of listeners) listener();
+    },
+  };
 }
 
 export function activePaneId(): string | undefined {

@@ -12,6 +12,7 @@ import type { OnirigiriWorkspaceHandle } from "../src/workspace/onirigiri-worksp
 
 import {
   activePaneId,
+  mountWorkspace,
   paneLocation,
   requiredElement,
   requiredPaneId,
@@ -653,74 +654,9 @@ describe("OnirigiriWorkspace keyboard shortcuts", () => {
     container.remove();
   });
 
-  it("runs only bindings marked whileEditing from a text field", async () => {
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
-    const editingRight = {
-      altKey: true,
-      ctrlKey: true,
-      key: "ArrowRight",
-      metaKey: false,
-      shiftKey: false,
-      whileEditing: true,
-    };
-
-    await act(async () => {
-      root.render(
-        <OnirigiriWorkspace
-          initialPanes={[
-            { paneId: "left", surfaceKind: "test", title: "Left" },
-            { paneId: "right", surfaceKind: "test", title: "Right" },
-          ]}
-          ref={workspaceRef}
-          renderPane={(pane) => <input aria-label={`${pane.paneId} field`} />}
-          shortcuts={{
-            focusRight: [
-              { ...editingRight, ctrlKey: false, whileEditing: false },
-              editingRight,
-            ],
-          }}
-        />,
-      );
-    });
-    const workspace = requiredWorkspaceHandle(workspaceRef.current);
-    expect(workspace.focusPane("left")).toBe(true);
-    const input = container.querySelector<HTMLInputElement>(
-      '[aria-label="left field"]',
-    );
-
-    let plainEvent: KeyboardEvent | undefined;
-    await act(async () => {
-      input?.focus();
-      plainEvent = dispatchKeyDown(input, { altKey: true, key: "ArrowRight" });
-    });
-    expect(plainEvent?.defaultPrevented).toBe(false);
-    expect(workspace.getSnapshot().focusedPaneId).toBe("left");
-
-    let editingEvent: KeyboardEvent | undefined;
-    await act(async () => {
-      editingEvent = dispatchKeyDown(input, {
-        altKey: true,
-        ctrlKey: true,
-        key: "ArrowRight",
-      });
-    });
-    expect(editingEvent?.defaultPrevented).toBe(true);
-    expect(workspace.getSnapshot().focusedPaneId).toBe("right");
-
-    await act(async () => root.unmount());
-    container.remove();
-  });
-
   it.each(["application", "workspace"] as const)(
     "reserves opted-in editing shortcuts before a consuming editor in %s scope",
     async (shortcutScope) => {
-      const container = document.createElement("div");
-      document.body.append(container);
-      const root = createRoot(container);
-      const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
       const binding = {
         altKey: true,
         ctrlKey: true,
@@ -729,27 +665,26 @@ describe("OnirigiriWorkspace keyboard shortcuts", () => {
         shiftKey: false,
         whileEditing: true,
       };
-      await act(async () => {
-        root.render(
-          <OnirigiriWorkspace
-            initialPanes={["left", "middle", "right"].map((paneId) => ({
-              paneId,
-              surfaceKind: "test",
-              title: paneId,
-            }))}
-            ref={workspaceRef}
-            renderPane={(pane) => (
-              <textarea aria-label={`${pane.paneId} terminal`} />
-            )}
-            shortcutScope={shortcutScope}
-            shortcuts={{
-              focusRight: [binding],
-              toggleOverview: [{ ...binding, key: "o" }],
-            }}
-          />,
-        );
+      const view = await mountWorkspace({
+        initialPanes: ["left", "middle", "right"].map((paneId) => ({
+          paneId,
+          surfaceKind: "test",
+          title: paneId,
+        })),
+        renderPane: (pane) => (
+          <textarea aria-label={`${pane.paneId} terminal`} />
+        ),
+        shortcutScope,
+        shortcuts: {
+          focusRight: [
+            { ...binding, ctrlKey: false, whileEditing: false },
+            binding,
+          ],
+          toggleOverview: [{ ...binding, key: "o" }],
+        },
       });
-      const workspace = requiredWorkspaceHandle(workspaceRef.current);
+      const { container } = view;
+      const workspace = view.workspace();
       const input = requiredElement<HTMLTextAreaElement>(
         container,
         '[aria-label="left terminal"]',
@@ -810,8 +745,7 @@ describe("OnirigiriWorkspace keyboard shortcuts", () => {
       });
       expect(workspace.getSnapshot().presentationMode).toBe("overview");
       expect(shell).not.toHaveBeenCalled();
-      await act(async () => root.unmount());
-      container.remove();
+      await view.unmount();
     },
   );
 
