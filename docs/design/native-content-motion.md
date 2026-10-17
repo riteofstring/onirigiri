@@ -98,8 +98,6 @@ The restored host remains transparent and covered until live presentation is
 ready. A capture cancelled by motion waits for motion completion before restoring
 unrelated hidden content; incoming live panes retain their usual activation path.
 Explicit canvas and texture policies continue to use their requested surfaces.
-Browser guards cover successful and aborted captures, unchanged iframe and input
-identity, retained scroll offsets and reentry without another content move.
 Frozen display surfaces respect pane visibility in both continuous and ordinary
 workspaces. Ordinary mode reads current pane-item visibility; continuous mode
 uses its presented visibility set after the first frame. Cancelling a capture after its pane leaves the viewport does not
@@ -274,10 +272,7 @@ Disabling the option resumes ordinary mounting and retention rules.
 Pane-content rendering reads the continuous policy from its subscribed external
 store snapshot. Reading the mutable picture service directly in JSX can leave
 the initial value cached when a consumer compiles library source with React
-Compiler. The compiler regression transforms this component with the real
-compiler and checks initial configuration, policy changes and retained drafts.
-Packaged-consumer performance comparisons build the library first and consume
-its emitted JavaScript and CSS, matching the public package boundary.
+Compiler.
 
 Live content can move native focus and scroll selections into view. The
 workspace, stage and pane boxes therefore clip with `overflow: clip` rather than
@@ -382,14 +377,13 @@ embedded content or leaving the viewport does not interrupt movement or release.
 Left and top handles share this lifecycle; the retained texture stays anchored
 at the pane's top-left while that corner follows the pointer.
 
-`restPictureFade` optionally retains a previously displayed picture or custom
-placeholder for a 100 ms opacity fade after ready live presentation resumes at
-normal rest. The default remains off. Generic icon/title placeholders never
-fade; custom renderers supply arbitrary cover content and cannot be classified
-as pictures. Their previous presentation inputs remain fixed during departure.
-Live content, producer clocks and input follow the existing readiness boundary
-without waiting for the cover. The departing layer is inert, hidden from
-accessibility and excludes pointer input.
+`restPictureFade` (off by default) fades a previously displayed picture or
+custom placeholder over ready live content at normal rest. Custom renderers
+supply arbitrary cover content that cannot be classified as pictures, so they
+fade as covers while generic icon/title placeholders never do. The departing
+layer keeps its previous presentation inputs, is inert, hidden from
+accessibility and excludes pointer input; live content, producer clocks and
+input do not wait for it.
 
 The opt-in rest bit uses the existing pane-local picture subscription. Motion
 boundaries cancel a fade even when the underlying live presentation is unchanged;
@@ -407,11 +401,9 @@ universal frame-rate guarantee.
 
 One engine service owns acquired and developer-supplied PNG pictures.
 `getPanePicture` supplies immutable Blob revisions and optional CSS dimensions,
-fit and position. Supplied `cssSize` describes the saved image's CSS extent,
-independent of raster density, prepared preview size, current pane geometry,
-layout mode and monitor size. The image box stays anchored at the top-left and
-is clipped by the pane; growth exposes the existing pane background. Pictures
-without supplied CSS dimensions retain their current-pane fitting behavior.
+fit and position. Supplied `cssSize` fixes the saved image's CSS extent
+independently of raster density, preview size, pane geometry, layout mode and
+monitor size, so the top-left-anchored image needs no layout measurement.
 Automatic captures use the accepted receipt's existing bounds as their CSS
 extent, with fill and top-left positioning. A stale capture keeps those bounds
 until a replacement is accepted; no new layout measurement or resize scheduler
@@ -788,9 +780,6 @@ Motion/rest checks compare every descendant's bounds exactly at several pane wid
 including native text and form controls in same-origin frames. Raster comparisons
 permit only small antialiasing differences between browser screenshot and texture
 readback; layout tolerances are zero.
-Nested text and border comparisons retain the native screenshot and canvas PNG
-used by the pixel assertion, so raster differences can be inspected without
-capturing a later frame.
 Engine checks capture an offscreen
 neighbor before navigation and fill missing overview pictures serially.
 The 100-pane interaction case exercises width, row-height and stacked-divider
@@ -820,12 +809,6 @@ Functional and sustained frame-rate checks are both required. The
 [performance budgets](performance-budget.md) govern browser cadence, CPU
 headroom, background acquisition and resize timing.
 
-The Retina offscreen-refresh guard gives initial acquisition and resized
-replacement separate 15-second bounds. Its overall 40-second deadline permits
-both phases and browser setup; the suite's 20-second default can otherwise
-truncate the second phase after a valid first phase. Cadence and CPU budgets
-remain in the performance suite and are unchanged.
-
 ## CPU work during geometry requests
 
 An elapsed pane-rearrangement clock rules out active rearrangements without
@@ -849,21 +832,16 @@ without changing presentation, live-content policy or resize behavior.
 For those panes, the `data-moving` theme hook changes on the first scheduled
 frame rather than during the preceding React request commit.
 
-Hidden resize controls remain unavailable while their item geometry changes.
-Becoming visible supplies current geometry and neighbour items to their event
-handlers. Focus, maximized state, presentation mode, placeholder mounting,
-content and callback changes still render while hidden. Always-live applications
-retain their DOM and observe the host's updated dimensions.
-
-Invisible resize controls reuse their existing children while only render items
-change. They remain hidden inside an inert pane. Pane metadata, neighbours,
-callbacks, configuration and styling still update; becoming visible always
-supplies current geometry and row height to their event handlers. Titlebar action buttons
-depend on pane metadata, maximized state, the current close callback and the store.
-Their own memo boundary preserves custom controls while their container's
-availability changes. Renaming a hidden pane and changing its callbacks, controls
-or styling still update the buttons. Titlebar availability and public application
-phase delivery retain their usual rules.
+Hidden resize controls reuse their children while only render items change and
+stay unavailable inside the inert pane. Focus, maximized state, presentation
+mode, placeholder mounting, content, pane metadata, neighbours, callbacks,
+configuration and styling still update them while hidden, and becoming visible
+supplies current geometry, row height and neighbour items to their event
+handlers. Always-live applications retain their DOM and observe the host's
+updated dimensions. Titlebar action buttons have their own memo boundary over
+pane metadata, maximized state, the current close callback and the store, so
+custom controls survive availability changes while renames and callback,
+control or styling changes still update them.
 
 Content covers also reuse unchanged inputs. Their interaction eligibility includes
 visibility and normal presentation, so an invisible custom placeholder stays inert without

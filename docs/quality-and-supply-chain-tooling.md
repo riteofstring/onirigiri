@@ -28,7 +28,7 @@ pnpm install --frozen-lockfile --ignore-scripts
 | `./code-polishyw supply-chain`                         | Add online native audit, OSV, and release-age checks.                                                                         |
 | `./code-polishyw dependency-review --base origin/main` | Review an intentional manifest or lockfile change before installation.                                                        |
 | `./code-polishyw gate`                                 | Run the complete ordinary gate after broader execution is authorized.                                                         |
-| `pnpm consumer:check`                                  | Pack Onirigiri, install it into an unrelated temporary React app, and build against public exports only.                      |
+| `pnpm consumer:check`                                  | Pack and install Onirigiri in an unrelated temporary React app, build against public exports only, and check it in Chrome.    |
 | `pnpm test`                                            | Run unit and component behavior.                                                                                              |
 | `pnpm test:browser`                                    | Run real interaction workflows in the installed Google Chrome channel.                                                        |
 | `pnpm build`                                           | Build the library package and check the built package boundary.                                                               |

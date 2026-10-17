@@ -15,16 +15,12 @@ motion markers or unused timing subsets.
 Browser launches share `tests/browser/chrome-launch.ts`. macOS uses installed
 Chrome. Linux uses the Chrome for Testing headless shell at the pinned stable
 version, installed by `node scripts/install-linux-chrome.mjs` after verifying
-the archive digest. The versioned browser cache lives under
-`~/.cache/onirigiri/chrome-for-testing`, outside disposable checkouts. Baseline
-and candidate checkouts run by the same user share that executable path instead
-of loading browser libraries from private review worktrees. The installer
-extracts beside the destination and publishes the complete directory atomically;
-concurrent installers retain the first completed installation. Review artifacts
-retain their existing permissions. Launches use ANGLE on Vulkan, Dawn's Vulkan adapter and no
+the archive digest, with ANGLE on Vulkan, Dawn's Vulkan adapter and no
 presentation surface. On a headless Linux GPU host, installed Chrome's headless
 mode falls back to software compositing and reports its WebGPU adapter
 intermittently, while the headless shell composites and rasterizes on the GPU.
+The browser cache under `~/.cache/onirigiri/chrome-for-testing` lies outside
+disposable checkouts, so every checkout of the same user shares one executable.
 Playwright's bundled Chromium 149 predates the `copyElementImageToTexture`
 signature the engine uses. Browser and performance runs first require a
 hardware adapter and fail on a software fallback. The NVIDIA Vulkan driver
@@ -92,26 +88,8 @@ content. Separate headless pixel guards check changing content during held
 motion and overview exit, document identity, and unchanged render counts for
 content that remains hidden throughout navigation.
 
-The ordinary `pane-native-cadence-browser` guard uses a production build of its
-native fixture, with normal production React and an assertion of the running
-React renderer’s production mode before measuring. Its dedicated project stays
-in the canonical browser configuration, so both `pnpm test:browser` and the
-native browser selector include it. The development projects retain StrictMode
-functional coverage. Build output and dependency caches are separate from the
-development servers. This runtime separation prevents development overhead from
-being mistaken for shipped rendering cost; recorded development failures remain
-diagnostic evidence and are not converted into passes.
-
-The `pane-worker-capture-browser` and `pane-capture-display-browser` suites
-select the existing worker-PNG acceptance and live capture-display cases for
-focused regression proofs. They use the canonical Chrome project, hardware
-guard and assertions. The display cases cover full and reduced capture sizes
-at both pixel densities, including translucency and live pixels while encoding
-is pending. Their narrow selection keeps unrelated interaction costs out of
-the proof runtime; the complete native browser suite and mandatory performance
-checks retain their coverage and deadlines.
-
-The guard isolates automatic presentation with 100 mounted iframe applications alternating automatic native Canvas 2D and
+The ordinary `pane-native-cadence-browser` guard isolates automatic presentation
+with 100 mounted iframe applications alternating automatic native Canvas 2D and
 explicit native DOM animation. It traverses neighboring panes in normal and
 overview modes over ten-second samples, checks changing pixels, and enforces the
 nominal 60 Hz mean (or faster observed refresh interval), 50 ms maximum, and
@@ -120,7 +98,16 @@ It also rejects element-image captures during native navigation. Queued paint
 events must respect the current native presentation decision, including before
 the native host has been attached. This focused guard complements the heavier
 mixed native and HTML-in-Canvas performance matrix; it does not certify arbitrary
-content or visible-browser refresh rates.
+content or visible-browser refresh rates. It measures a production build of its
+native fixture and asserts that React runs in production mode first, so
+development overhead is never mistaken for shipped rendering cost; the
+development projects retain StrictMode functional coverage.
+
+The `pane-worker-capture-browser` and `pane-capture-display-browser` suites
+select the existing worker-PNG acceptance and capture-display cases as narrow
+regression proofs with the canonical Chrome project, hardware guard and
+assertions; the complete native browser suite and mandatory performance checks
+retain their coverage and deadlines.
 
 The production overview cadence check of the full 2D demo with its sibling
 `browser-surface-lab` workloads lives with the demo in `playground/`. It is an integration check of that application, separate from the

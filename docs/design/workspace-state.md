@@ -19,11 +19,9 @@ Neither frame interpolation nor those camera adjustments emit command events.
 The frame scheduler owns presentation boundaries, so React does not rerender the
 pane tree on each interpolated frame.
 
-Focused-pane frame notifications include the presentation's motion state, even
-when the final geometry is unchanged. Hosts that bridge expensive view mounts
-with retained pictures can wait for actual settlement instead of guessing the
-camera's duration. The notification does not schedule or pause consumer content;
-continuous presentation and content without a picture keep their existing policy.
+Focused-pane frame notifications carry the presentation's motion state even when
+the final geometry is unchanged, so hosts can wait for actual settlement instead
+of guessing the camera's duration; they never schedule or pause consumer content.
 
 Every new focus or camera destination publishes a request boundary, including
 commands issued during an unfinished move. That boundary prepares content and
@@ -97,15 +95,11 @@ Boundary tests cover complete command notifications, immutable prior snapshots,
 unsubscription, independent workspaces, layout restoration, and continuous camera
 motion. Browser tests cover keyboard navigation and retained pane presentation.
 
-Overview card width constraints can change on a mounted workspace. Updating them
-invalidates the existing geometry revision and reapplies the current overview
-camera mode around the same selected pane. This deliberately resets manual
-overview pan and zoom to the new baseline, while preserving the layout, normal
-camera and original pane content. Unchanged constraints publish no command;
-updates outside overview take effect on its next entry.
-Explicit width constraints set the initial overview scale in both camera modes.
-Without them, the existing fitted or stable following baseline is unchanged.
-Users can still zoom relative to either baseline using the existing controls.
+Changing overview card width constraints on a mounted workspace invalidates the
+geometry revision and reapplies the current overview camera mode around the same
+selected pane, deliberately resetting manual overview pan and zoom to the new
+baseline while preserving the layout, normal camera and pane content. Unchanged
+constraints publish no command; updates outside overview apply on its next entry.
 Layout restoration reads the current scene configuration so runtime default
 sizes remain authoritative while explicit saved pane sizes retain precedence.
 

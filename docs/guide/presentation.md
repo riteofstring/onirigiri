@@ -25,19 +25,17 @@ normal navigation mounts destination content before the camera settles.
 
 `renderPane` receives `runtimeState` (`"live"`, `"frozen"`, or `"hidden"`).
 `useOnirigiriPaneInteractive()` returns whether the pane's content currently
-accepts input, so a host can move focus into it as soon as it can receive it.
-Only components that call the hook re-render when it changes. Always-live
-content stays interactive during camera motion; only its pointer input is
-shielded. When another pane is selected, native keyboard focus leaves the
-departing pane's content. Motion that keeps the same pane selected preserves
-its input focus.
+accepts input, so a host can move focus into it as soon as it can receive it;
+only components that call the hook re-render when it changes.
 Onirigiri keeps the same content subtree while the engine moves stable pane hosts.
 Ready content stays visible during navigation and overview. Frozen content
 receives no input, and Onirigiri pauses its CSS animations; applications pause
 their own render loops. During camera motion a transparent shield over each pane
-takes pointer input, and focus leaves content that stops accepting input, so
-motion never restyles the content itself. Normal navigation mounts cold
-destination panes without mounting the entire corridor. Zustand owns layout state.
+takes pointer input, so motion never restyles the content itself; always-live
+content otherwise stays interactive. Focus leaves content that stops accepting
+input or whose pane is no longer selected; motion that keeps the same pane
+selected preserves it. Normal navigation mounts cold destination panes without
+mounting the entire corridor. Zustand owns layout state.
 
 ### Following the focused pane
 
@@ -175,9 +173,8 @@ It defaults to `false`. Only the departing cover fades; live content and input
 resume immediately through the existing readiness boundary. The cover is inert
 and ignores pointer input, and motion, hiding, errors or disabling the option
 cancel it immediately. Reduced motion skips the fade. The built-in icon/title
-placeholder does not fade, and content already live needs no cover or transition.
-Custom placeholders are treated as covers regardless of whether they contain an
-image, so use this option when their departing content should remain briefly.
+placeholder does not fade; custom placeholders fade as covers whether or not
+they contain an image.
 
 ```tsx
 <OnirigiriWorkspace restPictureFade renderPane={renderPane} />
