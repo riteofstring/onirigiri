@@ -15,6 +15,7 @@
       "bench/vite.config.ts",
       "fixtures/packed-consumer/src/main.tsx",
       "scripts/*.mjs",
+      "scripts/disable-dev-editor.d.mts",
       "playground/one-dimensional/src/main.tsx",
       "playground/one-dimensional/src/fixture.tsx",
       "playground/two-dimensional/src/main.tsx",
@@ -115,6 +116,9 @@
       {
         "path": "docs/design/source-organization.md",
         "sourcePaths": [
+          "scripts/disable-dev-editor.mjs",
+          "scripts/disable-dev-editor.d.mts",
+          "tests/dev-editor-endpoint.test.ts",
           "src/index.ts",
           "src/styles.css",
           "playground/library-source.ts",
@@ -809,7 +813,7 @@
         "basis": "temporary-no-fix",
         "reason": "Vite bundles the affected Windows editor-launch code. Default loopback listeners and Host validation limit exposure but do not eliminate malicious local-page requests. No aged fixed release is available; retain the pinned toolchain until Vite 8.1.6 reaches 30 days on 2026-11-05 and update by 2026-11-06.",
         "impact": "Windows interactive development remains exposed if an attacker supplies the existing crafted filename and required shell expansion inputs. Built browser packages and Linux release/comparison execution do not use the Windows shell branch. Use production preview for untrusted-file inspection and stop Windows dev servers before that workflow.",
-        "evidence": "https://github.com/riteofstring/onirigiri/blob/work/slim/docs/security/dependency-assessments.md",
+        "evidence": "https://github.com/riteofstring/onirigiri/blob/6a26dc5f26fae14ce864cbd73148793a8b3f0517/docs/security/dependency-assessments.md",
         "owner": "Codex",
         "reviewed": "2026-10-20",
         "expires": "2026-11-06"

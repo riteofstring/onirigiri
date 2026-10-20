@@ -6,6 +6,7 @@ import { librarySource } from "../library-source.ts";
 import { chromeLaunchOptions } from "../../tests/browser/chrome-launch.ts";
 import { requireHardwareWebGpu } from "../../tests/browser/hardware-webgpu.ts";
 import { surfaceLabServer } from "./surface-lab-server.mjs";
+import { disableDevEditor } from "../../scripts/disable-dev-editor.mjs";
 
 const playgroundRoot = fileURLToPath(new URL("../", import.meta.url));
 const examples = ["one-dimensional", "two-dimensional"];
@@ -24,7 +25,7 @@ export async function launchPlaygroundPreview(options) {
   };
   const server = await createServer({
     configFile: false,
-    plugins: [surfaceLabServer()],
+    plugins: [disableDevEditor(), surfaceLabServer()],
     optimizeDeps: {
       include: [
         "react",

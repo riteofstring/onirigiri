@@ -17,6 +17,7 @@ import { repositoryRoot, run, runPnpm } from "./lib/process.mjs";
 import { chromeLaunchOptions } from "../tests/browser/chrome-launch.ts";
 import { requireHardwareWebGpu } from "../tests/browser/hardware-webgpu.ts";
 import { verifyPackedPictureGeometry } from "./verify-packed-picture-geometry.mjs";
+import { disableDevEditor } from "./disable-dev-editor.mjs";
 
 const fixtureRoot = path.join(repositoryRoot, "fixtures/packed-consumer");
 const fixtureManifestPath = path.join(fixtureRoot, "package.template.json");
@@ -168,6 +169,7 @@ async function verifyConsumerInBrowser(consumerRoot, mode) {
     if (mode === "development") {
       server = await createServer({
         ...config,
+        plugins: [disableDevEditor()],
         optimizeDeps: { include: ["@riteofstring/onirigiri"] },
         server: addressOptions,
       });

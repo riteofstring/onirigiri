@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { join } from "node:path";
 import { chromeLaunchOptions } from "../tests/browser/chrome-launch.ts";
 import { requireHardwareWebGpu } from "../tests/browser/hardware-webgpu.ts";
+import { disableDevEditor } from "./disable-dev-editor.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -19,6 +20,7 @@ export async function launchRetainedPicturePreview(options = {}) {
   };
   const server = await createServer({
     configFile: false,
+    plugins: [disableDevEditor()],
     optimizeDeps: {
       include: [
         "react",

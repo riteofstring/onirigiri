@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { normalizePath } from "vite";
 import { defineConfig } from "vitest/config";
+import { disableDevEditor } from "./scripts/disable-dev-editor.mjs";
 
 const testLibraryAlias = {
   "@riteofstring/onirigiri": new URL("./src/index.ts", import.meta.url)
@@ -29,6 +30,7 @@ const jsdomTestFiles = [
 
 export default defineConfig({
   plugins: [
+    disableDevEditor(),
     {
       name: "inline-pane-capture-worker",
       apply: "build",

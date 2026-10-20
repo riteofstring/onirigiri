@@ -35,3 +35,10 @@ preview reuses the library's browser launch and hardware capability checks.
 The published package excludes the playground. Browser fixture HTML files and
 the root Vitest project list load the playground fixture and test entry points;
 TypeScript loads the surface-lab server declaration for its Vite plugin imports.
+
+Repository-owned development HTTP servers disable Vite's browser-to-editor
+endpoint before its bundled launcher receives a filename. The shared development
+plugin uses Connect's route matching at both root and raw configured base paths;
+builds and production preview retain their normal behavior. The
+[dependency assessments](../security/dependency-assessments.md) record the
+affected input paths, verification and bounded dependency-update window.

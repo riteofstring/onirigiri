@@ -1,9 +1,11 @@
 import { defineConfig } from "vite";
+import { disableDevEditor } from "../scripts/disable-dev-editor.mjs";
 
 const librarySource = new URL("../src/index.ts", import.meta.url).pathname;
 const libraryStyles = new URL("../src/styles.css", import.meta.url).pathname;
 
 export default defineConfig({
+  plugins: [disableDevEditor()],
   root: new URL("./", import.meta.url).pathname,
   resolve: {
     alias: [
