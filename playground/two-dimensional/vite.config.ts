@@ -3,9 +3,10 @@ import { fileURLToPath } from "node:url";
 
 import { librarySource } from "../library-source";
 import { surfaceLabServer } from "../scripts/surface-lab-server.mjs";
+import { disableDevEditor } from "../../scripts/disable-dev-editor.mjs";
 
 export default defineConfig({
-  plugins: [surfaceLabServer()],
+  plugins: [disableDevEditor(), surfaceLabServer()],
   root: fileURLToPath(new URL("./", import.meta.url)),
   resolve: librarySource.resolve,
   server: {

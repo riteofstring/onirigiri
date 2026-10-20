@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { createServer, preview } from "vite";
 import { surfaceLabServer } from "./surface-lab-server.mjs";
+import { disableDevEditor } from "../../scripts/disable-dev-editor.mjs";
 
 for (const mode of ["development", "preview"]) {
   await test(
@@ -35,7 +36,7 @@ for (const mode of ["development", "preview"]) {
         const configuration = {
           configFile: false,
           root,
-          plugins: [surfaceLabServer(fixtureRoot)],
+          plugins: [disableDevEditor(), surfaceLabServer(fixtureRoot)],
           logLevel: "silent",
         };
         const listener = { host: "127.0.0.1", port: 0, strictPort: true };

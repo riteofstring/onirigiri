@@ -44,56 +44,74 @@ on 2026-09-30; it clears the 30-day admission window on 2026-10-30. No early
 admission is justified when the affected path is absent. Expiry blocks continued
 acceptance without completing the update or a new evidence-backed assessment.
 
-## Vite 8.1.4 Windows editor launch
+## Vite 8.1.4 development editor endpoint
 
-Reviewed 2026-10-20 by Codex; expires 2026-11-06. Accept the moderate development
-risk temporarily because an aged fixed release is not yet available. This is
-`risk-accepted` / `temporary-no-fix`, not a claim that all supported uses are
-unaffected.
+Reviewed 2026-10-20 by Codex; expires 2026-11-06. The pinned Vite release
+contains launch-editor 2.14.1 and remains affected by three upstream advisories:
 
-[GHSA-698v-4r3x-3vcv](https://github.com/vitejs/launch-editor/security/advisories/GHSA-698v-4r3x-3vcv)
-affects the launch-editor 2.14.1 copy bundled inside Vite 8.1.4. In
-`vite/dist/node/chunks/node.js`, the `/__open-in-editor` middleware reads the
-request's `file` parameter, resolves it against the working directory, checks
-that it exists and passes it to `launchEditor`. Absolute paths outside the
-repository are accepted. On Windows, `escapeCmdArgs` omits percent-sign escaping
-before a shell command is executed. A crafted existing filename combined with
-environment expansion or NTFS stream behavior can execute commands as the
-developer. The advisory also describes a filename using `%CD%`; absence of an
-explicit attacker-supplied environment variable is not sufficient protection.
+- [GHSA-698v-4r3x-3vcv](https://github.com/vitejs/launch-editor/security/advisories/GHSA-698v-4r3x-3vcv):
+  Windows command construction fails to escape percent expansion.
+- [GHSA-587h-7wmj-h5pm](https://github.com/vitejs/launch-editor/security/advisories/GHSA-587h-7wmj-h5pm):
+  Windows path normalization bypasses the file-existence check. A supplied path
+  ending in `\..:1:1` survives middleware resolution until the position suffix is
+  removed. The resulting parent-directory path can pass `existsSync` without the
+  preceding component existing. Combined with percent expansion, this permits
+  command injection without an attacker-created file.
+- [GHSA-r825-w8mm-5pxw](https://github.com/vitejs/launch-editor/security/advisories/GHSA-r825-w8mm-5pxw):
+  WSL converts absolute `/mnt/` paths back to relative paths. An existing filename
+  beginning with `+` or `-` can become a command-line option for affected editors.
 
-Both playground dev configurations, `preview-playground.mjs`,
-`preview-retained-capture.mjs`, `two-dimensional-dev-server.ts`, the packed-consumer
-development fixture and the surface-lab server test can start this middleware.
-Their default listeners use localhost or 127.0.0.1, with Vite's normal Host
-validation. These controls reduce network exposure but do not prevent a malicious
-page from reaching a local development endpoint. In particular, a Windows
-contributor who has an attacker-named file anywhere on disk remains exposed.
+The resolved caller is Vite's `/__open-in-editor` middleware. It takes the HTTP
+`file` query parameter, resolves a path and calls the bundled launcher. The
+launcher removes the position suffix, checks existence, guesses an editor and
+constructs a process invocation. Windows uses a shell; WSL may change the path
+passed to an editor. Absolute paths outside the repository are accepted.
+Loopback listeners and Host validation do not authorize requests from local
+pages, and file existence is not a reliable Windows security boundary.
 
-The npm package contains browser code and no Vite server. Release builds and the
-GPU comparison run on Linux, where this function uses `spawn` without a shell.
-The cadence fixture uses a production build and Vite preview, which does not
-register the editor endpoint. Windows CI does briefly start a loopback dev server
-in the surface-lab test; its checked-in fixture requests do not invoke this
-endpoint. These narrower observations do not clear Windows interactive use.
+Every repository-owned Vite development HTTP server installs
+`scripts/disable-dev-editor.mjs`. Its early `configureServer` hook mounts an
+unconditional 404 response at the editor route, using Connect's own matching.
+It also mounts the raw configured base prefix, before Vite strips that prefix.
+Both mounts remain present in middleware mode. This covers case variants,
+trailing path segments and dot suffixes without parsing or forwarding `file`.
+The response ends without calling the downstream editor middleware.
 
-Retain the exact version for this bounded interval. On Windows, use built
-playground assets with `vite preview` when inspecting untrusted files, and stop
-interactive Vite dev servers before doing so. No untrusted-file workflow should
-rely on loopback or Host validation as authorization. Residual risk remains for
-contributors who run a dev server with attacker-controlled files available.
+The root, benchmark and both playground Vite configurations install
+the plugin. The playground preview, retained-capture preview, packed-consumer
+development fixture and surface-lab server test install it in their inline
+configurations. The two-dimensional browser test server inherits its playground
+configuration. Vitest's remaining internal middleware servers have no HTTP
+listener. The cadence configuration is used only for a production build and
+preview. The built npm package has no Vite server, and production preview
+never mounts the editor endpoint.
+
+The high finding is `not-affected` / `unreachable` for these owned entry points:
+no untrusted HTTP input can reach the vulnerable launcher. The two moderate
+findings retain explicit `risk-accepted` / `mitigated` assessments while the
+bundled dependency remains present. These decisions do not clear arbitrary Vite
+servers created by consumers or configurations that omit the plugin. New server
+entry points require the same mitigation until the dependency update.
+
+HTTP tests start the actual Vite configurations with temporary page and module
+files. They verify editor-route rejection at root, nested and percent-encoded
+bases, normal HTML injection and module transformation, and the hot-reload ping.
+The tests establish that the endpoint is unavailable; they do not establish
+that Windows path parsing or the bundled launcher itself is safe. Production
+rendering, motion and styling are unchanged. The development error overlay no
+longer opens an editor when its source-file link is clicked.
 
 [Registry metadata for Vite](https://registry.npmjs.org/vite) dates 8.1.6 to
 2026-10-06T04:51:51.393Z; it reaches 30 days on 2026-11-05. No affected release
-line has an aged fix as of this review. A launch-editor dependency override would
-not replace Vite's bundled copy. Disabling the endpoint at every configuration
-and inline server would add temporary code and remove editor integration.
-The limited development exposure and available production-preview workflow do
-not justify admitting a fresh toolchain release now. Keeping the dependency graph
-fixed also preserves the controlled cadence comparison's historical inputs.
+line has an aged fix as of this review. A launch-editor dependency override
+cannot replace Vite's bundled copy. Disabling the unused HTTP endpoint removes
+the reachable input with a small development-only change; admitting a younger
+bundler would replace substantially more code while the release is being
+verified. Keep the exact toolchain with this mitigation through the bounded
+admission window.
 
-Update to Vite 8.1.6 by 2026-11-06, remove this assessment, review the candidate
+Update to Vite 8.1.6 by 2026-11-06, remove these assessments, review the complete
 dependency graph, install frozen without scripts and verify build and development
-server behavior. Reassess sooner if listener exposure, Windows execution lanes,
-file-input authority or the resolved Vite version changes. This assessment does
-not cover other applications that independently run a Vite development server.
+server behavior. Reassess sooner if an HTTP server bypasses the plugin, middleware
+ordering changes, an editor caller is introduced or Vite changes. All findings
+remain visible in dependency-review output.
