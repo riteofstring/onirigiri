@@ -88,11 +88,15 @@ on real GPUs before release.
 ## Releasing
 
 Set the new `version` in `package.json`, commit, and push an annotated
-`vMAJOR.MINOR.PATCH` tag that matches it. `.github/workflows/release.yml` runs in
+`vMAJOR.MINOR.PATCH` tag that matches it, including any prerelease suffix such as
+`-beta.1`. `.github/workflows/release.yml` runs in
 the `npm` GitHub environment, verifies the tag, typechecks, runs the unit tests,
 builds, and publishes `@riteofstring/onirigiri` through npm trusted publishing,
 which adds provenance while the repository is public. Browser suites need a real
-GPU and run before tagging, not in that workflow.
+GPU and run before tagging, not in that workflow. Prereleases publish under the
+`beta` npm dist-tag; stable versions use `latest`. Publishing a beta does not
+replace the stable default installation. Install a beta with
+`npm install @riteofstring/onirigiri@beta`, or use its exact version to pin it.
 
 npm trusted publishing can only be configured for a package that already exists.
 Publish the first version by hand (`pnpm build`, then `npm publish --access public`),

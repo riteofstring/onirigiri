@@ -84,4 +84,11 @@ jobs:
         run: pnpm build
 
       - name: Publish through trusted publishing
-        run: npm publish --access public
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ "${RELEASE_TAG}" == *-* ]]; then
+            npm publish --access public --tag beta
+          else
+            npm publish --access public --tag latest
+          fi
