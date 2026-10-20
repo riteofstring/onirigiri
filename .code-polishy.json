@@ -785,6 +785,23 @@
         "owner": "Codex",
         "reviewed": "2026-10-10",
         "expires": "2026-10-31"
+      },
+      {
+        "id": "ghsa-698v-4r3x-3vcv-development-window",
+        "ecosystem": "pnpm",
+        "advisory": "GHSA-698v-4r3x-3vcv",
+        "package": "vite",
+        "affectedVersion": "8.1.4",
+        "scope": "pnpm-lock.yaml",
+        "severity": "moderate",
+        "status": "risk-accepted",
+        "basis": "temporary-no-fix",
+        "reason": "Vite bundles the affected Windows editor-launch code. Default loopback listeners and Host validation limit exposure but do not eliminate malicious local-page requests. No aged fixed release is available; retain the pinned toolchain until Vite 8.1.6 reaches 30 days on 2026-11-05 and update by 2026-11-06.",
+        "impact": "Windows interactive development remains exposed if an attacker supplies the existing crafted filename and required shell expansion inputs. Built browser packages and Linux release/comparison execution do not use the Windows shell branch. Use production preview for untrusted-file inspection and stop Windows dev servers before that workflow.",
+        "evidence": "https://github.com/riteofstring/onirigiri/blob/work/slim/docs/security/dependency-assessments.md",
+        "owner": "Codex",
+        "reviewed": "2026-10-20",
+        "expires": "2026-11-06"
       }
     ],
     "allowedLicenses": [
