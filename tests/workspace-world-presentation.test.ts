@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceWorldFrame } from "../src/types";
 import { WorkspaceWorldPresentation } from "../src/presentation/workspace-world-presentation";
@@ -7,6 +7,8 @@ describe("WorkspaceWorldPresentation", () => {
   it("keeps a pane and the dotted grid registered through normal, overview, and reversal frames", () => {
     const presenter = new WorkspaceWorldPresentation();
     const world = document.createElement("div");
+    const animation = { cancel: vi.fn(), pause: vi.fn(), currentTime: null };
+    world.animate = vi.fn(() => animation as unknown as Animation);
     const grid = document.createElement("div");
     const pane = document.createElement("section");
     pane.style.transform = "translate3d(960px, 180px, 0) scale(1)";
@@ -32,11 +34,46 @@ describe("WorkspaceWorldPresentation", () => {
 
     expect(presenter.retarget(overview, normal)).toBe(true);
     expect(projectedPoint(world, pane)).toEqual(duringOverview);
+    expect(world.animate).toHaveBeenCalledTimes(1);
+    expect(animation.pause).toHaveBeenCalledTimes(1);
     presenter.advanceMotion(160);
     presenter.apply(normal);
     expect(projectedPoint(world, pane)).toEqual(normalPanePosition);
     expect(presenter.hasActiveMotion()).toBe(false);
+    expect(animation.cancel).toHaveBeenCalledTimes(1);
   });
+
+  it.each(["settle", "snap", "same destination", "unbind", "rebind"])(
+    "releases the world's motion animation on %s",
+    (ending) => {
+      const presenter = new WorkspaceWorldPresentation();
+      const world = document.createElement("div");
+      const grid = document.createElement("div");
+      const animation = { cancel: vi.fn(), pause: vi.fn(), currentTime: null };
+      world.animate = vi.fn(() => animation as unknown as Animation);
+      const unbind = presenter.bindWorldHost(world, grid);
+      const frame = worldFrame({ scale: 1, x: -320, y: -48 });
+      presenter.apply(frame);
+      expect(world.animate).not.toHaveBeenCalled();
+      presenter.apply(frame, true);
+      presenter.apply(frame, true);
+      expect(world.animate).toHaveBeenCalledTimes(1);
+      const displayed = world.style.transform;
+
+      if (ending === "settle") presenter.apply(frame);
+      if (ending === "snap") presenter.snapMotion();
+      if (ending === "same destination") {
+        expect(presenter.retarget(frame, frame)).toBe(false);
+      }
+      if (ending === "unbind") unbind();
+      if (ending === "rebind") {
+        presenter.bindWorldHost(document.createElement("div"), grid);
+      }
+
+      expect(animation.cancel).toHaveBeenCalledTimes(1);
+      expect(world.style.transform).toBe(displayed);
+    },
+  );
 
   it("moves the destination focal point on one direct monotonic screen path", () => {
     const presenter = new WorkspaceWorldPresentation();

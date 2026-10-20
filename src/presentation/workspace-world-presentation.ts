@@ -4,6 +4,7 @@ import type {
   WorkspaceWorldFrame,
 } from "../types.js";
 import { defaultCameraMotion, MotionTimeline } from "./motion-curve.js";
+import { syncTransformMotionHint } from "./transform-motion-hint.js";
 import { unionRects } from "./workspace-sweep-geometry.js";
 
 const worldGridOverscanRatio = 0.25;
@@ -36,6 +37,7 @@ interface WorldBinding {
   lastTransform: string;
   lastWillChange: string;
   motion: WorldMotion | null;
+  motionHint: Animation | null;
   motionGrid: Rect | null;
   motionProgress: number;
   presentedFrame: WorkspaceWorldFrame | null;
@@ -53,9 +55,11 @@ export class WorkspaceWorldPresentation {
     if (this.binding?.host === host && this.binding.grid === grid) {
       return () => undefined;
     }
+    this.binding?.motionHint?.cancel();
     this.binding = host && grid ? createWorldBinding(host, grid) : null;
     return () => {
       if (this.binding?.host === host && this.binding.grid === grid) {
+        this.binding.motionHint?.cancel();
         this.binding = null;
       }
     };
@@ -77,6 +81,11 @@ export class WorkspaceWorldPresentation {
     if (binding.lastWillChange !== willChange) {
       binding.lastWillChange = willChange;
       binding.host.style.willChange = willChange;
+      binding.motionHint = syncTransformMotionHint(
+        binding.host,
+        binding.motionHint,
+        willChange !== "",
+      );
     }
     writeWorldGrid(binding, frame, moving || binding.motion !== null);
     return presented;
@@ -209,6 +218,7 @@ function createWorldBinding(
     lastTransform: "",
     lastWillChange: "",
     motion: null,
+    motionHint: null,
     motionGrid: null,
     motionProgress: 1,
     presentedFrame: null,

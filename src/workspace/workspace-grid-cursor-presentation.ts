@@ -2,6 +2,7 @@ import {
   defaultCameraMotion,
   MotionTimeline,
 } from "../presentation/motion-curve.js";
+import { syncTransformMotionHint } from "../presentation/transform-motion-hint.js";
 import type {
   OnirigiriMotionCurve,
   WorkspaceGridCursorRenderItem,
@@ -36,6 +37,7 @@ interface CursorBinding {
   lastX: number;
   lastY: number;
   motion: { from: CursorBox; fromScale: number; to: CursorBox } | null;
+  motionHint: Animation | null;
   motionProgress: number;
 }
 
@@ -53,9 +55,11 @@ export class WorkspaceGridCursorPresentation {
     if (this.binding?.host === host) {
       return () => undefined;
     }
+    this.binding?.motionHint?.cancel();
     this.binding = host ? createCursorBinding(host) : null;
     return () => {
       if (this.binding?.host === host) {
+        this.binding.motionHint?.cancel();
         this.binding = null;
       }
     };
@@ -71,6 +75,11 @@ export class WorkspaceGridCursorPresentation {
       return emptyWriteCounts();
     }
     const counts = emptyWriteCounts();
+    binding.motionHint = syncTransformMotionHint(
+      binding.host,
+      binding.motionHint,
+      moving,
+    );
     const geometry = presentedCursorGeometry(binding, item);
     counts.boxWrites += writeBox(binding, geometry);
     counts.attributeWrites += writeStringAttribute(
@@ -111,6 +120,8 @@ export class WorkspaceGridCursorPresentation {
     if (!binding || !from || sameCursorBox(from, to)) {
       if (binding) {
         binding.motion = null;
+        binding.motionHint?.cancel();
+        binding.motionHint = null;
       }
       return false;
     }
@@ -157,6 +168,8 @@ export class WorkspaceGridCursorPresentation {
     if (this.binding) {
       this.binding.motion = null;
       this.binding.motionProgress = 1;
+      this.binding.motionHint?.cancel();
+      this.binding.motionHint = null;
     }
   }
 }
@@ -176,6 +189,7 @@ function createCursorBinding(host: HTMLElement): CursorBinding {
     lastX: Number.NaN,
     lastY: Number.NaN,
     motion: null,
+    motionHint: null,
     motionProgress: 1,
   };
 }
