@@ -592,23 +592,10 @@ export class WorkspaceFrameScheduler {
         !this.options.presentation.hasActivePaneRearrangement(),
       )
     ) {
-      if (!sameOverviewCameraFrame(previous, snapshot)) {
-        if (this.options.worldPresentation?.hasActiveMotion()) {
-          if (
-            this.options.worldPresentation.isMovingTo(
-              this.renderWorldFrameForSnapshot(snapshot),
-            )
-          ) {
-            return;
-          }
-          this.options.worldPresentation.snapMotion();
-        }
-        this.overviewCameraMotionInitialFramePending = false;
-      }
+      this.settleOverviewCameraFrame(previous, snapshot);
       return;
     }
-    const wasActive =
-      this.options.worldPresentation?.hasActiveMotion() ?? false;
+    const wasActive = motionIsActive(this.options.worldPresentation);
     const initialFramePending = this.overviewCameraMotionInitialFramePending;
     const retargeted =
       this.options.worldPresentation?.retarget(
@@ -623,6 +610,24 @@ export class WorkspaceFrameScheduler {
         this.paneRearrangementInitialFramePending);
   }
 
+  private settleOverviewCameraFrame(
+    previous: WorkspaceLayoutSnapshot,
+    snapshot: WorkspaceLayoutSnapshot,
+  ): void {
+    if (sameOverviewCameraFrame(previous, snapshot)) return;
+    if (this.options.worldPresentation?.hasActiveMotion()) {
+      if (
+        this.options.worldPresentation.isMovingTo(
+          this.renderWorldFrameForSnapshot(snapshot),
+        )
+      ) {
+        return;
+      }
+      this.options.worldPresentation.snapMotion();
+    }
+    this.overviewCameraMotionInitialFramePending = false;
+  }
+
   private retargetCursor(snapshot: WorkspaceLayoutSnapshot): void {
     const previous = this.lastCursorGeometrySnapshot;
     if (!this.cursorGeometryChanged(snapshot)) {
@@ -633,24 +638,34 @@ export class WorkspaceFrameScheduler {
       snapshot.maximizedPaneId === previous.maximizedPaneId &&
       snapshot.paneRearrangementRevision === previous.paneRearrangementRevision
     ) {
-      if (
-        this.options.cursorPresentation?.hasActiveMotion() &&
-        this.options.cursorPresentation.isMovingTo(
-          this.renderCursorForSnapshot(
-            snapshot,
-            workspaceSnapshotIsMoving(snapshot),
-          ),
-        )
-      ) {
-        return;
-      }
-      this.options.cursorPresentation?.snapMotion();
-      this.cursorMotionInitialFramePending = false;
+      this.settleCursorFrame(snapshot);
       return;
     }
+    this.holdOverviewCameraInitialFrame(
+      snapshot,
+      this.startCursorMotion(snapshot),
+    );
+  }
+
+  private settleCursorFrame(snapshot: WorkspaceLayoutSnapshot): void {
+    if (
+      this.options.cursorPresentation?.hasActiveMotion() &&
+      this.options.cursorPresentation.isMovingTo(
+        this.renderCursorForSnapshot(
+          snapshot,
+          workspaceSnapshotIsMoving(snapshot),
+        ),
+      )
+    ) {
+      return;
+    }
+    this.options.cursorPresentation?.snapMotion();
+    this.cursorMotionInitialFramePending = false;
+  }
+
+  private startCursorMotion(snapshot: WorkspaceLayoutSnapshot): boolean {
     const { curve, followsStoreCamera } = this.cursorMotion(snapshot);
-    const wasActive =
-      this.options.cursorPresentation?.hasActiveMotion() ?? false;
+    const wasActive = motionIsActive(this.options.cursorPresentation);
     const initialFramePending = this.cursorMotionInitialFramePending;
     const retargeted =
       this.options.cursorPresentation?.retarget(
@@ -667,6 +682,13 @@ export class WorkspaceFrameScheduler {
         !wasActive ||
         this.paneRearrangementInitialFramePending ||
         snapshot.presentationMode !== "overview");
+    return retargeted;
+  }
+
+  private holdOverviewCameraInitialFrame(
+    snapshot: WorkspaceLayoutSnapshot,
+    retargeted: boolean,
+  ): void {
     if (
       retargeted &&
       snapshot.presentationMode === "overview" &&
@@ -905,4 +927,10 @@ function sameFocusedPaneFrame(
     Math.abs(left.x - right.x) <= 0.001 &&
     Math.abs(left.y - right.y) <= 0.001
   );
+}
+
+function motionIsActive(
+  presentation: { hasActiveMotion(): boolean } | undefined,
+): boolean {
+  return presentation?.hasActiveMotion() ?? false;
 }

@@ -936,24 +936,34 @@ export class PanePictures {
           capture: receipt,
         },
       );
-      if (!accepted) {
-        const attempt = this.attempts.get(pane.paneId);
-        if (attempt) attempt.retryAt = Date.now() + 1000;
-      } else {
-        this.retireSeed(pane.paneId);
-        const captured = this.configuration.panes.get(pane.paneId);
-        if (
-          captured &&
-          batch.panes.every((candidate) => this.currentCandidate(candidate))
-        )
-          this.configuration.onCaptured?.(captured, result.image, receipt);
-      }
+      this.recordCaptureOutcome(batch, result.image, receipt, accepted);
       this.reason = null;
       return accepted;
     } catch (error) {
       this.captureFailed(batch, error);
       return false;
     }
+  }
+
+  private recordCaptureOutcome(
+    batch: Batch,
+    image: Blob,
+    receipt: OnirigiriPaneCaptureReceipt,
+    accepted: boolean,
+  ): void {
+    const paneId = batch.panes[0]!.paneId;
+    if (!accepted) {
+      const attempt = this.attempts.get(paneId);
+      if (attempt) attempt.retryAt = Date.now() + 1000;
+      return;
+    }
+    this.retireSeed(paneId);
+    const captured = this.configuration.panes.get(paneId);
+    if (
+      captured &&
+      batch.panes.every((candidate) => this.currentCandidate(candidate))
+    )
+      this.configuration.onCaptured?.(captured, image, receipt);
   }
 
   private async capturePreload(
@@ -1230,20 +1240,29 @@ export class PanePictures {
     const host = this.hosts.get(item.paneId);
     if (
       !host ||
-      this.frozenSurface(item.paneId, host) ||
-      !this.canAcquire(item.paneId, host) ||
-      ["dom", "canvas", "placeholder"].includes(
-        this.decision(item.paneId).requested,
-      ) ||
-      (this.isContinuous() && this.isLive(item.paneId)) ||
-      (this.configuration.liveContent &&
-        !this.isPreloading(item.paneId) &&
-        !host.readiness.getSnapshot()) ||
+      this.preloadBlocked(item.paneId, host) ||
       this.pictureMatchesContent(item.paneId, host) ||
       this.preloadWouldCoverContent(item, host)
     )
       return null;
     return host;
+  }
+
+  private preloadBlocked(
+    paneId: PaneId,
+    host: ContentHost,
+  ): boolean | undefined {
+    return (
+      this.frozenSurface(paneId, host) ||
+      !this.canAcquire(paneId, host) ||
+      ["dom", "canvas", "placeholder"].includes(
+        this.decision(paneId).requested,
+      ) ||
+      (this.isContinuous() && this.isLive(paneId)) ||
+      (this.configuration.liveContent &&
+        !this.isPreloading(paneId) &&
+        !host.readiness.getSnapshot())
+    );
   }
 
   private pictureMatchesContent(paneId: PaneId, host: ContentHost): boolean {

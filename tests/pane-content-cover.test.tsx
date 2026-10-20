@@ -222,9 +222,39 @@ it.each(["error", "hidden", "disabled", "unmount"])(
   },
 );
 
-it.each(["supplied", "captured", "unsized"])(
-  "preserves %s picture sizing across pane shrink and growth",
-  async (source) => {
+it.each([
+  {
+    source: "supplied",
+    capture: null,
+    cssSize: { width: 240, height: 120 },
+    width: "240px",
+    height: "120px",
+    anchor: "auto",
+  },
+  {
+    source: "captured",
+    capture: {
+      id: "capture",
+      devicePixelRatio: 2,
+      pixelsPerCss: { x: 2, y: 2 },
+      bounds: { x: 0, y: 0, width: 320, height: 180 },
+    },
+    cssSize: { width: 240, height: 120 },
+    width: "320px",
+    height: "180px",
+    anchor: "auto",
+  },
+  {
+    source: "unsized",
+    capture: null,
+    cssSize: undefined,
+    width: "",
+    height: "",
+    anchor: "",
+  },
+])(
+  "preserves $source picture sizing across pane shrink and growth",
+  async ({ capture, cssSize, width, height, anchor }) => {
     const texture = {
       width: 64,
       height: 36,
@@ -237,20 +267,12 @@ it.each(["supplied", "captured", "unsized"])(
     };
     const picture: NonNullable<ReturnType<PanePictures["get"]>> = {
       revision: 1,
-      capture:
-        source === "captured"
-          ? {
-              id: "capture",
-              devicePixelRatio: 2,
-              pixelsPerCss: { x: 2, y: 2 },
-              bounds: { x: 0, y: 0, width: 320, height: 180 },
-            }
-          : null,
+      capture,
       image: new Blob(["Saved picture"]),
       width: 64,
       height: 36,
       originalSize: { width: 640, height: 360 },
-      cssSize: source === "unsized" ? undefined : { width: 240, height: 120 },
+      cssSize,
       texture,
       preview: texture,
       fit: "fill",
@@ -265,14 +287,10 @@ it.each(["supplied", "captured", "unsized"])(
       container.style.width = `${paneSize}px`;
       container.style.height = `${paneSize}px`;
       await fixture.render();
-      expect(canvas.style.width).toBe(
-        source === "captured" ? "320px" : source === "supplied" ? "240px" : "",
-      );
-      expect(canvas.style.height).toBe(
-        source === "captured" ? "180px" : source === "supplied" ? "120px" : "",
-      );
-      expect(canvas.style.right).toBe(source === "unsized" ? "" : "auto");
-      expect(canvas.style.bottom).toBe(source === "unsized" ? "" : "auto");
+      expect(canvas.style.width).toBe(width);
+      expect(canvas.style.height).toBe(height);
+      expect(canvas.style.right).toBe(anchor);
+      expect(canvas.style.bottom).toBe(anchor);
       expect(canvas.width).toBe(64);
       expect(canvas.height).toBe(36);
     }
