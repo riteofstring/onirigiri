@@ -34,6 +34,7 @@ it("automated previews request headless Chrome and visible previews require an e
     const dependencies = {
       "node:url": await import("node:url"),
       "node:path": await import("node:path"),
+      "./disable-dev-editor.mjs": await import("./scripts/disable-dev-editor.mjs"),
       "../tests/browser/chrome-launch.ts": {chromeLaunchOptions: {args: []}},
       "../tests/browser/hardware-webgpu.ts": {requireHardwareWebGpu: async () => {}},
       vite: {createServer: async () => ({async listen() {}, async close() {}})},
