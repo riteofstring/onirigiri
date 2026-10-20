@@ -32,6 +32,7 @@ import type {
   OnirigiriWorkspaceProps,
 } from "../workspace/onirigiri-workspace-types.js";
 import type {
+  PaneId,
   PaneRuntimeState,
   WorkspacePane,
   WorkspacePresentationMode,
@@ -99,8 +100,11 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
     presentationMode,
     runtimeState,
     restPictureFade,
-    placeholderInput:
-      visible && !!renderPanePlaceholder && presentationMode === "normal",
+    placeholderInput: placeholderInputAvailable(
+      visible,
+      renderPanePlaceholder,
+      presentationMode,
+    ),
   });
   useLayoutEffect(() => {
     readiness.invalidate();
@@ -145,9 +149,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
             data-onirigiri-slot="pane-live-content"
             data-onirigiri-content-fit={contentFit}
             {...inertAttribute(
-              presentationMode !== "normal" ||
-                covered ||
-                contentRuntime === "hidden",
+              liveContentInert(presentationMode, covered, contentRuntime),
             )}
             ref={contentRef}
             style={liveSlot.style}
@@ -265,12 +267,10 @@ function usePaneCoverState({
 const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
   const { pictures, picture, pane, covered, visible, error } = props;
   const { showPicture, placeholderInteractive } = usePaneCoverState(props);
-  const { fading, retainedCover, surfaceRef } = usePaneCoverFade(
+  const { fading, coverProps, coverShowPicture, surfaceRef } = usePaneCoverFade(
     props,
     showPicture,
   );
-  const coverProps = retainedCover?.props ?? props;
-  const coverShowPicture = retainedCover?.showPicture ?? showPicture;
   const surfaceVisible = covered || fading;
   const styling = useOnirigiriStyling();
   const pictureSlot = resolveOnirigiriSlotProps(
@@ -282,7 +282,7 @@ const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
   return (
     <div
       className="onirigiri-pane__picture-surface"
-      aria-hidden={!covered || (showPicture && !error)}
+      aria-hidden={coverSurfaceHidden(covered, showPicture, error)}
       data-onirigiri-picture-visible={String(surfaceVisible)}
       data-onirigiri-picture-fading={String(fading)}
       {...inertAttribute(fading)}
@@ -317,7 +317,7 @@ const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
 const panePictureFadeDuration = 100;
 
 function usePaneCoverFade(props: PaneCoverProps, showPicture: boolean) {
-  const { covered, restPictureFade, atRest, visible, picture, error } = props;
+  const { covered, restPictureFade, visible, error } = props;
   const surfaceRef = useRef<HTMLDivElement>(null);
   const previousCover = useRef<{
     props: PaneCoverProps;
@@ -326,17 +326,10 @@ function usePaneCoverFade(props: PaneCoverProps, showPicture: boolean) {
   const [finished, setFinished] = useState(false);
   const previous = previousCover.current;
   const fading = Boolean(
-    restPictureFade &&
-    atRest &&
-    visible &&
-    !covered &&
-    !error &&
+    coverFadeAllowed(props) &&
     !finished &&
     previous &&
-    previous.props.pane === props.pane &&
-    (previous.showPicture
-      ? previous.props.picture === picture && showPicture
-      : previous.props.renderPanePlaceholder === props.renderPanePlaceholder),
+    coverFadeContinues(previous, props, showPicture),
   );
   useLayoutEffect(() => {
     if (
@@ -379,7 +372,60 @@ function usePaneCoverFade(props: PaneCoverProps, showPicture: boolean) {
       reducedMotion?.removeEventListener("change", changed);
     };
   }, [fading]);
-  return { fading, retainedCover: fading ? previous : null, surfaceRef };
+  const retained = fading ? previous : null;
+  return {
+    fading,
+    coverProps: retained ? retained.props : props,
+    coverShowPicture: retained ? retained.showPicture : showPicture,
+    surfaceRef,
+  };
+}
+
+function coverFadeAllowed({
+  restPictureFade,
+  atRest,
+  visible,
+  covered,
+  error,
+}: PaneCoverProps): boolean {
+  return Boolean(restPictureFade && atRest && visible && !covered && !error);
+}
+
+function coverFadeContinues(
+  previous: { props: PaneCoverProps; showPicture: boolean },
+  props: PaneCoverProps,
+  showPicture: boolean,
+): boolean {
+  if (previous.props.pane !== props.pane) return false;
+  return previous.showPicture
+    ? previous.props.picture === props.picture && showPicture
+    : previous.props.renderPanePlaceholder === props.renderPanePlaceholder;
+}
+
+function placeholderInputAvailable(
+  visible: boolean,
+  renderPanePlaceholder: OnirigiriWorkspaceProps["renderPanePlaceholder"],
+  presentationMode: WorkspacePresentationMode,
+): boolean {
+  return visible && !!renderPanePlaceholder && presentationMode === "normal";
+}
+
+function coverSurfaceHidden(
+  covered: boolean,
+  showPicture: boolean,
+  error: string | null,
+): boolean {
+  return !covered || (showPicture && !error);
+}
+
+function liveContentInert(
+  presentationMode: WorkspacePresentationMode,
+  covered: boolean,
+  contentRuntime: PaneRuntimeState,
+): boolean {
+  return (
+    presentationMode !== "normal" || covered || contentRuntime === "hidden"
+  );
 }
 
 function PaneCoverPlaceholder(
@@ -462,22 +508,12 @@ function usePaneContentState({
   );
   const getWarmingState = useCallback(
     () =>
-      (pictures.isLive(pane.paneId) ? 8 : 0) |
-      (pictures.isContinuous() ? 16 : 0) |
-      (pictures.isLive(pane.paneId) && pictures.acceptsContentInput()
-        ? 32
-        : 0) |
-      (((restPictureFade && pictures.isLive(pane.paneId)) ||
-        (placeholderInput && pictures.getPresentation(pane.paneId).covered)) &&
-      pictures.isInteractive()
-        ? 64
-        : 0) |
-      (pictures.isDrawn(pane.paneId) ? 4 : 0) |
-      (pictures.isOverviewCapture(pane.paneId)
-        ? 1
-        : pictures.isPreloading(pane.paneId)
-          ? 2
-          : 0),
+      paneWarmingState(
+        pictures,
+        pane.paneId,
+        restPictureFade,
+        placeholderInput,
+      ),
     [pictures, pane.paneId, restPictureFade, placeholderInput],
   );
   const warming = useSyncExternalStore(
@@ -637,4 +673,39 @@ function inertAttribute(inert: boolean): { inert?: boolean } {
   return booleanInert
     ? { inert }
     : ({ inert: inert ? "" : undefined } as unknown as { inert?: boolean });
+}
+
+function paneWarmingState(
+  pictures: PanePictures,
+  paneId: PaneId,
+  restPictureFade: boolean | undefined,
+  placeholderInput: boolean,
+): number {
+  return (
+    (pictures.isLive(paneId) ? 8 : 0) |
+    (pictures.isContinuous() ? 16 : 0) |
+    paneInputWarming(pictures, paneId, restPictureFade, placeholderInput) |
+    (pictures.isDrawn(paneId) ? 4 : 0) |
+    (pictures.isOverviewCapture(paneId)
+      ? 1
+      : pictures.isPreloading(paneId)
+        ? 2
+        : 0)
+  );
+}
+
+function paneInputWarming(
+  pictures: PanePictures,
+  paneId: PaneId,
+  restPictureFade: boolean | undefined,
+  placeholderInput: boolean,
+): number {
+  return (
+    (pictures.isLive(paneId) && pictures.acceptsContentInput() ? 32 : 0) |
+    (((restPictureFade && pictures.isLive(paneId)) ||
+      (placeholderInput && pictures.getPresentation(paneId).covered)) &&
+    pictures.isInteractive()
+      ? 64
+      : 0)
+  );
 }

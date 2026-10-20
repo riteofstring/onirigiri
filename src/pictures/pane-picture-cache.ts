@@ -107,8 +107,7 @@ export class PanePictureCache {
       !picture ||
       (picture.fit === fit &&
         picture.position === position &&
-        picture.cssSize?.width === cssSize?.width &&
-        picture.cssSize?.height === cssSize?.height)
+        sameCssSize(picture.cssSize, cssSize))
     )
       return;
     this.pictures.set(id, {
@@ -377,4 +376,11 @@ function reducedSize(size: PictureSize, edge: number): PictureSize {
 
 function normalVisible(item: PaneRenderItem): boolean {
   return item.visible && item.presentationMode === "normal";
+}
+
+function sameCssSize(
+  previous: PictureSize | undefined,
+  next: PictureSize | undefined,
+): boolean {
+  return previous?.width === next?.width && previous?.height === next?.height;
 }

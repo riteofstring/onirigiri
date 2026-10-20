@@ -216,14 +216,33 @@ function paneItemFieldsAreUnchanged(
 ): boolean {
   if (previous === next) return true;
   if (!previous || !next) return false;
-  const hidden =
-    ownItem &&
+  const hidden = ownItem && hiddenPaneItemPair(previous, next);
+  const frozenOverview = ownItem && frozenOverviewPaneItemPair(previous, next);
+  return equalPaneItemFields(
+    previous,
+    next,
+    hidden || frozenOverview,
+    frozenOverview,
+  );
+}
+
+function hiddenPaneItemPair(
+  previous: PaneRenderItem,
+  next: PaneRenderItem,
+): boolean {
+  return (
     !previous.visible &&
     !next.visible &&
     previous.runtimeState === "hidden" &&
-    next.runtimeState === "hidden";
-  const frozenOverview =
-    ownItem &&
+    next.runtimeState === "hidden"
+  );
+}
+
+function frozenOverviewPaneItemPair(
+  previous: PaneRenderItem,
+  next: PaneRenderItem,
+): boolean {
+  return (
     previous.visible &&
     next.visible &&
     !previous.focused &&
@@ -231,12 +250,7 @@ function paneItemFieldsAreUnchanged(
     previous.runtimeState === "frozen" &&
     next.runtimeState === "frozen" &&
     previous.presentationMode === "overview" &&
-    next.presentationMode === "overview";
-  return equalPaneItemFields(
-    previous,
-    next,
-    hidden || frozenOverview,
-    frozenOverview,
+    next.presentationMode === "overview"
   );
 }
 
@@ -253,6 +267,14 @@ function equalPaneItemFields(
     if (key === "moving" && ignoreMotion) continue;
     if (previous[key] !== next[key]) return false;
   }
+  return paneItemHasNoExtraFields(previous, next, ignorePreload);
+}
+
+function paneItemHasNoExtraFields(
+  previous: PaneRenderItem,
+  next: PaneRenderItem,
+  ignorePreload: boolean,
+): boolean {
   for (const key in next) {
     if (key === "preload" && ignorePreload) continue;
     if (!(key in previous)) return false;

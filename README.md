@@ -22,8 +22,10 @@ without a picture show a placeholder while moving or in overview.
 
 ## Install
 
+Install this beta with its exact version:
+
 ```sh
-pnpm add @riteofstring/onirigiri
+pnpm add @riteofstring/onirigiri@0.4.0-beta.1
 ```
 
 React 18.2 or 19 is required as a peer dependency.
