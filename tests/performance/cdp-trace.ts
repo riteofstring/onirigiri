@@ -75,6 +75,11 @@ export function shouldCapturePerformanceCdpTrace(
 
 export async function startPerformanceCdpTrace(
   session: CDPSession,
+  configuration: {
+    includedCategories: string[];
+    recordMode: "recordContinuously";
+    traceBufferSizeInKb: number;
+  } = performanceCdpTraceConfiguration,
 ): Promise<PerformanceCdpTrace> {
   let completeTrace: (trace: CompletedChromeTrace) => void;
   let rejectTrace: (reason: Error) => void;
@@ -97,7 +102,7 @@ export async function startPerformanceCdpTrace(
     rejectTrace(new Error("Chrome trace completed without a stream."));
   });
   await session.send("Tracing.start", {
-    traceConfig: performanceCdpTraceConfiguration,
+    traceConfig: configuration,
     transferMode: "ReturnAsStream",
   });
   return {

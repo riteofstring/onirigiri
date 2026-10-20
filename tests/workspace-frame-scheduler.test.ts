@@ -1453,6 +1453,7 @@ describe("WorkspaceFrameScheduler", () => {
     } as unknown as MediaQueryList;
     const worldPresentation = new WorkspaceWorldPresentation();
     const worldHost = document.createElement("div");
+    worldHost.animate = vi.fn();
     const worldGrid = document.createElement("div");
     worldPresentation.bindWorldHost(worldHost, worldGrid);
     const harness = createSchedulerHarness(
@@ -1470,6 +1471,7 @@ describe("WorkspaceFrameScheduler", () => {
     expect(harness.store.moveFocus("right", viewport)).toBe(true);
     expect(worldPresentation.hasActiveMotion()).toBe(false);
     expect(worldHost.style.willChange).toBe("");
+    expect(worldHost.animate).not.toHaveBeenCalled();
     harness.scheduler.teardown();
   });
 

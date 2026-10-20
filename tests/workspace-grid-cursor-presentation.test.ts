@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { WorkspaceGridCursorPresentation } from "../src/workspace/workspace-grid-cursor-presentation";
 import type { WorkspaceGridCursorRenderItem } from "../src/types";
@@ -7,6 +7,8 @@ describe("WorkspaceGridCursorPresentation", () => {
   it("keeps one decorative host and retargets from its displayed box", () => {
     const presentation = new WorkspaceGridCursorPresentation();
     const host = document.createElement("div");
+    const animation = { cancel: vi.fn(), pause: vi.fn(), currentTime: null };
+    host.animate = vi.fn(() => animation as unknown as Animation);
     presentation.bindCursorHost(host);
 
     presentation.apply(cursorItem(), false);
@@ -45,13 +47,47 @@ describe("WorkspaceGridCursorPresentation", () => {
     expect(presentation.retarget(cursorItem())).toBe(true);
     presentation.apply(cursorItem(), true);
     expect(host.style.transform).toBe(inFlightTransform);
+    expect(host.animate).toHaveBeenCalledTimes(1);
+    expect(animation.pause).toHaveBeenCalledTimes(1);
 
     presentation.advanceMotion(1000);
     presentation.apply(cursorItem(), false);
     expect(host.style.transform).toBe(
       "translate3d(8.00px, 12.00px, 0) scale(1.0000)",
     );
+    expect(animation.cancel).toHaveBeenCalledTimes(1);
   });
+
+  it.each(["settle", "snap", "same destination", "unbind", "rebind"])(
+    "releases the outline's motion animation on %s",
+    (ending) => {
+      const presentation = new WorkspaceGridCursorPresentation();
+      const host = document.createElement("div");
+      const animation = { cancel: vi.fn(), pause: vi.fn(), currentTime: null };
+      host.animate = vi.fn(() => animation as unknown as Animation);
+      const unbind = presentation.bindCursorHost(host);
+      const item = cursorItem();
+      presentation.apply(item, false);
+      expect(host.animate).not.toHaveBeenCalled();
+      presentation.apply(item, true);
+      presentation.apply(item, true);
+      expect(host.animate).toHaveBeenCalledTimes(1);
+      const displayed = host.style.transform;
+
+      if (ending === "settle") presentation.apply(item, false);
+      if (ending === "snap") presentation.snapMotion();
+      if (ending === "same destination") {
+        expect(presentation.retarget(item)).toBe(false);
+      }
+      if (ending === "unbind") unbind();
+      if (ending === "rebind") {
+        presentation.bindCursorHost(document.createElement("div"));
+      }
+
+      expect(animation.cancel).toHaveBeenCalledTimes(1);
+      expect(host.style.transform).toBe(displayed);
+    },
+  );
 
   it("keeps its outline crisp at overview scale and snaps under reduced motion", () => {
     const presentation = new WorkspaceGridCursorPresentation();

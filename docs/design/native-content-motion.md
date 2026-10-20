@@ -134,6 +134,24 @@ workload scopes it in its own stylesheet, using the completed live DOM renderer
 and the pane's visible native host. Such a hint must not reach hidden hosts or
 nested panes through an ancestor's motion state, and is not a frame-rate guarantee.
 
+While the world or focus outline moves, its presenter holds one paused additive
+identity transform animation. The existing frame clock, transform values and
+curves still determine every displayed position. Both keyframes add a zero
+translation, and the animation stays paused inside its active interval. Its
+lifetime follows the existing movement boundary and ends at settlement, a snap,
+or host disposal; retargeting a move retains the same animation.
+
+Chromium revision `73c14f6228d7cd537c855007e8f88678969cc0eb` permits a direct
+compositor transform update only when the transform has an active animation
+reason. A `will-change` hint alone does not satisfy that condition. A paused,
+current animation supplies that reason without a second clock or independent
+motion. This is a conditional browser optimization, not a geometry dependency:
+an environment without `Element.animate` keeps the ordinary transform writes,
+and a change to Chromium's internal predicate can remove the performance benefit
+without changing those positions. Pane activity, layout and other boundary
+changes can still require full layer updates. Hardware cadence remains a separate
+acceptance requirement.
+
 Input blocking during normal camera motion avoids inherited style changes in
 consumer content. Applications can mount
 thousands of elements per pane, and a style change that reaches every
