@@ -2451,6 +2451,38 @@ describe("engine pane pictures", () => {
     expect(capture).toHaveBeenCalledTimes(2);
   });
 
+  it("releases an overview capture whose detail cannot be prepared without waiting for presentation", async () => {
+    const f = fixture(capture);
+    f.overview(true);
+    f.config.rasterBudgetBytes = 20000;
+    f.config.items = ["a", "b"].map((paneId) =>
+      renderItem({
+        paneId,
+        visible: true,
+        placeholderOnly: true,
+        presentationMode: "overview",
+        runtimeState: "frozen",
+      }),
+    );
+    f.config.captureMissingOverviewPictures = true;
+    const b = document.createElement("div");
+    f.content.parentElement!.append(b);
+    vi.spyOn(b, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(300, 60, 200, 100),
+    );
+    cleanups.push(f.pictures.register("b", b, new PaneContentReadiness()));
+    f.readiness.update({}, true, 1);
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(capture).toHaveBeenCalledTimes(2);
+    expect(f.pictures.get("a")).toMatchObject({ width: 64, pixelated: true });
+    expect(f.pictures.get("b")).toMatchObject({ width: 64, pixelated: true });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.getStatus().overviewPaneId).toBeNull();
+    expect(f.pictures.get("a")).toMatchObject({ width: 64, pixelated: true });
+    expect(capture).toHaveBeenCalledTimes(2);
+  });
+
   it("leaves overview cold by default and cancels its warm capture when overview closes", async () => {
     const reply = deferred<CanvasPicture>();
     const provider = vi.fn(() => reply.promise);

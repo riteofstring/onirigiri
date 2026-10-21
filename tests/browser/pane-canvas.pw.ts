@@ -779,17 +779,21 @@ test("reduced captures preserve the full content rectangle without letterboxing"
 }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto(
-    `/@fs${repositoryRoot}tests/browser/native-content-guard.html?grid&count=4&pictures&allPictures&rasterBudget=250000`,
+    `/@fs${repositoryRoot}tests/browser/native-content-guard.html?grid&count=4&pictures&allPictures&rasterBudget=250000&policy&auto`,
   );
-  await expect(
-    page.locator('[data-onirigiri-picture-ready="true"]'),
-  ).toHaveCount(4);
+  await page.evaluate(() =>
+    window.__nativeMotionFixture.setPresentation("pane-4", {
+      kind: "texture",
+      detail: "preview",
+    }),
+  );
+  const pane = page.locator('[data-onirigiri-pane-id="pane-4"]');
+  await expect(pane).toHaveAttribute("data-onirigiri-picture-ready", "true");
   const clock = await holdPaneFrames(page);
   try {
     await page.evaluate(() =>
       window.__nativeMotionFixture.handle.current!.focusPane("pane-3"),
     );
-    const pane = page.locator('[data-onirigiri-pane-id="pane-4"]');
     for (let frame = 0; frame < 90; frame++) {
       await clock.evaluate((clock) => clock.step());
       const visible = await pane.evaluate((pane) => {

@@ -252,21 +252,27 @@ function usePaneCoverState({
   renderPanePlaceholder,
   covered,
   error,
+  visible,
 }: PaneCoverProps) {
   const showPicture =
-    !!picture && presentation.kind !== "placeholder" && !error;
+    !!picture &&
+    presentation.kind !== "placeholder" &&
+    !error &&
+    presentablePicture(picture, presentation);
+  const presented = showPicture && visible;
   const placeholderInteractive =
-    covered && !showPicture && !!renderPanePlaceholder && inputAvailable;
+    covered && !presented && !!renderPanePlaceholder && inputAvailable;
   useLayoutEffect(() => {
     if (!covered) pictures.presentCover(pane.paneId, null);
-    else if (!showPicture) pictures.presentCover(pane.paneId, "placeholder");
-  }, [covered, showPicture, pictures, pane.paneId]);
-  return { showPicture, placeholderInteractive };
+    else if (!presented) pictures.presentCover(pane.paneId, "placeholder");
+  }, [covered, presented, pictures, pane.paneId]);
+  return { showPicture, presented, placeholderInteractive };
 }
 
 const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
   const { pictures, picture, pane, covered, visible, error } = props;
-  const { showPicture, placeholderInteractive } = usePaneCoverState(props);
+  const { showPicture, presented, placeholderInteractive } =
+    usePaneCoverState(props);
   const { fading, coverProps, coverShowPicture, surfaceRef } = usePaneCoverFade(
     props,
     showPicture,
@@ -282,7 +288,7 @@ const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
   return (
     <div
       className="onirigiri-pane__picture-surface"
-      aria-hidden={coverSurfaceHidden(covered, showPicture, error)}
+      aria-hidden={coverSurfaceHidden(covered, presented, error)}
       data-onirigiri-picture-visible={String(surfaceVisible)}
       data-onirigiri-picture-fading={String(fading)}
       {...inertAttribute(fading)}
@@ -296,7 +302,7 @@ const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
       {surfaceVisible ? (
         <PaneCoverPlaceholder
           {...coverProps}
-          showPicture={coverShowPicture}
+          showPicture={coverShowPicture && visible}
           interactive={placeholderInteractive}
         />
       ) : null}
@@ -315,6 +321,13 @@ const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
 });
 
 const panePictureFadeDuration = 100;
+
+function presentablePicture(
+  picture: NonNullable<PaneCoverProps["picture"]>,
+  presentation: PaneCoverProps["presentation"],
+): boolean {
+  return !picture.pixelated || presentation.detail === "preview";
+}
 
 function usePaneCoverFade(props: PaneCoverProps, showPicture: boolean) {
   const { covered, restPictureFade, visible, error } = props;
@@ -412,10 +425,10 @@ function placeholderInputAvailable(
 
 function coverSurfaceHidden(
   covered: boolean,
-  showPicture: boolean,
+  presented: boolean,
   error: string | null,
 ): boolean {
-  return !covered || (showPicture && !error);
+  return !covered || (presented && !error);
 }
 
 function liveContentInert(
