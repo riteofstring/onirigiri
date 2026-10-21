@@ -224,11 +224,13 @@ Developers can set both retention budgets:
   Lower values reduce their memory use, with less detail.
 
 Each retained PNG keeps a small prepared preview. Full-detail textures are
-prepared for visible panes and the first surrounding ring, within the budget.
-Leaving that neighborhood releases detail textures while preserving the original
-PNG. Returning restores detail from that original, without another content
-capture. A distant jump can show the prepared preview immediately while detail
-loads; normal visible textures are protected. There is no age-based degradation.
+prepared for visible panes, including overview cards, and the first surrounding
+ring, within the budget. Leaving that neighborhood keeps prepared detail until
+capacity is needed. If detail was released, returning restores it from the
+original PNG, without another content capture. Continuous hosts restore detail
+and accept supplied pictures while overview is at rest, with background capture
+still paused. A distant jump can show the prepared preview immediately while
+detail loads; normal visible textures are protected. There is no age-based degradation.
 Capacity pressure releases lower-priority detail first, then evicts unprotected
 originals if necessary. Replacements require room for both old and new resources;
 an impossible replacement preserves the existing cache.

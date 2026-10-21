@@ -2093,6 +2093,226 @@ describe("engine pane pictures", () => {
     expect(capture).not.toHaveBeenCalled();
   });
 
+  it("restores focused picture detail while continuous overview is at rest", async () => {
+    const f = fixture();
+    const images = new Map([
+      ["a", png()],
+      ["b", png()],
+    ]);
+    f.config.items = [
+      renderItem({ paneId: "a", x: 0, visible: true }),
+      renderItem({ paneId: "b", x: 4000, visible: false }),
+    ];
+    f.config.resolver = (pane) => ({ image: images.get(pane.paneId)! });
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("b")).toMatchObject({ width: 64, pixelated: true });
+    f.focus("b");
+    f.overview(true);
+    f.config.items = f.config.items.map((item) => ({
+      ...item,
+      visible: true,
+      presentationMode: "overview",
+    }));
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("b")).toMatchObject({ width: 200, pixelated: false });
+    expect(f.pictures.get("b")?.image).toBe(images.get("b"));
+  });
+
+  it("accepts supplied pictures while continuous overview is at rest", async () => {
+    const f = fixture();
+    const image = png();
+    f.config.items = [
+      renderItem({ paneId: "a", visible: true, presentationMode: "overview" }),
+    ];
+    f.config.resolver = (pane) =>
+      pane.paneId === "a" ? { image, replaceable: true } : null;
+    f.overview(true);
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toMatchObject({
+      image,
+      width: 200,
+      pixelated: false,
+    });
+  });
+
+  it("prepares detail for visible overview pictures beyond the focus ring", async () => {
+    const f = fixture();
+    const images = new Map([
+      ["a", png()],
+      ["b", png()],
+    ]);
+    f.config.items = [
+      renderItem({
+        paneId: "a",
+        x: 0,
+        visible: true,
+        presentationMode: "overview",
+      }),
+      renderItem({
+        paneId: "b",
+        x: 4000,
+        visible: true,
+        presentationMode: "overview",
+      }),
+    ];
+    f.config.resolver = (pane) => ({ image: images.get(pane.paneId)! });
+    f.overview(true);
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("b")).toMatchObject({ width: 200, pixelated: false });
+  });
+
+  it("retains overview originals at the detail ceiling without repeated decoding", async () => {
+    const f = fixture();
+    const images = new Map([
+      ["a", png()],
+      ["b", png()],
+      ["c", png()],
+    ]);
+    f.config.panes = new Map([
+      ...f.config.panes,
+      ["c", { ...f.config.panes.get("b")!, paneId: "c" }],
+    ]);
+    f.config.items = [...images.keys()].map((paneId, index) =>
+      renderItem({
+        paneId,
+        x: index * 4000,
+        visible: true,
+        presentationMode: "overview",
+      }),
+    );
+    f.config.resolver = (pane) => ({ image: images.get(pane.paneId)! });
+    f.config.rasterBudgetBytes = 110000;
+    f.overview(true);
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toMatchObject({ width: 200, pixelated: false });
+    for (const id of ["b", "c"])
+      expect(f.pictures.get(id)).toMatchObject({ width: 64, pixelated: true });
+    const retained = [...images.keys()].map((id) => f.pictures.get(id)!);
+    const prepared = vi.mocked(preparePanePictureTexture).mock.calls.length;
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(preparePanePictureTexture).toHaveBeenCalledTimes(prepared);
+    expect(f.pictures.getStatus().pictureRasterBytes).toBeLessThanOrEqual(
+      110000,
+    );
+    expect(f.pictures.getStatus().pictures).toHaveLength(3);
+    for (const [id, image] of images)
+      expect(f.pictures.get(id)?.image).toBe(image);
+    for (const picture of retained) {
+      expect(picture.preview.dispose).not.toHaveBeenCalled();
+      expect(picture.texture.dispose).not.toHaveBeenCalled();
+    }
+  });
+
+  it("keeps hidden overview pictures beyond the focus ring at preview detail", async () => {
+    const f = fixture();
+    const images = new Map([
+      ["a", png()],
+      ["b", png()],
+    ]);
+    f.config.items = [
+      renderItem({
+        paneId: "a",
+        x: 0,
+        visible: true,
+        presentationMode: "overview",
+      }),
+      renderItem({
+        paneId: "b",
+        x: 4000,
+        visible: false,
+        presentationMode: "overview",
+      }),
+    ];
+    f.config.resolver = (pane) => ({ image: images.get(pane.paneId)! });
+    f.overview(true);
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(f.pictures.get("a")).toMatchObject({ width: 200, pixelated: false });
+    expect(f.pictures.get("b")).toMatchObject({ width: 64, pixelated: true });
+  });
+
+  it("accepts overview seeds without starting continuous background capture", async () => {
+    frameCadence(16);
+    const f = adjacentFixture();
+    const image = png();
+    f.ready();
+    f.readiness.update({}, true, 1);
+    f.config.items = [
+      renderItem({ paneId: "a", visible: true, presentationMode: "overview" }),
+      renderItem({
+        paneId: "b",
+        visible: false,
+        presentationMode: "overview",
+        runtimeState: "hidden",
+      }),
+    ];
+    f.config.resolver = (pane) => (pane.paneId === "a" ? { image } : null);
+    f.overview(true);
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(f.pictures.get("a")?.image).toBe(image);
+    expect(f.pictures.getStatus()).toMatchObject({
+      accepted: 1,
+      preloadingPaneId: null,
+    });
+    expect(capture).not.toHaveBeenCalled();
+    f.overview(false);
+    f.config.items = f.config.items.map((item) => ({
+      ...item,
+      presentationMode: "normal",
+    }));
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(capture).toHaveBeenCalledOnce();
+    expect(f.pictures.get("b")).not.toBeNull();
+  });
+
+  it("defers overview promotion and supplied pictures until continuous motion settles", async () => {
+    const f = fixture();
+    const existing = png();
+    const supplied = png();
+    f.config.items = [
+      renderItem({ paneId: "a", x: 0, visible: true }),
+      renderItem({ paneId: "b", x: 4000, visible: false }),
+    ];
+    f.config.resolver = (pane) =>
+      pane.paneId === "b" ? { image: existing } : null;
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("b")).toMatchObject({ width: 64, pixelated: true });
+    f.config.resolver = (pane) => ({
+      image: pane.paneId === "a" ? supplied : existing,
+    });
+    f.config.items = f.config.items.map((item) => ({
+      ...item,
+      visible: true,
+      presentationMode: "overview",
+    }));
+    f.overview(true);
+    f.move(true);
+    f.pictures.configure({ ...f.config, liveContent: true });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(f.pictures.get("a")).toBeNull();
+    expect(f.pictures.get("b")).toMatchObject({ width: 64, pixelated: true });
+    f.move(false);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toMatchObject({
+      image: supplied,
+      width: 200,
+      pixelated: false,
+    });
+    expect(f.pictures.get("b")).toMatchObject({
+      image: existing,
+      width: 200,
+      pixelated: false,
+    });
+  });
+
   it("does not retry a rejected supplied image on navigation and accepts its replacement", async () => {
     const f = fixture();
     let image = new NodeBlob(["invalid PNG"]) as Blob;

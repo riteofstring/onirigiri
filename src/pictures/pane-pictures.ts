@@ -703,12 +703,18 @@ export class PanePictures {
     return this.browserReady() && this.interaction.idle() && !this.moving();
   }
 
-  private preloadAllowed(): boolean {
+  private pictureWorkAllowed(): boolean {
     return (
       this.captureUnavailable === null &&
       this.browserReady() &&
       this.interaction.canPreload() &&
-      (!this.isContinuous() || (!this.moving() && !this.overview()))
+      (!this.isContinuous() || !this.moving())
+    );
+  }
+
+  private preloadAllowed(): boolean {
+    return (
+      this.pictureWorkAllowed() && (!this.isContinuous() || !this.overview())
     );
   }
 
@@ -722,19 +728,19 @@ export class PanePictures {
 
   private async tick(): Promise<void> {
     if (!this.root) return;
-    if (this.busy || !this.preloadAllowed()) {
+    if (this.busy || !this.pictureWorkAllowed()) {
       this.wake(100);
       return;
     }
     this.busy = true;
     try {
-      await this.pictures.reconcile(() => this.preloadAllowed());
+      await this.pictures.reconcile(() => this.pictureWorkAllowed());
       if (!this.idle()) {
         if (!this.moving()) this.preloadAdjacentContent();
         return;
       }
       await this.resolveSupplied();
-      if (!this.idle()) return;
+      if (!this.idle() || !this.preloadAllowed()) return;
       await this.acquireContent();
     } finally {
       this.active = null;
