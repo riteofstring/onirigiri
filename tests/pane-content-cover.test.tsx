@@ -96,6 +96,7 @@ async function coverFixture({
     covered?: boolean;
     moving?: boolean;
     error?: string;
+    detail?: PanePresentationState["detail"];
   }) =>
     act(async () => {
       if (next.covered !== undefined)
@@ -107,6 +108,8 @@ async function coverFixture({
           covered: next.covered,
           live: !next.covered,
         };
+      if (next.detail !== undefined)
+        presentation = { ...presentation, detail: next.detail };
       if (next.moving !== undefined) moving = next.moving;
       if (next.error !== undefined) error = next.error;
       notify();
@@ -208,6 +211,25 @@ it("covers a preview-only picture with the host placeholder until full detail is
     "editor",
     "texture",
   );
+});
+
+it("fades a preview presented during motion when rest requests full detail", async () => {
+  const picture = previewPicture();
+  const fixture = await coverFixture({
+    enabled: true,
+    picture,
+    presentation: { requested: "texture", kind: "texture", detail: "preview" },
+  });
+  expect(pictureCanvas()).not.toBeNull();
+  expect(picture.texture.present).toHaveBeenCalledOnce();
+  await fixture.update({ covered: false, detail: "full" });
+  expect(fixture.surface()?.dataset.onirigiriPictureFading).toBe("true");
+  expect(pictureCanvas()).not.toBeNull();
+  expect(picture.texture.present).toHaveBeenCalledOnce();
+  await act(async () => vi.advanceTimersByTimeAsync(100));
+  expect(fixture.surface()?.dataset.onirigiriPictureFading).toBe("false");
+  expect(fixture.surface()?.dataset.onirigiriPictureVisible).toBe("false");
+  expect(pictureCanvas()).toBeNull();
 });
 
 it("presents the reduced texture under explicit preview detail", async () => {

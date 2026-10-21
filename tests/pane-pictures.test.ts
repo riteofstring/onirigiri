@@ -2483,6 +2483,35 @@ describe("engine pane pictures", () => {
     expect(capture).toHaveBeenCalledTimes(2);
   });
 
+  it("releases the selected overview pane when a supplied picture arrives that cannot be presented", async () => {
+    const f = fixture(capture);
+    f.overview(true);
+    f.config.rasterBudgetBytes = 20000;
+    f.config.items = [
+      renderItem({
+        paneId: "a",
+        visible: true,
+        placeholderOnly: true,
+        presentationMode: "overview",
+        runtimeState: "frozen",
+      }),
+    ];
+    f.config.captureMissingOverviewPictures = true;
+    const source = {};
+    f.readiness.update(source, false, 1);
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.getStatus().overviewPaneId).toBe("a");
+    expect(capture).not.toHaveBeenCalled();
+    const seed = png(200, 100);
+    f.config.resolver = () => ({ image: seed, replaceable: true });
+    f.pictures.configure(f.config);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(f.pictures.get("a")).toMatchObject({ width: 64, pixelated: true });
+    expect(f.pictures.getStatus().overviewPaneId).toBeNull();
+    expect(capture).not.toHaveBeenCalled();
+  });
+
   it("leaves overview cold by default and cancels its warm capture when overview closes", async () => {
     const reply = deferred<CanvasPicture>();
     const provider = vi.fn(() => reply.promise);

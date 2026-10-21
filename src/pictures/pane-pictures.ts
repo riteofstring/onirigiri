@@ -800,6 +800,10 @@ export class PanePictures {
     return !picture?.pixelated || this.decision(id).detail === "preview";
   }
 
+  private overviewPictureHeldUnpresented(id: PaneId): boolean {
+    return !this.pictureMissing(id) && !this.overviewPicturePresentable(id);
+  }
+
   private beginBatch(panes: Candidate[], view: Window, preload = false): Batch {
     const abort = new AbortController();
     const batch: Batch = {
@@ -1355,7 +1359,11 @@ export class PanePictures {
       return;
     }
     if (this.overviewPane) {
-      if (Date.now() < this.overviewPane.deadline) return;
+      if (
+        Date.now() < this.overviewPane.deadline &&
+        !this.overviewPictureHeldUnpresented(this.overviewPane.paneId)
+      )
+        return;
       this.setOverviewPane(null);
     }
     const view = this.root?.ownerDocument.defaultView;
