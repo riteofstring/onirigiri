@@ -170,6 +170,14 @@ chrome stays attached across visibility and presentation changes. Hidden resize
 handles remain excluded from layout and input even when a consumer slot sets
 their display style. Keeping these nodes avoids structural mutations that make
 the browser re-evaluate consumer `:has()` selectors across the pane tree.
+Default titlebars use `visibility: hidden` while their pane is offscreen, so
+Chrome can omit their paint from layer updates without changing layout or node
+identity. Action controls inherit that visibility. The presented visibility
+union restores titlebars before panes enter the viewport. Pane content and outer
+shadows retain their existing rendering rules. Titlebars with a custom accessory
+or action component remain visible: the engine cannot inspect arbitrary host
+content, including top-layer popovers inside closed shadow roots. Offscreen
+panes remain inert under the existing input policy.
 Frozen normal-mode panes disable pointer events only on titlebars and resize
 handles. Their existing content shield blocks application input without changing
 the inherited pointer behavior of the application subtree.

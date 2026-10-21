@@ -53,6 +53,9 @@ export const OnirigiriPaneTitlebar = memo(function OnirigiriPaneTitlebar({
   return (
     <header
       className={titlebarSlot.className}
+      data-onirigiri-custom-titlebar={String(
+        Boolean(Accessory || styling.chromeComponents?.PaneActionButton),
+      )}
       data-onirigiri-pane-titlebar="true"
       data-onirigiri-slot="pane-titlebar"
       style={titlebarSlot.style}

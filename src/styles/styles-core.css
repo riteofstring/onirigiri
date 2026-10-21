@@ -501,6 +501,11 @@
     pointer-events: none;
   }
 
+  .onirigiri-pane[data-visible="false"]
+    > .onirigiri-pane__titlebar[data-onirigiri-custom-titlebar="false"] {
+    visibility: hidden;
+  }
+
   .onirigiri-pane[hidden] {
     display: none !important;
   }
@@ -573,12 +578,10 @@
     transition-duration: var(--onirigiri-duration-fast);
     transition-property: opacity;
     transition-timing-function: var(--onirigiri-easing-standard);
-    visibility: hidden;
   }
 
   .onirigiri-pane__actions[data-visible="true"] {
     opacity: var(--onirigiri-pane-actions-muted-opacity);
-    visibility: visible;
   }
 
   .onirigiri-pane[data-focused="true"]
