@@ -342,7 +342,7 @@ function usePaneCoverFade(props: PaneCoverProps, showPicture: boolean) {
     coverFadeAllowed(props) &&
     !finished &&
     previous &&
-    coverFadeContinues(previous, props, showPicture),
+    coverFadeContinues(previous, props),
   );
   useLayoutEffect(() => {
     if (
@@ -407,11 +407,10 @@ function coverFadeAllowed({
 function coverFadeContinues(
   previous: { props: PaneCoverProps; showPicture: boolean },
   props: PaneCoverProps,
-  showPicture: boolean,
 ): boolean {
   if (previous.props.pane !== props.pane) return false;
   return previous.showPicture
-    ? previous.props.picture === props.picture && showPicture
+    ? previous.props.picture === props.picture
     : previous.props.renderPanePlaceholder === props.renderPanePlaceholder;
 }
 
