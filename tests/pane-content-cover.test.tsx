@@ -35,14 +35,17 @@ afterEach(async () => {
 async function coverFixture({
   enabled,
   custom = true,
-  picture = null,
+  picture: initialPicture = null,
+  presentation: presentationOverride = {},
 }: {
   enabled?: boolean;
   custom?: boolean;
   picture?: ReturnType<PanePictures["get"]>;
+  presentation?: Partial<PanePresentationState>;
 } = {}) {
   let moving = false;
   let error: string | null = null;
+  let picture = initialPicture;
   let presentation: PanePresentationState = {
     requested: custom ? "placeholder" : "dom",
     kind: custom ? "placeholder" : "dom",
@@ -52,6 +55,7 @@ async function coverFixture({
     actual: picture ? "texture" : "placeholder",
     covered: true,
     live: false,
+    ...presentationOverride,
   };
   const interactive = vi.fn(() => !moving);
   const { pictures, notify } = panePicturesStub({
@@ -109,8 +113,140 @@ async function coverFixture({
     });
   const surface = () =>
     container.querySelector<HTMLElement>(".onirigiri-pane__picture-surface");
-  return { update, render, surface, clicked, interactive, pictures };
+  const setPicture = (next: ReturnType<PanePictures["get"]>) => {
+    picture = next;
+    return render();
+  };
+  return {
+    update,
+    render,
+    setPicture,
+    surface,
+    clicked,
+    interactive,
+    pictures,
+  };
 }
+
+function previewPicture(
+  overrides: Partial<NonNullable<ReturnType<PanePictures["get"]>>> = {},
+): NonNullable<ReturnType<PanePictures["get"]>> {
+  const texture = {
+    width: 64,
+    height: 36,
+    present: vi.fn((canvas: HTMLCanvasElement) => {
+      canvas.width = 64;
+      canvas.height = 36;
+      return () => {};
+    }),
+    dispose: vi.fn(),
+  };
+  return {
+    revision: 1,
+    capture: null,
+    image: new Blob(["Saved picture"]),
+    width: 64,
+    height: 36,
+    originalSize: { width: 640, height: 360 },
+    cssSize: { width: 240, height: 120 },
+    texture,
+    preview: texture,
+    fit: "fill",
+    position: "left top",
+    pixelated: true,
+    ...overrides,
+  };
+}
+
+const pictureCanvas = () =>
+  container.querySelector<HTMLCanvasElement>(
+    "[data-onirigiri-slot=pane-picture]",
+  );
+
+const nativePresentation = {
+  requested: "auto",
+  kind: "dom",
+  reason: "native-presentation",
+} as const;
+
+it("covers a preview-only picture with the host placeholder until full detail is prepared", async () => {
+  const picture = previewPicture();
+  const fixture = await coverFixture({
+    picture,
+    presentation: nativePresentation,
+  });
+  expect(container.querySelector("[data-saved-cover]")).not.toBeNull();
+  expect(pictureCanvas()).toBeNull();
+  expect(picture.texture.present).not.toHaveBeenCalled();
+  expect(fixture.pictures.presentCover).toHaveBeenLastCalledWith(
+    "editor",
+    "placeholder",
+  );
+  expect(fixture.surface()?.getAttribute("aria-hidden")).toBe("false");
+  const detail = {
+    ...picture.texture,
+    width: 640,
+    height: 360,
+    present: vi.fn((canvas: HTMLCanvasElement) => {
+      canvas.width = 640;
+      canvas.height = 360;
+      return () => {};
+    }),
+  };
+  await fixture.setPicture({
+    ...picture,
+    width: 640,
+    height: 360,
+    texture: detail,
+    pixelated: false,
+  });
+  expect(container.querySelector("[data-saved-cover]")).toBeNull();
+  expect(pictureCanvas()?.dataset.onirigiriPicturePixelated).toBe("false");
+  expect(detail.present).toHaveBeenCalledOnce();
+  expect(picture.texture.present).not.toHaveBeenCalled();
+  expect(fixture.pictures.presentCover).toHaveBeenLastCalledWith(
+    "editor",
+    "texture",
+  );
+});
+
+it("presents the reduced texture under explicit preview detail", async () => {
+  const picture = previewPicture();
+  const fixture = await coverFixture({
+    picture,
+    presentation: { requested: "texture", kind: "texture", detail: "preview" },
+  });
+  expect(container.querySelector("[data-saved-cover]")).toBeNull();
+  expect(pictureCanvas()?.dataset.onirigiriPicturePixelated).toBe("true");
+  expect(picture.texture.present).toHaveBeenCalledOnce();
+  expect(fixture.pictures.presentCover).toHaveBeenLastCalledWith(
+    "editor",
+    "texture",
+  );
+});
+
+it("keeps the host placeholder over a held picture until the host marks the pane visible", async () => {
+  const picture = previewPicture({ pixelated: false });
+  const fixture = await coverFixture({
+    picture,
+    presentation: nativePresentation,
+  });
+  vi.mocked(picture.texture.present).mockClear();
+  await fixture.render(false);
+  expect(container.querySelector("[data-saved-cover]")).not.toBeNull();
+  expect(picture.texture.present).not.toHaveBeenCalled();
+  expect(fixture.pictures.presentCover).toHaveBeenLastCalledWith(
+    "editor",
+    "placeholder",
+  );
+  await fixture.render(true);
+  expect(container.querySelector("[data-saved-cover]")).toBeNull();
+  expect(picture.texture.present).toHaveBeenCalledOnce();
+  expect(fixture.pictures.presentCover).toHaveBeenLastCalledWith(
+    "editor",
+    "texture",
+  );
+});
 
 it("removes covers immediately by default without adding motion subscriptions", async () => {
   const fixture = await coverFixture();
@@ -279,10 +415,16 @@ it.each([
       position: "left top",
       pixelated: true,
     };
-    const fixture = await coverFixture({ custom: false, picture });
-    const canvas = container.querySelector<HTMLCanvasElement>(
-      "[data-onirigiri-slot=pane-picture]",
-    )!;
+    const fixture = await coverFixture({
+      custom: false,
+      picture,
+      presentation: {
+        requested: "texture",
+        kind: "texture",
+        detail: "preview",
+      },
+    });
+    const canvas = pictureCanvas()!;
     for (const paneSize of [100, 800]) {
       container.style.width = `${paneSize}px`;
       container.style.height = `${paneSize}px`;

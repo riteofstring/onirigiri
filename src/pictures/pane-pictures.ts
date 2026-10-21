@@ -785,9 +785,19 @@ export class PanePictures {
     } finally {
       clearTimeout(deadline);
       const id = batch.panes[0]?.paneId;
-      if (id && this.isOverviewCapture(id) && this.pictureMissing(id))
+      if (
+        id &&
+        this.isOverviewCapture(id) &&
+        !this.overviewPicturePresentable(id)
+      )
         this.setOverviewPane(null);
     }
+  }
+
+  private overviewPicturePresentable(id: PaneId): boolean {
+    if (this.pictureMissing(id)) return false;
+    const picture = this.pictures.get(id);
+    return !picture?.pixelated || this.decision(id).detail === "preview";
   }
 
   private beginBatch(panes: Candidate[], view: Window, preload = false): Batch {

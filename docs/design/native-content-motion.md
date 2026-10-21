@@ -61,6 +61,14 @@ Missing pictures for excluded or cold content show a placeholder. Promoting a
 retained preview to full detail is deferred until idle; a mounted capturable
 frozen buffer can change detail immediately.
 
+A retained preview is presented only under preview detail. Under full detail an
+unpromoted preview stays covered by the placeholder, custom or icon and title,
+until its detail is prepared, so a reduced texture never replaces a host's
+cover. The same cover applies while the host has not marked the pane visible:
+its output canvas is released, and without the cover the pane would show an
+empty surface. Explicit preview detail is the only reduced-texture
+presentation.
+
 Automatic live presentation keeps ordinary DOM, graphics and video native in every
 phase. Chrome implements element-image copies with a synchronous pixel readback, so
 per-frame HTML-in-Canvas presentation cannot sustain high-refresh cadence on
@@ -623,9 +631,10 @@ hidden outputs are reduced to one pixel. Connected output canvases keep their
 WebGPU context configured: unconfiguring a canvas in this document can crash
 Chromium during subsequent HTML-in-Canvas navigation. Resizing releases the
 large drawing buffer; disposing the workspace destroys the shared device. Restoring detail uses
-the original PNG and does not remount consumer content or recapture it. A cold
-jump can show its prepared preview immediately and upgrade asynchronously;
-limited memory cannot guarantee every distant full-resolution pane is ready.
+the original PNG and does not remount consumer content or recapture it. The
+prepared preview serves admission, explicit preview presentation and demotion;
+a cold jump shows the placeholder until detail is prepared, and limited memory
+cannot guarantee every distant full-resolution pane is ready.
 
 Normal visible textures are protected. Capacity pressure releases lower-priority
 detail first, then evicts complete unprotected entries if previews or compressed
@@ -737,14 +746,16 @@ stays transparent while pixels are copied into the private capture texture.
 `captureMissingOverviewPictures` enables a separate serial queue at overview
 rest, prioritizing a missing focused pane. It may temporarily mount one extra
 subtree beyond the ordinary DOM budget. Only that pane resumes, and the saved
-texture is prepared and presented before temporary content is released.
+texture is prepared and presented, or covered by the placeholder when its
+detail cannot be prepared, before temporary content is released.
 Presentation acknowledgement is bound to the current picture revision and
 resource, so a stale completion cannot release a newer capture. Focus, layout and camera do
 not change. Closing overview cancels its capture; readiness and acquisition
 have deadlines so a failed pane does not prevent other pictures from loading.
 
 Fast navigation can outrun readiness or available capacity. A placeholder is
-still necessary for content that has never produced usable pixels. The engine
+still necessary for content that has never produced usable pixels and for
+pictures held only at preview detail under full presentation. The engine
 retains usable old pictures rather than replacing them merely because they age.
 
 ## Public boundary and verification

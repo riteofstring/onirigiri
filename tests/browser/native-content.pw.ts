@@ -181,6 +181,7 @@ async function openNativeFixture(
     count?: number;
     preloadMargin?: number;
     allPictures?: boolean;
+    policy?: boolean;
   } = {},
 ): Promise<void> {
   const parameters = new URLSearchParams();
@@ -188,6 +189,10 @@ async function openNativeFixture(
   if (pictures) parameters.set("pictures", "");
   if (options.cooperative) parameters.set("cooperative", "");
   if (options.allPictures) parameters.set("allPictures", "");
+  if (options.policy) {
+    parameters.set("policy", "");
+    parameters.set("auto", "");
+  }
   for (const [key, value] of Object.entries({
     count: options.count,
     budget: options.budgetBytes,
@@ -1769,6 +1774,7 @@ test("retains sharp mosaics when new full-size pictures exceed the cache budget"
     rasterBudgetBytes: 70000,
     budgetBytes: 0,
     preloadMargin: 0,
+    policy: true,
   });
   await page.evaluate(() =>
     window.__nativeMotionFixture.handle.current!.toggleOverview(),
@@ -1801,6 +1807,33 @@ test("retains sharp mosaics when new full-size pictures exceed the cache budget"
     ]);
   });
   const pictures = page.locator(".onirigiri-pane__picture");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          window.__nativeMotionFixture.handle
+            .current!.getCaptureStatus()
+            .pictures.filter(
+              (picture) =>
+                ["pane-5", "pane-6"].includes(picture.paneId) &&
+                picture.pixelated,
+            ).length,
+      ),
+    )
+    .toBe(2);
+  await expect(pictures).toHaveCount(0);
+  await expect(
+    page.locator(
+      '[data-onirigiri-pane-id="pane-5"] [data-onirigiri-slot="pane-placeholder"]',
+    ),
+  ).toContainText("Native 5");
+  await page.evaluate(() => {
+    for (const paneId of ["pane-5", "pane-6"])
+      window.__nativeMotionFixture.setPresentation(paneId, {
+        kind: "texture",
+        detail: "preview",
+      });
+  });
   await expect(pictures).toHaveCount(2);
   for (const paneId of ["pane-5", "pane-6", "pane-5"]) {
     await page.evaluate(

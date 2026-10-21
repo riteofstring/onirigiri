@@ -25,6 +25,13 @@
 - Restoring a layout preserves current workspace and pane-type defaults.
 - Background picture preparation retains useful accepted images while new
   content becomes ready, and yields to navigation and visible interaction.
+- Retained pictures held only at preview detail are no longer presented under
+  full detail. The host placeholder covers the pane until full detail is
+  prepared, so a reduced texture never replaces a sharp host cover; explicit
+  `{ kind: "texture", detail: "preview" }` still presents the reduced texture.
+  Panes the host has not marked visible keep their placeholder instead of an
+  empty cover, and overview capture releases temporary content when a card's
+  detail cannot be prepared.
 
 ## 0.3.0 - 2026-10-10
 

@@ -128,7 +128,10 @@ Explicit textures and placeholders pause the application. A mounted capturable
 pane freezes a fresh display frame immediately, without PNG encoding. Preview
 mode bounds it by `pictureMinLongEdgePx`. Cold or supplied pictures use the
 retained cache; preview detail releases its full allocation, and restoring full
-detail waits for idle time. Original CSS geometry remains unchanged.
+detail waits for idle time. A reduced preview texture is presented only under
+preview detail; under full detail a pane whose picture holds only its preview
+shows its placeholder until detail is prepared. Original CSS geometry remains
+unchanged.
 
 Capture-incompatible graphics, shadow content, protected media and inaccessible
 frames use native presentation when canvas is requested. They need a supplied
@@ -148,7 +151,7 @@ apply across panes; they do not flatten the whole workspace into one canvas.
 
 Graphics canvases and opaque embedded content retain their native presentation
 while mounted. Automatic capture skips content Chromium cannot record faithfully;
-provide `getPanePicture` when those panes need a preview after DOM eviction.
+provide `getPanePicture` when those panes need a picture after DOM eviction.
 
 The playground's retained texture count is the number of cached panes. Refreshing
 an existing pane's texture does not increase that count. Viewport and layout
@@ -164,8 +167,9 @@ DOM moves keep iframe documents, native input and edited forms intact through
 that handoff. While resizing, old pixels stay at their original size at the
 top-left; the pane crops them or expands around them until responsive content
 returns. Retained pictures cover cold or loading content. Compressed originals
-survive content eviction and have no freshness expiry. Unvisited panes show a
-styled icon and title.
+survive content eviction and have no freshness expiry. Unvisited panes, and
+panes whose retained picture holds only its preview under full detail, show a
+styled icon and title or the custom placeholder.
 
 Set `restPictureFade` to fade a displayed retained picture or custom
 `renderPanePlaceholder` over ready live content for 100 ms at normal rest.
@@ -229,8 +233,9 @@ ring, within the budget. Leaving that neighborhood keeps prepared detail until
 capacity is needed. If detail was released, returning restores it from the
 original PNG, without another content capture. Continuous hosts restore detail
 and accept supplied pictures while overview is at rest, with background capture
-still paused. A distant jump can show the prepared preview immediately while
-detail loads; normal visible textures are protected. There is no age-based degradation.
+still paused. A distant jump shows the placeholder while detail loads; the
+reduced preview appears only under explicit preview detail. Normal visible
+textures are protected. There is no age-based degradation.
 Capacity pressure releases lower-priority detail first, then evicts unprotected
 originals if necessary. Replacements require room for both old and new resources;
 an impossible replacement preserves the existing cache.
@@ -260,8 +265,8 @@ Set `preloadAllPanePictures` to also cache distant panes progressively while
 idle. Visible work and nearby panes take priority. Only one speculative pane
 runs at a time, and each returns to its paused state after one frame. Both
 playgrounds enable this and expose a caching checkbox in **Content**. All-pane
-caching respects the picture budgets; it will not repeatedly evict mosaics
-to load more distant panes than the cache can hold.
+caching respects the picture budgets; it will not repeatedly evict retained
+previews to load more distant panes than the cache can hold.
 
 Preloading saves offscreen pictures before navigation reaches their panes. Browser
 painting, readiness and available memory can still delay a preview; existing
@@ -316,7 +321,8 @@ synchronous HTML needs no hook. Frame adapters validate their own messages and
 combine document identity, load and application readiness. Onirigiri does not interpret
 application protocols. The `pane-picture` and `pane-placeholder` styling slots,
 `data-onirigiri-content-ready` and `data-onirigiri-picture-ready` attributes are public;
-no example CSS is needed for picture visibility.
+`data-onirigiri-picture-ready` reports a retained picture, which the placeholder
+may still cover. No example CSS is needed for picture visibility.
 
 See [pane content and picture ownership](../design/native-content-motion.md)
 and the [HTML-in-Canvas examples](../design/html-canvas-examples.md).
