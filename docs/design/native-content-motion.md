@@ -594,14 +594,16 @@ claim to measure the browser's total GPU memory.
 `PanePictureCache` owns immutable originals, prepared resources, admission,
 priority and disposal. Every accepted original has a small prepared preview,
 using the configured minimum long edge (128 pixels by default). Full detail is
-prepared for normal visible panes and the first surrounding ring (normalized
-center distance below two pane widths/heights), subject to capacity. This
-neighborhood controls preparation priority, not retention: leaving it or entering
+prepared for visible panes, including overview cards, and the first surrounding
+ring (normalized center distance below two pane widths/heights), subject to
+capacity. This neighborhood controls preparation priority, not retention: leaving it or entering
 overview keeps already-prepared detail while it fits the budget. Capacity
 pressure releases lower-priority detail while preserving its compressed original
-and preview. Overview uses the same focus neighborhood for preparation. There is
-no age-based quality reduction. Keeping reusable detail avoids repeated decoding
-and uploads when navigation returns to a recently viewed pane.
+and preview. Continuous hosts reconcile retained pictures and accept supplied
+pictures while the overview camera is at rest; they do not start background
+capture there. There is no age-based quality reduction. Keeping reusable detail
+avoids repeated decoding and uploads when navigation returns to a recently viewed
+pane.
 
 Captured previews fill the recorded content rectangle. Rounding a reduced bitmap
 to whole pixels must not make its slightly different intrinsic ratio introduce
@@ -697,8 +699,9 @@ frame gap and callback latency. Stalled acquisitions and user activity discard
 that timing evidence. Warming and capture never start while the camera moves:
 a capture's readback and content initialization cost cannot be bounded, and on
 discrete GPUs or slower processors a single capture can stall a navigation
-frame for hundreds of milliseconds. Picture reconciliation and decoding of
-existing pictures continue during motion. At rest a 40 ms frame-gap limit
+frame for hundreds of milliseconds. Continuous hosts also defer picture
+reconciliation and decoding until camera motion settles. Ordinary hosts may
+restore retained detail during motion. At rest a 40 ms frame-gap limit
 permits gradual progress on browsers capped near 30 Hz; while other interaction
 is active the limit is 20 ms. Both require callbacks within 8 ms of their frame timestamp. Slower
 or busy frames defer admission, including at rest. Frame timing is also monitored

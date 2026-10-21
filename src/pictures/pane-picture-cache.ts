@@ -82,7 +82,7 @@ export class PanePictureCache {
       ordered
         .filter(
           (item) =>
-            normalVisible(item) || paneActivationDistance(item, ordered[0]) < 2,
+            item.visible || paneActivationDistance(item, ordered[0]) < 2,
         )
         .map((item) => item.paneId),
     );
