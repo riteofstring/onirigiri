@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import { OnirigiriWorkspace } from "../../src/workspace/OnirigiriWorkspace";
 import type { OnirigiriWorkspaceHandle } from "../../src/workspace/onirigiri-workspace-types";
+import type { OnirigiriPaneActionButtonProps } from "../../src/styles/onirigiri-styling";
 import type {
   PaneLiveRenderer,
   PanePresentation,
@@ -26,6 +27,13 @@ export interface NativeMotionFixture {
 
 const handle = createRef<OnirigiriWorkspaceHandle>();
 const parameters = new URLSearchParams(location.search);
+const popoverHost = parameters.get("popoverHost");
+const chromeComponents =
+  popoverHost === "accessory"
+    ? { PaneTitlebarAccessory: FixtureAccessory }
+    : popoverHost === "action"
+      ? { PaneActionButton: FixtureAction }
+      : undefined;
 const dense = parameters.has("dense");
 const grid = parameters.has("grid");
 const cooperative = parameters.has("cooperative");
@@ -95,11 +103,25 @@ function initialPanes() {
 }
 
 const root = createRoot(document.querySelector("#root")!);
+
+function FixtureAccessory() {
+  return <span data-fixture-popover-host="accessory" />;
+}
+
+function FixtureAction({ action, ...props }: OnirigiriPaneActionButtonProps) {
+  return (
+    <span data-fixture-popover-host="action" data-fixture-action={action.id}>
+      <button {...props} />
+    </span>
+  );
+}
+
 function render() {
   root.render(
     <StrictMode>
       <OnirigiriWorkspace
         {...overviewCamera}
+        chromeComponents={chromeComponents}
         liveContent={parameters.has("liveContent")}
         captureMissingOverviewPictures={parameters.has("overviewPictures")}
         preloadAllPanePictures={parameters.has("allPictures")}
@@ -153,7 +175,7 @@ function render() {
               id: pane.paneId,
               time: performance.now(),
             });
-          return cooperative ? (
+          const content = cooperative ? (
             <CooperativeFixtureFrame
               protocol="onirigiri-native-test/v1"
               runtime={state.runtimeState}
@@ -177,6 +199,16 @@ function render() {
                   : '<!doctype html><html style="background:#083b4b;color:#f4cf60;font:24px sans-serif"><body><h1>Retained native frame</h1><input aria-label="Retained value" value="Keep my state"><p>Real browser content</p></body></html>'
               }
             />
+          );
+          return popoverHost === "content" ? (
+            <div
+              data-fixture-popover-host="content"
+              style={{ width: "100%", height: "100%" }}
+            >
+              {content}
+            </div>
+          ) : (
+            content
           );
         }}
       />
