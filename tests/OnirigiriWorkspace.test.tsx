@@ -339,6 +339,7 @@ describe("OnirigiriWorkspace interactions", () => {
     });
 
     const workspace = requiredWorkspaceHandle(workspaceRef.current);
+    await act(async () => workspace.focusPane("pane-2"));
     const pane = requiredElement<HTMLElement>(
       container,
       '[data-onirigiri-pane-id="pane-2"]',
