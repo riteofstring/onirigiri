@@ -433,6 +433,68 @@ describe("resize edge handles", () => {
   });
 
   it.each(["left", "right", "top", "bottom"] as const)(
+    "keeps a selected pane at its released geometry after a %s resize",
+    async (edge) => {
+      const workspace = await mount({
+        focusAnchor: "center",
+        initialPanes: [{ ...stackPanes[2]!, heightPx: 400 }],
+        paneDefaults: { resizeEdges: [edge] },
+      });
+      stubPointerCapture();
+      await act(async () => {
+        handle("side", edge).dispatchEvent(
+          new MouseEvent("pointerdown", {
+            bubbles: true,
+            clientX: 500,
+            clientY: 500,
+          }),
+        );
+        window.dispatchEvent(
+          new MouseEvent("pointermove", { clientX: 560, clientY: 440 }),
+        );
+      });
+      const held = workspace.getSnapshot();
+      await act(async () => {
+        window.dispatchEvent(new MouseEvent("pointerup"));
+      });
+      const released = workspace.getSnapshot();
+      expect(released.focusedPaneId).toBe("side");
+      expect(released.horizontalAnchorOffset).toBe(held.horizontalAnchorOffset);
+      expect(released.verticalAnchorOffset).toBe(held.verticalAnchorOffset);
+      expect(released.targetHorizontalAnchorOffset).toBe(
+        held.horizontalAnchorOffset,
+      );
+      expect(released.targetVerticalAnchorOffset).toBe(
+        held.verticalAnchorOffset,
+      );
+    },
+  );
+
+  it.each(["left", "right", "top", "bottom"] as const)(
+    "keeps selected-pane %s keyboard resizing stationary",
+    async (edge) => {
+      const workspace = await mount({
+        focusAnchor: "center",
+        initialPanes: [{ ...stackPanes[2]!, heightPx: 400 }],
+        paneDefaults: { resizeEdges: [edge] },
+      });
+      const before = workspace.getLayout();
+      await pressKey(
+        handle("side", edge),
+        edge === "left" || edge === "right" ? "ArrowRight" : "ArrowDown",
+      );
+      expect(workspace.getLayout().columns).not.toEqual(before.columns);
+      const snapshot = workspace.getSnapshot();
+      expect(snapshot.targetHorizontalAnchorOffset).toBe(
+        snapshot.horizontalAnchorOffset,
+      );
+      expect(snapshot.targetVerticalAnchorOffset).toBe(
+        snapshot.verticalAnchorOffset,
+      );
+    },
+  );
+
+  it.each(["left", "right", "top", "bottom"] as const)(
     "resizes an unfocused pane from its %s edge without changing selection",
     async (edge) => {
       const workspace = await mount({

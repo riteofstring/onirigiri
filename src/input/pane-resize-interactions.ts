@@ -64,8 +64,6 @@ export function beginPaneResize({
     if (handle.hasPointerCapture(pointerId))
       handle.releasePointerCapture(pointerId);
     store.endLayoutMutationGroup();
-    if (store.getSnapshot().focusedPaneId === item.paneId)
-      store.reanchorFocusedPane();
   };
   ownerWindow.addEventListener("pointermove", move);
   ownerWindow.addEventListener("pointerup", end, { once: true });

@@ -506,8 +506,6 @@ function PaneColumnResizeHandle({
       onDoubleClick={(event) => {
         event.stopPropagation();
         store.resetPaneColumnWidth(pane.paneId);
-        if (store.getSnapshot().focusedPaneId === pane.paneId)
-          store.reanchorFocusedPane();
       }}
       onKeyDown={(event) => handleColumnResizeKeyDown(event, item, edge, store)}
       onPointerDown={(event) => beginResize(event, item, edge)}
@@ -598,8 +596,6 @@ function resetPaneRowResize(
 ): void {
   if (!split) {
     store.resizePaneRow(paneId, null);
-    if (store.getSnapshot().focusedPaneId === paneId)
-      store.reanchorFocusedPane();
     return;
   }
   const scene = store.toScene();
@@ -612,7 +608,6 @@ function resetPaneRowResize(
     pairWeight / 2,
     pairWeight / 2,
   );
-  if (store.getSnapshot().focusedPaneId === paneId) store.reanchorFocusedPane();
 }
 
 function handleColumnResizeKeyDown(
@@ -625,8 +620,6 @@ function handleColumnResizeKeyDown(
     event.preventDefault();
     event.stopPropagation();
     store.resetPaneColumnWidth(item.paneId);
-    if (store.getSnapshot().focusedPaneId === item.paneId)
-      store.reanchorFocusedPane();
     return;
   }
   const direction =
@@ -643,8 +636,6 @@ function handleColumnResizeKeyDown(
     { unit: "px", value: Math.max(180, item.width + growth) },
     edge === "left" ? "end" : "start",
   );
-  if (store.getSnapshot().focusedPaneId === item.paneId)
-    store.reanchorFocusedPane();
 }
 
 interface PaneRowResizeTarget {
@@ -682,13 +673,9 @@ function handleRowResizeKeyDown(
       ),
       edge === "top" ? "end" : "start",
     );
-    if (store.getSnapshot().focusedPaneId === item.paneId)
-      store.reanchorFocusedPane();
     return;
   }
   resizePaneSplitFromKeyboard(store, split.upper, split.lower, delta);
-  if (store.getSnapshot().focusedPaneId === item.paneId)
-    store.reanchorFocusedPane();
 }
 
 function resizePaneSplitFromKeyboard(
