@@ -185,8 +185,12 @@ move only by the distance the fixed edge would otherwise move. The
 compensation is applied before the command is published, so frame and React
 presentation never observe the uncompensated layout. A top handle between two
 stacked panes is the same split control as the bottom handle above it. When a
-gesture ends, only a resized selected pane is re-anchored. Resizing another pane
-keeps the adjusted camera position so release cannot undo the edge hold.
+gesture ends, the adjusted camera position is retained for selected and
+unselected panes alike. Keyboard resizing and resets likewise do not request
+another camera destination. Re-anchoring after a size change would move the
+released edge and activate motion presentation policies, briefly replacing
+responsive live content with a retained picture. Ordinary navigation and explicit
+focus-anchor changes still choose their normal camera destinations.
 
 Normal camera coordinates remain logical rows and columns, with local pixel
 anchors for centering and compact alignment. Geometry is projected relative to

@@ -119,6 +119,10 @@ test("dragging the left edge holds the right edge while the width follows the po
   expect(Math.round((await box(frame)).width)).toBe(
     Math.round(before.width + 120),
   );
+  const released = await box(frame);
+  expect(
+    Math.abs(released.x + released.width - (before.x + before.width)),
+  ).toBeLessThanOrEqual(1);
 });
 
 test("dragging the top edge holds the bottom edge while the height follows the pointer", async ({
@@ -145,6 +149,10 @@ test("dragging the top edge holds the bottom edge while the height follows the p
   expect(Math.round((await box(frame)).height)).toBe(
     Math.round(before.height + 80),
   );
+  const released = await box(frame);
+  expect(
+    Math.abs(released.y + released.height - (before.y + before.height)),
+  ).toBeLessThanOrEqual(1);
 });
 
 test("a pane link opens on its pane without a camera flight and follows focus", async ({
