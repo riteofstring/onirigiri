@@ -16,10 +16,13 @@ export type PaneResizeFixedEdge = "end" | "start";
 
 interface WorkspaceSizingHooks {
   engine: WorkspaceLikeLayoutEngine;
-  focusedColumnId: () => ColumnId | null;
   notify: () => void;
   offsetCamera: (axis: PaneResizeAxis, delta: number) => void;
-  paneEndEdge: (paneId: PaneId, axis: PaneResizeAxis) => number | null;
+  paneResizeEdge: (
+    paneId: PaneId,
+    axis: PaneResizeAxis,
+    edge: PaneResizeFixedEdge,
+  ) => number | null;
   scene: () => WorkspaceScene;
   updateViewport: (viewport: Rect) => void;
   viewport: () => Rect;
@@ -28,8 +31,8 @@ interface WorkspaceSizingHooks {
 export class WorkspaceSizingController {
   constructor(private readonly hooks: WorkspaceSizingHooks) {}
 
-  resetFocusedColumnWidth(): boolean {
-    const columnId = this.hooks.focusedColumnId();
+  resetPaneColumnWidth(paneId: PaneId): boolean {
+    const columnId = this.hooks.scene().paneById.get(paneId)?.columnId;
     if (!columnId) {
       return false;
     }
@@ -88,7 +91,7 @@ export class WorkspaceSizingController {
     heightPx: number | null,
     fixedEdge: PaneResizeFixedEdge = "start",
   ): boolean {
-    const holdEndEdge = this.endEdgeHold(paneId, "row", fixedEdge);
+    const holdEdge = this.edgeHold(paneId, "row", fixedEdge);
     if (
       !resizePaneRowAcrossPlane(
         this.hooks.engine,
@@ -99,7 +102,7 @@ export class WorkspaceSizingController {
     ) {
       return false;
     }
-    holdEndEdge();
+    holdEdge();
     this.hooks.notify();
     return true;
   }
@@ -113,24 +116,21 @@ export class WorkspaceSizingController {
     if (!columnId) {
       return null;
     }
-    const holdEndEdge = this.endEdgeHold(paneId, "column", fixedEdge);
+    const holdEdge = this.edgeHold(paneId, "column", fixedEdge);
     this.hooks.engine.resizeColumn(columnId, width);
-    holdEndEdge();
+    holdEdge();
     this.hooks.notify();
     return columnId;
   }
 
-  private endEdgeHold(
+  private edgeHold(
     paneId: PaneId,
     axis: PaneResizeAxis,
     fixedEdge: PaneResizeFixedEdge,
   ): () => void {
-    if (fixedEdge === "start") {
-      return () => undefined;
-    }
-    const before = this.hooks.paneEndEdge(paneId, axis);
+    const before = this.hooks.paneResizeEdge(paneId, axis, fixedEdge);
     return () => {
-      const after = this.hooks.paneEndEdge(paneId, axis);
+      const after = this.hooks.paneResizeEdge(paneId, axis, fixedEdge);
       if (before !== null && after !== null && after !== before) {
         this.hooks.offsetCamera(axis, after - before);
       }

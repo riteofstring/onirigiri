@@ -38,7 +38,6 @@ export function beginPaneResize({
 }: BeginPaneResizeInput): void {
   event.preventDefault();
   event.stopPropagation();
-  store.focusPane(item.paneId);
   const ownerWindow = event.currentTarget.ownerDocument.defaultView;
   if (!ownerWindow) {
     return;
@@ -65,7 +64,8 @@ export function beginPaneResize({
     if (handle.hasPointerCapture(pointerId))
       handle.releasePointerCapture(pointerId);
     store.endLayoutMutationGroup();
-    store.reanchorFocusedPane();
+    if (store.getSnapshot().focusedPaneId === item.paneId)
+      store.reanchorFocusedPane();
   };
   ownerWindow.addEventListener("pointermove", move);
   ownerWindow.addEventListener("pointerup", end, { once: true });

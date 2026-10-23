@@ -158,10 +158,10 @@ export class WorkspaceLayoutStore {
     });
     this.sizing = new WorkspaceSizingController({
       engine,
-      focusedColumnId: () => this.focusedColumnId(),
       notify: () => this.notify(),
       offsetCamera: (axis, delta) => this.offsetNormalCamera(axis, delta),
-      paneEndEdge: (paneId, axis) => this.paneEndEdge(paneId, axis),
+      paneResizeEdge: (paneId, axis, edge) =>
+        this.paneResizeEdge(paneId, axis, edge),
       scene: () => this.toScene(),
       updateViewport: (viewport) => this.updateViewportAfterSizing(viewport),
       viewport: () => this.lastViewport,
@@ -799,8 +799,8 @@ export class WorkspaceLayoutStore {
     this.notify(false);
   }
 
-  resetFocusedColumnWidth(): boolean {
-    return this.sizing.resetFocusedColumnWidth();
+  resetPaneColumnWidth(paneId: PaneId): boolean {
+    return this.sizing.resetPaneColumnWidth(paneId);
   }
   resizeColumn(columnId: ColumnId, width: ColumnWidthSpec): void {
     this.sizing.resizeColumn(columnId, width);
@@ -1084,28 +1084,30 @@ export class WorkspaceLayoutStore {
     this.focusRevealSuppressed = true;
   }
 
-  private paneEndEdge(paneId: PaneId, axis: PaneResizeAxis): number | null {
+  private paneResizeEdge(
+    paneId: PaneId,
+    axis: PaneResizeAxis,
+    edge: PaneResizeFixedEdge,
+  ): number | null {
     const scene = this.toScene();
     const cursor = workspaceGridCursorForPane(scene, paneId);
     if (!cursor) {
       return null;
     }
-    const maximizedPaneId = this.getSnapshot().maximizedPaneId;
-    if (axis === "column") {
-      const box = this.engine.gridCellBox(
-        cursor,
-        this.lastViewport,
-        maximizedPaneId,
-      );
-      return box.x + box.width;
-    }
     const cells = workspaceColumnAtGridCursor(scene, cursor)?.cells.length ?? 1;
-    const box = this.engine.gridCellBox(
-      { ...cursor, split: Math.max(0, cells - 1) },
-      this.lastViewport,
-      maximizedPaneId,
-    );
-    return box.y + box.height;
+    const box = this.engine.gridCursorRenderItem({
+      ...this.getSnapshot(),
+      cursor:
+        axis === "row"
+          ? { ...cursor, split: edge === "start" ? 0 : Math.max(0, cells - 1) }
+          : cursor,
+      movementPhase: "idle",
+      presentationMode: "normal",
+      viewport: this.lastViewport,
+    });
+    return axis === "column"
+      ? box.x + (edge === "end" ? box.width : 0)
+      : box.y + (edge === "end" ? box.height : 0);
   }
 
   private offsetNormalCamera(axis: PaneResizeAxis, delta: number): void {

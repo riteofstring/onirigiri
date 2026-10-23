@@ -198,3 +198,67 @@ test("a pane link opens on its pane without a camera flight and follows focus", 
   ).toHaveAttribute("data-focused", "true");
   await expect(page).toHaveURL(/\?link=1&pane=unknown$/);
 });
+
+for (const edge of ["left", "right", "top", "bottom"] as const) {
+  test(`resizing the ${edge} edge of an unfocused pane preserves selection and its opposite edge`, async ({
+    page,
+  }) => {
+    const frame = await openEdgeFixture(page);
+    await page.evaluate(() => {
+      const fixture = (
+        window as Window & { __paneDefaultsFixture: PaneDefaultsFixture }
+      ).__paneDefaultsFixture;
+      fixture.handle.current!.focusPane("video");
+    });
+    await settled(page);
+    const selected = page.locator('[data-onirigiri-pane-id="video"]');
+    const before = await box(frame);
+    const horizontal = edge === "left" || edge === "right";
+    const deltaX = horizontal ? 60 : 0;
+    const deltaY = horizontal ? 0 : 60;
+    const fixed = (bounds: typeof before) =>
+      horizontal
+        ? bounds.x + (edge === "left" ? bounds.width : 0)
+        : bounds.y + (edge === "top" ? bounds.height : 0);
+    await drag(
+      page,
+      frame.locator(`[data-resize-edge="${edge}"]`),
+      deltaX,
+      deltaY,
+      async () => {
+        await expect(selected).toHaveAttribute("data-focused", "true");
+        const during = await box(frame);
+        expect(Math.abs(fixed(during) - fixed(before))).toBeLessThanOrEqual(1);
+        expect(
+          Math.abs(
+            (horizontal
+              ? during.width - before.width
+              : during.height - before.height) -
+              (edge === "left" || edge === "top" ? -60 : 60),
+          ),
+        ).toBeLessThanOrEqual(1);
+      },
+    );
+    await settled(page);
+    await expect(selected).toHaveAttribute("data-focused", "true");
+    expect(
+      Math.abs(fixed(await box(frame)) - fixed(before)),
+    ).toBeLessThanOrEqual(1);
+    await frame
+      .locator(
+        '[data-onirigiri-slot="pane-resize-column"][data-resize-edge="right"]',
+      )
+      .dblclick();
+    await expect(selected).toHaveAttribute("data-focused", "true");
+    await expect.poll(async () => (await box(frame)).width).toBe(500);
+  });
+}
+
+test("clicking the live pane body still selects that pane", async ({
+  page,
+}) => {
+  await openEdgeFixture(page);
+  const video = page.locator('[data-onirigiri-pane-id="video"]');
+  await video.locator('[data-onirigiri-slot="pane-content"]').click();
+  await expect(video).toHaveAttribute("data-focused", "true");
+});

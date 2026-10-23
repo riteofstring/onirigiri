@@ -351,13 +351,14 @@ describe("resize edge handles", () => {
       paneDefaults: { resizeEdges: [...defaultPaneResizeEdges, "left"] },
     });
     await pressKey(handle("side", "left"), "ArrowLeft");
-    expect(workspace.getSnapshot().focusedPaneId).toBe("side");
+    expect(workspace.getSnapshot().focusedPaneId).toBe("upper");
     expect(columnWidth(workspace, "side")).toBe(416);
     await pressKey(handle("side", "left"), "ArrowRight");
     await pressKey(handle("side", "left"), "ArrowRight");
     expect(columnWidth(workspace, "side")).toBe(384);
     await pressKey(handle("side", "left"), "Enter");
     expect(columnWidth(workspace, "side")).toBe(400);
+    expect(workspace.getSnapshot().focusedPaneId).toBe("upper");
   });
 
   it("moves the shared split from the lower pane's top edge", async () => {
@@ -368,7 +369,7 @@ describe("resize edge handles", () => {
       "Resize split between Upper and Lower",
     );
     await pressKey(top, "ArrowUp");
-    expect(fromTop.getSnapshot().focusedPaneId).toBe("lower");
+    expect(fromTop.getSnapshot().focusedPaneId).toBe("upper");
     const topSizing = splitSizing(fromTop);
     await act(async () => root.unmount());
     root = createRoot(container);
@@ -429,6 +430,56 @@ describe("resize edge handles", () => {
       unit: "px",
       value: 500,
     });
+  });
+
+  it.each(["left", "right", "top", "bottom"] as const)(
+    "resizes an unfocused pane from its %s edge without changing selection",
+    async (edge) => {
+      const workspace = await mount({
+        paneDefaults: { resizeEdges: [edge] },
+      });
+      stubPointerCapture();
+      const before = workspace.getSnapshot().cursor;
+      const initialLayout = workspace.getLayout();
+      await act(async () => {
+        handle("side", edge).dispatchEvent(
+          new MouseEvent("pointerdown", {
+            bubbles: true,
+            cancelable: true,
+            clientX: 500,
+            clientY: 500,
+          }),
+        );
+      });
+      expect(workspace.getSnapshot().focusedPaneId).toBe("upper");
+      await act(async () => {
+        window.dispatchEvent(
+          new MouseEvent("pointermove", { clientX: 550, clientY: 450 }),
+        );
+      });
+      expect(workspace.getSnapshot().cursor).toEqual(before);
+      expect(workspace.getLayout().columns).not.toEqual(initialLayout.columns);
+      await act(async () => {
+        window.dispatchEvent(new MouseEvent("pointerup"));
+      });
+      expect(workspace.getSnapshot().focusedPaneId).toBe("upper");
+    },
+  );
+
+  it("resets an unfocused column without resetting or selecting the focused column", async () => {
+    const workspace = await mount();
+    await pressKey(handle("upper", "right"), "ArrowRight");
+    await pressKey(handle("side", "right"), "ArrowRight");
+    expect(columnWidth(workspace, "upper")).toBe(416);
+    expect(columnWidth(workspace, "side")).toBe(416);
+    await act(async () => {
+      handle("side", "right").dispatchEvent(
+        new MouseEvent("dblclick", { bubbles: true }),
+      );
+    });
+    expect(columnWidth(workspace, "side")).toBe(400);
+    expect(columnWidth(workspace, "upper")).toBe(416);
+    expect(workspace.getSnapshot().focusedPaneId).toBe("upper");
   });
 });
 

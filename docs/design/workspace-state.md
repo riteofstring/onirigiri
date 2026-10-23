@@ -175,17 +175,18 @@ accommodate them and retains positive, restorable cell sizes. The measurement
 happens once, at the split; later viewport changes keep the explicit heights
 like any other resized split.
 
-Pane resize handles operate on one edge. Right and bottom handles keep the
-established anchor: the pane's leading edge stays fixed because the camera is
-anchored to the focused cell's start. Left and top handles reuse the same
-column-width and plane-height commands and then shift the current and target
-camera anchor offsets by the measured change of the opposite edge. Measuring the
-resolved cell geometry before and after the command makes width and height
-limits move the camera only by the distance the edge really moved. The
+Pane resize handles preserve the selected pane for pointer, keyboard and reset
+gestures. Width resets address the resized pane's column directly. Each edge
+reuses the column-width or plane-height command and holds its opposite edge in
+screen coordinates. Measuring the resolved cell geometry before and after the
+command accounts for changes to columns or rows preceding the selected cell,
+as well as width and height limits. The current and target camera anchor offsets
+move only by the distance the fixed edge would otherwise move. The
 compensation is applied before the command is published, so frame and React
 presentation never observe the uncompensated layout. A top handle between two
 stacked panes is the same split control as the bottom handle above it. When a
-gesture ends, the focused pane is re-anchored like every other resize.
+gesture ends, only a resized selected pane is re-anchored. Resizing another pane
+keeps the adjusted camera position so release cannot undo the edge hold.
 
 Normal camera coordinates remain logical rows and columns, with local pixel
 anchors for centering and compact alignment. Geometry is projected relative to
