@@ -705,7 +705,7 @@ export class WorkspaceLayoutStore {
     if (
       this.overviewCamera.mode !== "normal" ||
       state.focusedPaneId === null ||
-      (this.focusRevealSuppressed && state.focusAnchor !== "center") ||
+      this.focusCameraIsSuppressed() ||
       workspaceGridCursorForPane(this.toScene(), paneId)?.row !==
         state.cursor.row
     ) {
@@ -1048,7 +1048,7 @@ export class WorkspaceLayoutStore {
       this.retargetOverviewFollowCamera();
       return;
     }
-    if (this.focusRevealSuppressed && state.focusAnchor !== "center") {
+    if (this.focusCameraIsSuppressed()) {
       return;
     }
     const target = this.cursorCameraTarget();
@@ -1077,6 +1077,12 @@ export class WorkspaceLayoutStore {
       });
     }
     this.state.current.setState(this.createSnapshot());
+  }
+
+  private focusCameraIsSuppressed(): boolean {
+    return (
+      this.focusRevealSuppressed && this.getSnapshot().focusAnchor !== "center"
+    );
   }
 
   private setCursor(

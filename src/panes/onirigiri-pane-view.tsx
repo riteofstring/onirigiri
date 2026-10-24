@@ -650,7 +650,7 @@ function handleRowResizeKeyDown(
   { edge, item, rowHeight, split }: PaneRowResizeTarget,
   store: WorkspaceLayoutStore,
 ): void {
-  if (event.key === "Enter" || event.key === " ") {
+  if (["Enter", " "].includes(event.key)) {
     event.preventDefault();
     event.stopPropagation();
     resetPaneRowResize(store, item.paneId, split);
