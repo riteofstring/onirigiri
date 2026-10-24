@@ -595,7 +595,7 @@ function resetPaneRowResize(
   split: PaneSplitItems | null,
 ): void {
   if (!split) {
-    store.resizePaneRow(paneId, null);
+    if (store.resizePaneRow(paneId, null)) store.reanchorResizedRow(paneId);
     return;
   }
   const scene = store.toScene();
@@ -665,14 +665,18 @@ function handleRowResizeKeyDown(
   event.stopPropagation();
   const delta = direction * keyboardResizeStep(event);
   if (!split) {
-    store.resizePaneRow(
-      item.paneId,
-      Math.max(
-        minimumPaneHeightPx,
-        rowHeight + (edge === "top" ? -delta : delta),
-      ),
-      edge === "top" ? "end" : "start",
-    );
+    if (
+      store.resizePaneRow(
+        item.paneId,
+        Math.max(
+          minimumPaneHeightPx,
+          rowHeight + (edge === "top" ? -delta : delta),
+        ),
+        edge === "top" ? "end" : "start",
+      )
+    ) {
+      store.reanchorResizedRow(item.paneId);
+    }
     return;
   }
   resizePaneSplitFromKeyboard(store, split.upper, split.lower, delta);

@@ -46,6 +46,7 @@ export function beginPaneResize({
   const pointerId = event.pointerId;
   handle.setPointerCapture(pointerId);
   store.beginLayoutMutationGroup();
+  const layoutRevision = store.getSnapshot().layoutRevision;
   const move = paneResizeMoveHandler({
     adjacentItem,
     edge,
@@ -64,6 +65,13 @@ export function beginPaneResize({
     if (handle.hasPointerCapture(pointerId))
       handle.releasePointerCapture(pointerId);
     store.endLayoutMutationGroup();
+    if (
+      (edge === "top" || edge === "bottom") &&
+      !adjacentItem &&
+      store.getSnapshot().layoutRevision !== layoutRevision
+    ) {
+      store.reanchorResizedRow(item.paneId);
+    }
   };
   ownerWindow.addEventListener("pointermove", move);
   ownerWindow.addEventListener("pointerup", end, { once: true });
