@@ -700,6 +700,34 @@ export class WorkspaceLayoutStore {
     this.notify(false);
   }
 
+  reanchorResizedRow(paneId: PaneId): void {
+    const state = this.getSnapshot();
+    if (
+      this.overviewCamera.mode !== "normal" ||
+      state.focusedPaneId === null ||
+      (this.focusRevealSuppressed && state.focusAnchor !== "center") ||
+      workspaceGridCursorForPane(this.toScene(), paneId)?.row !==
+        state.cursor.row
+    ) {
+      return;
+    }
+    const target = this.cursorCameraTarget();
+    if (
+      state.verticalAnchorOffset === target.verticalAnchorOffset &&
+      state.targetVerticalAnchorOffset === target.verticalAnchorOffset
+    ) {
+      return;
+    }
+    const settled =
+      Math.abs(state.verticalAnchorOffset - state.targetVerticalAnchorOffset) <=
+      0.001;
+    this.state.current.setState({
+      targetVerticalAnchorOffset: target.verticalAnchorOffset,
+      ...(settled ? { verticalAnchorOffset: target.verticalAnchorOffset } : {}),
+    });
+    this.notify(false);
+  }
+
   ensureFocusedRowVisible(viewport: Rect): void {
     if (this.overviewCamera.mode === "overview") {
       this.lastViewport = viewport;

@@ -134,6 +134,31 @@ describe("resize edge layout", () => {
     expect(shrunk.x + shrunk.width).toBeCloseTo(before.x + before.width);
   });
 
+  it.each(["start", "center"] as const)(
+    "restores the %s vertical anchor without disturbing a horizontal resize",
+    (anchor) => {
+      const { screenBox, store } = layoutStore(anchor);
+      const before = screenBox();
+      store.resizePaneColumn("right", { unit: "px", value: 520 }, "end");
+      const horizontal = store.getSnapshot().horizontalAnchorOffset;
+      store.resizePaneRow("right", 300, "end");
+      store.reanchorResizedRow("right");
+      const box = screenBox();
+      expect(box.height).toBe(300);
+      if (anchor === "center") {
+        expect(box.y + box.height / 2).toBeCloseTo(viewport.height / 2);
+      } else {
+        expect(box.y).toBeCloseTo(before.y);
+      }
+      const after = store.getSnapshot();
+      expect(after.horizontalAnchorOffset).toBe(horizontal);
+      expect(after.targetHorizontalAnchorOffset).toBe(horizontal);
+      expect(after.verticalAnchorOffset).toBe(after.targetVerticalAnchorOffset);
+      store.reanchorResizedRow("right");
+      expect(store.getSnapshot().revision).toBe(after.revision);
+    },
+  );
+
   it("validates resize edges with the other pane defaults", () => {
     expect(() =>
       createWorkspaceScene({
@@ -433,7 +458,7 @@ describe("resize edge handles", () => {
   });
 
   it.each(["left", "right", "top", "bottom"] as const)(
-    "keeps a selected pane at its released geometry after a %s resize",
+    "finishes selected-pane %s resizing without a camera flight",
     async (edge) => {
       const workspace = await mount({
         focusAnchor: "center",
@@ -460,18 +485,23 @@ describe("resize edge handles", () => {
       const released = workspace.getSnapshot();
       expect(released.focusedPaneId).toBe("side");
       expect(released.horizontalAnchorOffset).toBe(held.horizontalAnchorOffset);
-      expect(released.verticalAnchorOffset).toBe(held.verticalAnchorOffset);
+      if (edge === "top" || edge === "bottom") {
+        const box = focusedBox(workspace);
+        expect(box.y + box.height / 2).toBeCloseTo(viewport.height / 2);
+      } else {
+        expect(released.verticalAnchorOffset).toBe(held.verticalAnchorOffset);
+      }
       expect(released.targetHorizontalAnchorOffset).toBe(
         held.horizontalAnchorOffset,
       );
       expect(released.targetVerticalAnchorOffset).toBe(
-        held.verticalAnchorOffset,
+        released.verticalAnchorOffset,
       );
     },
   );
 
   it.each(["left", "right", "top", "bottom"] as const)(
-    "keeps selected-pane %s keyboard resizing stationary",
+    "finishes selected-pane %s keyboard resizing without a camera flight",
     async (edge) => {
       const workspace = await mount({
         focusAnchor: "center",
@@ -491,8 +521,67 @@ describe("resize edge handles", () => {
       expect(snapshot.targetVerticalAnchorOffset).toBe(
         snapshot.verticalAnchorOffset,
       );
+      if (edge === "top" || edge === "bottom") {
+        const box = focusedBox(workspace);
+        expect(box.y + box.height / 2).toBeCloseTo(viewport.height / 2);
+        await pressKey(handle("side", edge), "Enter");
+        const reset = focusedBox(workspace);
+        expect(reset.y + reset.height / 2).toBeCloseTo(viewport.height / 2);
+      }
     },
   );
+
+  it("recenters the selected row after dragging a neighboring pane without selecting it", async () => {
+    const workspace = await mount({
+      focusAnchor: "center",
+      initialPanes: [
+        { ...stackPanes[0]!, heightPx: 400 },
+        { ...stackPanes[2]!, heightPx: 400 },
+      ],
+    });
+    stubPointerCapture();
+    const before = workspace.getSnapshot();
+    await act(async () => {
+      handle("side", "bottom").dispatchEvent(
+        new MouseEvent("pointerdown", { bubbles: true, clientY: 500 }),
+      );
+      window.dispatchEvent(new MouseEvent("pointermove", { clientY: 440 }));
+      window.dispatchEvent(new MouseEvent("pointerup"));
+    });
+    const box = focusedBox(workspace);
+    expect(box.height).toBe(340);
+    expect(box.y + box.height / 2).toBeCloseTo(viewport.height / 2);
+    expect(workspace.getSnapshot().focusedPaneId).toBe("upper");
+    expect(workspace.getSnapshot().horizontalAnchorOffset).toBe(
+      before.horizontalAnchorOffset,
+    );
+    expect(workspace.getSnapshot().verticalAnchorOffset).toBe(
+      workspace.getSnapshot().targetVerticalAnchorOffset,
+    );
+  });
+
+  it("does not reanchor when a resize handle is pressed without a size change", async () => {
+    const workspace = await mount({
+      focusAnchor: "center",
+      initialPanes: [{ ...stackPanes[2]!, heightPx: 400 }],
+    });
+    stubPointerCapture();
+    await pressKey(handle("side", "right"), "ArrowRight");
+    const before = workspace.getSnapshot();
+    await act(async () => {
+      handle("side", "bottom").dispatchEvent(
+        new MouseEvent("pointerdown", { bubbles: true, clientY: 500 }),
+      );
+      window.dispatchEvent(new MouseEvent("pointerup"));
+    });
+    expect(workspace.getSnapshot()).toMatchObject({
+      horizontalAnchorOffset: before.horizontalAnchorOffset,
+      targetHorizontalAnchorOffset: before.targetHorizontalAnchorOffset,
+      verticalAnchorOffset: before.verticalAnchorOffset,
+      targetVerticalAnchorOffset: before.targetVerticalAnchorOffset,
+      layoutRevision: before.layoutRevision,
+    });
+  });
 
   it.each(["left", "right", "top", "bottom"] as const)(
     "resizes an unfocused pane from its %s edge without changing selection",
@@ -527,6 +616,20 @@ describe("resize edge handles", () => {
       expect(workspace.getSnapshot().focusedPaneId).toBe("upper");
     },
   );
+
+  it("retains the held camera when changing a split", async () => {
+    const workspace = await mount({ focusAnchor: "center" });
+    const before = workspace.getSnapshot();
+    const sizing = splitSizing(workspace);
+    await pressKey(handle("upper", "bottom"), "ArrowDown");
+    expect(splitSizing(workspace)).not.toEqual(sizing);
+    expect(workspace.getSnapshot()).toMatchObject({
+      focusedPaneId: before.focusedPaneId,
+      horizontalAnchorOffset: before.horizontalAnchorOffset,
+      verticalAnchorOffset: before.verticalAnchorOffset,
+      targetVerticalAnchorOffset: before.targetVerticalAnchorOffset,
+    });
+  });
 
   it("resets an unfocused column without resetting or selecting the focused column", async () => {
     const workspace = await mount();
@@ -594,4 +697,13 @@ function stackHeight(workspace: OnirigiriWorkspaceHandle): number {
     );
   }
   return upper + lower + scene.rowGap;
+}
+
+function focusedBox(workspace: OnirigiriWorkspaceHandle) {
+  const engine = new OnirigiriLayoutEngine(workspace.getScene());
+  return engine.gridCursorRenderItem({
+    ...workspace.getSnapshot(),
+    movementPhase: "idle",
+    viewport,
+  });
 }

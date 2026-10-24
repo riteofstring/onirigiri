@@ -130,6 +130,36 @@ test("dragging the top edge holds the bottom edge while the height follows the p
 }) => {
   const frame = await openEdgeFixture(page);
   const before = await box(frame);
+  await page.evaluate(() => {
+    const pane = document.querySelector('[data-onirigiri-pane-id="frame"]')!;
+    const release = { started: false, covered: false };
+    (window as Window & { __resizeRelease?: typeof release }).__resizeRelease =
+      release;
+    window.addEventListener(
+      "pointerup",
+      () => {
+        release.started = true;
+      },
+      { once: true, capture: true },
+    );
+    new MutationObserver((records) => {
+      if (
+        release.started &&
+        records.some(
+          (record) =>
+            record.attributeName === "data-onirigiri-shielded" &&
+            (record.target as Element).getAttribute(
+              "data-onirigiri-shielded",
+            ) === "true",
+        )
+      )
+        release.covered = true;
+    }).observe(pane, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ["data-onirigiri-shielded"],
+    });
+  });
   await drag(
     page,
     frame.locator('[data-resize-edge="top"]'),
@@ -149,9 +179,18 @@ test("dragging the top edge holds the bottom edge while the height follows the p
   expect(Math.round((await box(frame)).height)).toBe(
     Math.round(before.height + 80),
   );
-  const released = await box(frame);
+  await page.waitForTimeout(800);
   expect(
-    Math.abs(released.y + released.height - (before.y + before.height)),
+    await page.evaluate(
+      () =>
+        (window as Window & { __resizeRelease?: { covered: boolean } })
+          .__resizeRelease?.covered,
+    ),
+  ).toBe(false);
+  const released = await box(frame);
+  const stage = await box(page.locator('[data-onirigiri-slot="stage"]'));
+  expect(
+    Math.abs(released.y + released.height / 2 - stage.y - stage.height / 2),
   ).toBeLessThanOrEqual(1);
 });
 
@@ -208,7 +247,7 @@ test("a pane link opens on its pane without a camera flight and follows focus", 
 });
 
 for (const edge of ["left", "right", "top", "bottom"] as const) {
-  test(`resizing the ${edge} edge of an unfocused pane preserves selection and its opposite edge`, async ({
+  test(`resizing the ${edge} edge of an unfocused pane preserves selection and holds the opposite edge during the gesture`, async ({
     page,
   }) => {
     const frame = await openEdgeFixture(page);
@@ -249,9 +288,19 @@ for (const edge of ["left", "right", "top", "bottom"] as const) {
     );
     await settled(page);
     await expect(selected).toHaveAttribute("data-focused", "true");
-    expect(
-      Math.abs(fixed(await box(frame)) - fixed(before)),
-    ).toBeLessThanOrEqual(1);
+    if (horizontal) {
+      expect(
+        Math.abs(fixed(await box(frame)) - fixed(before)),
+      ).toBeLessThanOrEqual(1);
+    } else {
+      const selectedBox = await box(selected);
+      const stage = await box(page.locator('[data-onirigiri-slot="stage"]'));
+      expect(
+        Math.abs(
+          selectedBox.y + selectedBox.height / 2 - stage.y - stage.height / 2,
+        ),
+      ).toBeLessThanOrEqual(1);
+    }
     await frame
       .locator(
         '[data-onirigiri-slot="pane-resize-column"][data-resize-edge="right"]',
