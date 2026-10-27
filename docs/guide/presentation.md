@@ -324,8 +324,8 @@ application protocols. The `pane-picture` and `pane-placeholder` styling slots,
 `data-onirigiri-picture-ready` reports a retained picture, which the placeholder
 may still cover. No example CSS is needed for picture visibility.
 
-See [pane content and picture ownership](../design/native-content-motion.md)
-and the [HTML-in-Canvas examples](../design/html-canvas-examples.md).
+See [pane content and picture ownership](https://github.com/riteofstring/onirigiri/blob/main/docs/design/native-content-motion.md)
+and the [HTML-in-Canvas examples](https://github.com/riteofstring/onirigiri/blob/main/docs/design/html-canvas-examples.md).
 
 Hosts with their own render loops should use the same state to stop expensive work such as WebGL,
 canvas, terminal, video, chart, or stream updates:

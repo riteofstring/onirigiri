@@ -75,7 +75,7 @@ All automated browser tests, including the performance suite, run in headless Go
 navigation with 50 panes and a 3840×2160 overview stress workload with 500 panes, with a 60Hz
 display-cadence floor and 120Hz CPU-work budget.
 
-See [`docs/quality-and-supply-chain-tooling.md`](../quality-and-supply-chain-tooling.md) for the
+See [`docs/quality-and-supply-chain-tooling.md`](https://github.com/riteofstring/onirigiri/blob/main/docs/quality-and-supply-chain-tooling.md) for the
 locked quality, architecture, test, dependency, vulnerability, license, and release-age gates.
 
 ## Continuous integration

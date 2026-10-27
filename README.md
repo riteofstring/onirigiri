@@ -426,7 +426,7 @@ the workspace if it is invalid.
 
 ## Development
 
-The interactive 1D and 2D demo playground lives in [`playground/`](playground),
+The interactive 1D and 2D demo playground lives in [`playground/`](https://github.com/riteofstring/onirigiri/tree/main/playground),
 and its lab panes come from
 [browser-surface-lab](https://github.com/riteofstring/browser-surface-lab).
 Run `pnpm dev:1d` or `pnpm dev:2d`; see [Development](docs/guide/development.md).

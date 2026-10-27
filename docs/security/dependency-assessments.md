@@ -9,8 +9,8 @@ on 2026-10-31.
 
 ## Dependency and input boundaries
 
-The lock resolves `undici@7.29.1`, which fixes the September Undici advisories,
-so no Undici assessment is needed.
+The lock resolves `undici@7.29.1`. It fixes the September advisories but needs
+three separate October assessments, recorded below.
 
 `source-map-js@1.2.1` is reached through `postcss@8.5.23` in Vite and through
 `css-tree@3.2.1` in jsdom. The vulnerable loop is in
@@ -115,3 +115,97 @@ dependency graph, install frozen without scripts and verify build and developmen
 server behavior. Reassess sooner if an HTTP server bypasses the plugin, middleware
 ordering changes, an editor caller is introduced or Vite changes. All findings
 remain visible in dependency-review output.
+
+## October beta toolchain review
+
+Reviewed 2026-10-27 by Codex; these seven exact assessments expire 2026-11-06.
+They cover the checked-in configurations and resolved sources below, not arbitrary
+consumer servers or Node's independently bundled Undici. No dependency changes,
+release-age admissions or lifecycle-script execution are needed.
+
+### Undici 7.29.1
+
+The installed jsdom 29.1.1 imports `getGlobalDispatcher`, `Dispatcher`, handler
+adapters, `DecoratorHandler` and `WebSocket`. Its resource loader implements its
+own dispatch and decompression in
+`lib/jsdom/browser/resources/jsdom-dispatcher.js` and
+`decompress-interceptor.js`. It does not call Undici's `fetch`, `EventSource` or
+`interceptors.decompress`. Repository source has no direct Undici import.
+Unit tests construct local DOM and controlled fixtures, not an uploaded HTML
+service. Node HTTP checks use built-in fetch; browser fixture requests run in
+Chrome. Those implementations are separate from this installed package.
+
+- [GHSA-f72v-6w45-q472](https://github.com/nodejs/undici/security/advisories/GHSA-f72v-6w45-q472):
+  the fetch SRI verifier mishandles mixed-case algorithm names. No enabled caller
+  uses that verifier or makes an integrity decision with it. Outcome: not affected.
+- [GHSA-4qv8-2p9j-2685](https://github.com/nodejs/undici/security/advisories/GHSA-4qv8-2p9j-2685):
+  malicious SSE response framing can exhaust EventSource parser memory. Neither
+  jsdom nor repository code creates that client. Outcome: not affected.
+- [GHSA-xjj6-f33q-929c](https://github.com/nodejs/undici/security/advisories/GHSA-xjj6-f33q-929c):
+  excessive content encodings can cause an unhandled decompression error. The
+  installed fetch and decompression interceptor contain the affected handling;
+  jsdom uses its own interceptor, and no repository caller installs Undici's.
+  No response header reaches that sink in the installed package. Outcome: not affected.
+
+Reassess before adding an Undici fetch, EventSource or decompression caller,
+changing jsdom, or accepting remote documents. Plan an intentional update to
+Undici 7.30.1 or later after its exact release clears the 30-day admission window;
+verify registry release age during that update. The absent vulnerable paths do
+not justify admitting fresh networking code during beta verification. Complete
+the update or renew the analysis with current evidence before November 6.
+
+### Vitest mocker 4.1.11
+
+The resolved `@vitest/mocker/dist/node.js` registers
+`vitest:interceptor:register` in `interceptorPlugin.configureServer`. Its redirect
+branch joins a URL pathname and later reads the registered file; its manual
+branch generates module source from the registered URL. These are network-facing
+browser mocking features, distinct from node/jsdom `vi.mock` execution.
+
+- [GHSA-xp26-3454-mjgp](https://github.com/vitest-dev/vitest/security/advisories/GHSA-xp26-3454-mjgp):
+  a Windows backslash in a redirect can bypass the path allowlist and disclose
+  an outside file.
+- [GHSA-qxg6-89mg-rqv8](https://github.com/vitest-dev/vitest/security/advisories/GHSA-qxg6-89mg-rqv8):
+  a manual mock URL can inject JavaScript into a served module.
+
+Both are not affected here: root, playground and compiler projects use node or
+jsdom; no Vitest browser pool, direct `mockerPlugin` or `interceptorPlugin` is
+configured. Internal Vitest Vite servers use middleware mode without an HTTP
+listener; Playwright uses separate Vite applications without mocker plugins.
+There is no untrusted WebSocket registration path to either sink. This reasoning
+also applies on Windows; it does not rely on the local assessor running Linux.
+Reassess before enabling browser mocking or exposing Vitest API/UI servers.
+Plan a verified Vitest/mocker 4.1.12 update once eligible, by November 6, or renew
+with current source evidence. Retaining unused vulnerable APIs is lower risk
+than changing the test toolchain during this release; it grants no fresh admission.
+
+### Vite 8.1.4: additional HTTP advisories
+
+- [GHSA-rq7h-c2jc-7f22](https://github.com/vitejs/vite/security/advisories/GHSA-rq7h-c2jc-7f22):
+  import analysis can add a root-relative URL to `safeModulePaths` as an absolute
+  host path. Raw-filesystem middleware then accepts that path before checking
+  `server.fs.allow`. The exploit requires an imported project file whose URL
+  also names a readable host file outside the allowed roots. Owned imports use
+  source, playground, test, fixture and dependency paths; none supplies the
+  system-path collision. Playground aliases use absolute library source paths
+  with explicit allowed roots. The surface-lab middleware serves a production
+  build, not development import analysis. Outcome: not affected for this import
+  inventory. This is not a claim that loopback or the allowlist fixes Vite.
+- [GHSA-9jrq-w75r-8gcw](https://github.com/vitejs/vite/security/advisories/GHSA-9jrq-w75r-8gcw):
+  custom middleware passing an unchanged request URL to `transformIndexHtml`
+  can generate an attacker-origin module URL. No repository caller uses that
+  API. Development servers use normal SPA HTML handling; surface-lab delegates
+  to production MPA preview. No custom request-to-HTML transform reaches the
+  sink. Outcome: not affected.
+
+Resolved evidence is Vite's bundled `dist/node/chunks` import-analysis,
+raw-filesystem and HTML-transform implementations, `vite.config.ts`, benchmark
+and playground configs, `playground/library-source.ts`,
+`playground/scripts/surface-lab-server.mjs`, preview launchers and packed-consumer
+server configuration. Reassess when imports, host paths, server entry points or
+custom HTML transforms change. The existing Vite 8.1.6 update deadline remains
+November 6; its documented November 5 eligibility covers these fixes too.
+
+The earlier source-map-js assessment still expires October 31; the editor-route
+assessments still expire November 6. These additions extend neither deadline.
+Scanner findings remain visible even when the exact assessments are accepted.

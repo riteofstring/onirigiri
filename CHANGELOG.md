@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0-beta.1 - 2026-10-20
+## 0.4.0-beta.1 - 2026-10-27
 
 ### Added
 
@@ -18,7 +18,26 @@
 - Optional `restPictureFade` briefly fades a saved picture over ready, interactive
   live content after navigation settles. It does not animate pictures in motion.
 
+### Changed
+
+- The exported `WorkspaceLayoutStore.resetFocusedColumnWidth()` method is now
+  `resetPaneColumnWidth(paneId)`, so width reset targets the named pane.
+- Ready panes uncover one per frame as navigation settles, with the focused pane
+  first, while retained pictures cover panes awaiting activation.
+
 ### Fixed
+
+- Pane-edge resizing preserves selection and keeps the resized pane stationary
+  after release. Manual row-height changes recenter the selected row without
+  starting a camera flight.
+- Picture presentation follows the frame scheduler's motion phase, keeping
+  retained coverage aligned with the displayed frame through settling.
+- Repeated overview navigation and pane renaming preserve camera continuity,
+  selection and grid positioning.
+- Background worker captures are embedded in package builds and retain pane
+  geometry, original iframe state and useful pictures through recovery.
+- Custom placeholders observe input eligibility through motion and rest;
+  opted-in editing shortcuts work in text fields.
 
 - Changing overview card width constraints updates the mounted workspace,
   including the follow camera, without replacing pane content.

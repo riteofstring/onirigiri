@@ -57,7 +57,10 @@ in a separate test project; neither compiler is added to the runtime package.
 The existing jsdom dependency now resolves the aged security release
 `undici@7.29.1`, published September 4, 2026, within jsdom's existing range.
 This removes the September WebSocket, interceptor and BalancedPool advisories
-without changing jsdom or introducing an override.
+without changing jsdom or introducing an override. Three later October Undici
+advisories still require the exact assessments in
+[dependency-assessments.md](security/dependency-assessments.md); the September
+fix does not cover them.
 
 `source-map-js@1.2.1` is assessed as not affected by GHSA-68fv-2mgg-jv7q in
 [dependency-assessments.md](security/dependency-assessments.md).

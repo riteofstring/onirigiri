@@ -8,6 +8,7 @@
   ],
   "files": [
     "dist",
+    "!dist/assets/pane-picture-capture-worker-*.js.map",
     "CHANGELOG.md",
     "docs/guide",
     "LICENSE",
