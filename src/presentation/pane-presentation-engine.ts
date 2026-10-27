@@ -50,6 +50,7 @@ export class PanePresentationEngine {
   private readonly bindings = new Map<PaneId, PaneHostBinding>();
   private readonly itemByPaneId = new Map<PaneId, PaneRenderItem>();
   private deferredActivation: ReadonlySet<PaneId> = new Set();
+  private presentingMotion = false;
   private readonly deferredActivationListeners = new Set<() => void>();
   private readonly pendingPaneRearrangements = new Map<
     PaneId,
@@ -114,6 +115,15 @@ export class PanePresentationEngine {
 
   hasPaneHost(paneId: PaneId): boolean {
     return this.bindings.has(paneId);
+  }
+
+  /** Whether the scheduler's latest frame presented motion. */
+  isPresentingMotion(): boolean {
+    return this.presentingMotion;
+  }
+
+  presentMotion(moving: boolean): void {
+    this.presentingMotion = moving;
   }
 
   /** Covered panes that stay frozen until the scheduler uncovers them. */
