@@ -12,6 +12,7 @@ export function usePanePictures(
       new PanePictures(
         () =>
           workspaceSnapshotIsMoving(runtime.store.getSnapshot()) ||
+          runtime.presentation.isPresentingMotion() ||
           runtime.presentation.hasActivePaneRearrangement() ||
           runtime.worldPresentation.hasActiveMotion(),
         () => runtime.store.getSnapshot().focusedPaneId,

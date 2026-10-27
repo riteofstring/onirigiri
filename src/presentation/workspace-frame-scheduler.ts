@@ -289,6 +289,7 @@ export class WorkspaceFrameScheduler {
   ): PanePresentationWriteCounts {
     const viewport = this.options.viewportProvider();
     const compactLayout = this.options.compactLayoutProvider();
+    this.options.presentation.presentMotion(motion.moving);
     const renderInput = {
       compactLayout,
       engine: this.options.engine,
