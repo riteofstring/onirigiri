@@ -241,3 +241,8 @@ adjustment is enabled, dragging past a small threshold moves the minimap and
 snaps it to the nearest stage corner, and the inner-corner handle resizes it.
 Both gestures write inline styles during the drag and commit one placement on
 release.
+
+After motion, the scheduler uncovers at most one pane per frame, prioritizing
+the focused pane. Uncovering repaints the entire live content, so staggering
+avoids repainting all visible covered panes on one frame. Panes that were
+never covered activate immediately.

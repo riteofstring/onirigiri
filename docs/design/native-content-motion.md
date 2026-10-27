@@ -909,3 +909,8 @@ The native content contract includes operation-count guards for shell completion
 layout queries and activation ordering. Separate headless CPU browser checks
 exercise synchronous DOM mutations, protected-video capability queries, iframe
 document replacement and observer cleanup without requesting graphics devices.
+
+The scheduler's latest presented motion state, rather than a pending target,
+drives picture motion configuration. Covered panes remain deferred until the
+scheduler uncovers them; a pane still settling is presented as moving. The cover
+query excludes both native DOM and live canvas renderers.

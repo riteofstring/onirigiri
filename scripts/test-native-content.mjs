@@ -3,13 +3,20 @@ import { run, runPnpm } from "./lib/process.mjs";
 const commands = {
   unit: ["test"],
   "pane-defaults": ["exec", "vitest", "run", "tests/pane-defaults.test.tsx"],
-  cache: ["exec", "vitest", "run", "tests/pane-pictures.test.ts"],
+  cache: [
+    "exec",
+    "vitest",
+    "run",
+    "tests/pane-pictures.test.ts",
+    "tests/pane-pictures-policy.test.ts",
+  ],
   pictures: ["exec", "vitest", "run", "tests/engine-pane-pictures.test.tsx"],
   contract: [
     "exec",
     "vitest",
     "run",
     "tests/pane-pictures.test.ts",
+    "tests/pane-pictures-policy.test.ts",
     "tests/native-content-motion.test.tsx",
     "tests/pane-presentation-native-content.test.ts",
     "tests/pane-viewport-lifecycle.test.ts",
