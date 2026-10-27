@@ -13,6 +13,8 @@ import type { PaneId, PaneRenderItem, WorkspacePane } from "../types.js";
 export interface Configuration {
   panes: ReadonlyMap<PaneId, WorkspacePane>;
   items: readonly PaneRenderItem[];
+  /** Whether a pane is still settling after motion, presented as if moving. */
+  settling?: (paneId: PaneId) => boolean;
   resolver?: OnirigiriPanePictureResolver;
   presentation?: PanePresentation;
   getPresentation?: PanePresentationResolver;

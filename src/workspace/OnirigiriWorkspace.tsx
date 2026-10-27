@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
 } from "react";
 
@@ -88,6 +89,7 @@ import {
   workspaceShortcutKeyDownHandler,
 } from "../input/workspace-shortcut-react.js";
 import {
+  deferredItem,
   workspaceSnapshotIsMoving,
   type WorkspaceFrameMotionOptions,
   type WorkspaceFrameScheduler,
@@ -712,7 +714,7 @@ export const OnirigiriWorkspace = forwardRef<
       boundaryFrameRef.current = null;
     }
   }, [boundaryFrame]);
-  const renderItems = useMemo(() => {
+  const workspaceItems = useMemo(() => {
     if (boundaryFrame) {
       return boundaryFrame.items;
     }
@@ -743,6 +745,20 @@ export const OnirigiriWorkspace = forwardRef<
     runtime,
     viewport,
   ]);
+  const deferredActivation = useSyncExternalStore(
+    runtime.presentation.subscribeDeferredActivation,
+    runtime.presentation.deferredActivationPaneIds,
+    runtime.presentation.deferredActivationPaneIds,
+  );
+  const renderItems = useMemo(
+    () =>
+      deferredActivation.size === 0
+        ? workspaceItems
+        : workspaceItems.map((item) =>
+            deferredActivation.has(item.paneId) ? deferredItem(item) : item,
+          ),
+    [deferredActivation, workspaceItems],
+  );
   const { mountContentDuringMotion, targetWorldFrame } =
     useWorkspaceWorldFrames({
       compactLayout,
@@ -796,6 +812,7 @@ export const OnirigiriWorkspace = forwardRef<
     pictures.configure({
       panes: paneById,
       items: mountedRenderItems,
+      settling: runtime.presentation.activationIsDeferred,
       resolver: getPanePicture,
       presentation: stablePanePresentation,
       getPresentation: getPanePresentation,
@@ -814,6 +831,7 @@ export const OnirigiriWorkspace = forwardRef<
     pictures,
     paneById,
     mountedRenderItems,
+    runtime,
     getPanePicture,
     stablePanePresentation,
     getPanePresentation,
