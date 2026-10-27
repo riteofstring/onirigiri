@@ -343,12 +343,6 @@ export class WorkspaceFrameScheduler {
     return writes;
   }
 
-  /**
-   * Uncovers at most one pane per frame, the focused pane first. Replacing a
-   * picture or placeholder with live content repaints that pane's whole content,
-   * and a settling move would otherwise uncover every visible pane in the same
-   * frame. Panes whose live content was never covered activate at once.
-   */
   private staggerActivation(
     items: PaneRenderItem[],
     focusedPaneId: string | null,

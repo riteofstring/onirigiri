@@ -293,11 +293,7 @@ const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
       data-onirigiri-picture-fading={String(fading)}
       {...inertAttribute(fading)}
       ref={surfaceRef}
-      style={
-        fading
-          ? { animationDuration: `${panePictureFadeDuration}ms` }
-          : undefined
-      }
+      style={paneCoverFadeStyle(fading)}
     >
       {surfaceVisible ? (
         <PaneCoverPlaceholder
@@ -321,6 +317,12 @@ const PaneContentCover = memo(function PaneContentCover(props: PaneCoverProps) {
 });
 
 const panePictureFadeDuration = 100;
+
+function paneCoverFadeStyle(fading: boolean) {
+  return fading
+    ? { animationDuration: `${panePictureFadeDuration}ms` }
+    : undefined;
+}
 
 function presentablePicture(
   picture: NonNullable<PaneCoverProps["picture"]>,

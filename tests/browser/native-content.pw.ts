@@ -170,6 +170,15 @@ test.describe("native preparation without HTML-in-Canvas", () => {
   }
 });
 
+function appendNumericParameters(
+  parameters: URLSearchParams,
+  values: Record<string, number | undefined>,
+): void {
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined) parameters.set(key, String(value));
+  }
+}
+
 async function openNativeFixture(
   page: Page,
   dense?: boolean,
@@ -193,14 +202,12 @@ async function openNativeFixture(
     parameters.set("policy", "");
     parameters.set("auto", "");
   }
-  for (const [key, value] of Object.entries({
+  appendNumericParameters(parameters, {
     count: options.count,
     budget: options.budgetBytes,
     rasterBudget: options.rasterBudgetBytes,
     preloadMargin: options.preloadMargin,
-  })) {
-    if (value !== undefined) parameters.set(key, String(value));
-  }
+  });
   await page.goto(
     `/@fs${repositoryRoot}tests/browser/native-content-guard.html?${parameters}`,
   );

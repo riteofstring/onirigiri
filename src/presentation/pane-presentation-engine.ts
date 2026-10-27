@@ -117,7 +117,6 @@ export class PanePresentationEngine {
     return this.bindings.has(paneId);
   }
 
-  /** Whether the scheduler's latest frame presented motion. */
   isPresentingMotion(): boolean {
     return this.presentingMotion;
   }
@@ -126,7 +125,6 @@ export class PanePresentationEngine {
     this.presentingMotion = moving;
   }
 
-  /** Covered panes that stay frozen until the scheduler uncovers them. */
   readonly deferredActivationPaneIds = (): ReadonlySet<PaneId> =>
     this.deferredActivation;
 
@@ -151,10 +149,8 @@ export class PanePresentationEngine {
     for (const listener of this.deferredActivationListeners) listener();
   }
 
-  /** Whether a picture or placeholder currently covers the pane's live content. */
   paneContentIsCovered(paneId: PaneId): boolean {
-    const renderer =
-      this.bindings.get(paneId)?.host.dataset.onirigiriRenderer;
+    const renderer = this.bindings.get(paneId)?.host.dataset.onirigiriRenderer;
     return (
       renderer !== undefined && renderer !== "dom" && renderer !== "canvas"
     );
