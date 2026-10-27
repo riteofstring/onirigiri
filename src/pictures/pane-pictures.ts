@@ -1422,7 +1422,9 @@ export class PanePictures {
     const host = this.hosts.get(paneId);
     const item = this.itemsById.get(paneId);
     return this.policy.resolve(pane, {
-      phase: this.presentationPhase(),
+      phase: this.configuration.settling?.(paneId)
+        ? "motion"
+        : this.presentationPhase(),
       focused: this.focused() === paneId,
       maximized: item?.maximized ?? false,
       visible: this.paneVisible(paneId),

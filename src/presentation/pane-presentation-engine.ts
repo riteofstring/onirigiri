@@ -49,6 +49,8 @@ export interface PanePresentationWriteCounts {
 export class PanePresentationEngine {
   private readonly bindings = new Map<PaneId, PaneHostBinding>();
   private readonly itemByPaneId = new Map<PaneId, PaneRenderItem>();
+  private deferredActivation: ReadonlySet<PaneId> = new Set();
+  private readonly deferredActivationListeners = new Set<() => void>();
   private readonly pendingPaneRearrangements = new Map<
     PaneId,
     PaneRearrangement
@@ -112,6 +114,40 @@ export class PanePresentationEngine {
 
   hasPaneHost(paneId: PaneId): boolean {
     return this.bindings.has(paneId);
+  }
+
+  /** Covered panes that stay frozen until the scheduler uncovers them. */
+  readonly deferredActivationPaneIds = (): ReadonlySet<PaneId> =>
+    this.deferredActivation;
+
+  readonly activationIsDeferred = (paneId: PaneId): boolean =>
+    this.deferredActivation.has(paneId);
+
+  readonly subscribeDeferredActivation = (listener: () => void) => {
+    this.deferredActivationListeners.add(listener);
+    return () => {
+      this.deferredActivationListeners.delete(listener);
+    };
+  };
+
+  deferActivation(paneIds: ReadonlySet<PaneId>): void {
+    const current = this.deferredActivation;
+    if (
+      paneIds.size === current.size &&
+      [...paneIds].every((paneId) => current.has(paneId))
+    )
+      return;
+    this.deferredActivation = paneIds;
+    for (const listener of this.deferredActivationListeners) listener();
+  }
+
+  /** Whether a picture or placeholder currently covers the pane's live content. */
+  paneContentIsCovered(paneId: PaneId): boolean {
+    const renderer =
+      this.bindings.get(paneId)?.host.dataset.onirigiriRenderer;
+    return (
+      renderer !== undefined && renderer !== "dom" && renderer !== "canvas"
+    );
   }
 
   updatePaneHostBoundary(
