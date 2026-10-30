@@ -804,6 +804,10 @@ A density change discards that recording and waits for another paint
 before displaying or retaining pixels. A resized surface keeps its previous
 drawing buffer until the replacement recording passes this density check;
 resizing the buffer earlier would clear valid pixels during the retry.
+Consumer picture acquisition captures visible panes in place; only offscreen panes
+use the worker staging surface. Staging the original visible subtree would move
+its live content out of its slot while the camera is stationary.
+
 Staged captures preserve the same density
 adjustment when restoring their ordinary presentation. The image's density is
 measured independently of `devicePixelRatio`: visible Retina Chrome and headless
