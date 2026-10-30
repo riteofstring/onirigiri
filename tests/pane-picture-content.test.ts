@@ -146,22 +146,34 @@ describe("PanePictureContent", () => {
     expect(second.input.value).toBe("Retained draft");
   });
 
-  it.each([true, false])("captures consumer pixels without relocating visible content (%s)", async (visible) => {
-    const pane = paneCanvas();
-    const device = { lost: new Promise(() => {}) } as unknown as GPUDevice;
-    const surface = pane.surface(Promise.resolve(device), { visible: () => visible });
-    await Promise.resolve();
-    vi.spyOn(PanePictureCaptureClient.prototype, "prepare").mockResolvedValue({} as never);
-    const capture = vi.spyOn(surface, "capture").mockImplementation(async (request) => {
-      if (visible) expect(request.stage).toBe(false);
-      else expect(request.stage).toBe(true);
-      expect(pane.input.value).toBe("Retained draft");
-      return { image: new Blob(["pixels"]), width: 100, height: 100 };
-    });
-    const result = await captureOnirigiriPanePicture(pane.input, new AbortController().signal);
-    expect(capture).toHaveBeenCalledOnce();
-    expect(result?.image.size).toBe(6);
-  });
+  it.each([true, false])(
+    "captures consumer pixels without relocating visible content (%s)",
+    async (visible) => {
+      const pane = paneCanvas();
+      const device = { lost: new Promise(() => {}) } as unknown as GPUDevice;
+      const surface = pane.surface(Promise.resolve(device), {
+        visible: () => visible,
+      });
+      await Promise.resolve();
+      vi.spyOn(PanePictureCaptureClient.prototype, "prepare").mockResolvedValue(
+        {} as never,
+      );
+      const capture = vi
+        .spyOn(surface, "capture")
+        .mockImplementation(async (request) => {
+          if (visible) expect(request.stage).toBe(false);
+          else expect(request.stage).toBe(true);
+          expect(pane.input.value).toBe("Retained draft");
+          return { image: new Blob(["pixels"]), width: 100, height: 100 };
+        });
+      const result = await captureOnirigiriPanePicture(
+        pane.input,
+        new AbortController().signal,
+      );
+      expect(capture).toHaveBeenCalledOnce();
+      expect(result?.image.size).toBe(6);
+    },
+  );
 
   it.each(["dom", "canvas"] as const)(
     "recovers %s content immediately when device loss aborts pending capture preparation",
