@@ -117,6 +117,19 @@ const pictureWorkers = new WeakMap<
   }
 >();
 
+function pictureWorkerFor(document: Document) {
+  let worker = pictureWorkers.get(document);
+  if (!worker) {
+    worker = {
+      client: new PanePictureCaptureClient(document),
+      owners: new Set<PaneCanvasSurface>(),
+      active: false,
+    };
+    pictureWorkers.set(document, worker);
+  }
+  return worker;
+}
+
 export async function captureOnirigiriPanePicture(
   element: HTMLElement,
   signal: AbortSignal,
@@ -406,15 +419,7 @@ export class PaneCanvasSurface {
       height: this.content.offsetHeight,
     };
     const document = this.content.ownerDocument;
-    let worker = pictureWorkers.get(document);
-    if (!worker) {
-      worker = {
-        client: new PanePictureCaptureClient(document),
-        owners: new Set(),
-        active: false,
-      };
-      pictureWorkers.set(document, worker);
-    }
+    const worker = pictureWorkerFor(document);
     worker.owners.add(this);
     if (worker.active) return null;
     worker.active = true;
