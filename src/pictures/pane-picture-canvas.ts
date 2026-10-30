@@ -427,7 +427,7 @@ export class PaneCanvasSurface {
       if (!(await worker.client.prepare(signal))) return null;
       const result = await this.capture({
         signal,
-        stage: true,
+        stage: !this.callbacks.visible(),
         maxRasterBytes: 128 * 1024 * 1024,
         maxEncodedBytes: 32 * 1024 * 1024,
         background: {
