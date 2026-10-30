@@ -242,7 +242,6 @@ snaps it to the nearest stage corner, and the inner-corner handle resizes it.
 Both gestures write inline styles during the drag and commit one placement on
 release.
 
-After motion, the scheduler uncovers at most one pane per frame, prioritizing
-the focused pane. Uncovering repaints the entire live content, so staggering
-avoids repainting all visible covered panes on one frame. Panes that were
-never covered activate immediately.
+At settlement the scheduler restores every visible pane's live runtime in the
+same boundary. Cover and content readiness still govern presentation, but no
+pane remains frozen merely to spread uncovering across later stationary frames.

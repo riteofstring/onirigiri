@@ -13,7 +13,6 @@ import type { PaneId, PaneRenderItem, WorkspacePane } from "../types.js";
 export interface Configuration {
   panes: ReadonlyMap<PaneId, WorkspacePane>;
   items: readonly PaneRenderItem[];
-  settling?: (paneId: PaneId) => boolean;
   resolver?: OnirigiriPanePictureResolver;
   presentation?: PanePresentation;
   getPresentation?: PanePresentationResolver;

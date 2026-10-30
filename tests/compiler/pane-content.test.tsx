@@ -99,6 +99,7 @@ it.each([false, true])(
             <button onClick={clicked}>Open saved pane</button>
           )}
           runtimeState="frozen"
+          settledVisible
           visible
         />,
       );

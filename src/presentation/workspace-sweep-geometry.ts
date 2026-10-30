@@ -68,6 +68,7 @@ export function completePaneShells(
         moving: input.moving,
         preload: undefined,
         runtimeState: "hidden",
+        settledVisible: false,
         visible: false,
       });
     }
@@ -108,6 +109,7 @@ export function worldPaneRenderer(
       scale: box.scale,
       surfaceId: pane.surfaceId,
       surfaceKind: pane.surfaceKind,
+      settledVisible: false,
       visible: true,
       width: box.width,
       x: box.x,

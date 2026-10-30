@@ -19,6 +19,7 @@ export function renderItem(
     scale: 1,
     surfaceId: "surface",
     surfaceKind: "test",
+    settledVisible: true,
     visible: true,
     width: 400,
     x: 0,

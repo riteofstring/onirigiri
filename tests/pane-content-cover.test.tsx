@@ -87,6 +87,7 @@ async function coverFixture({
           renderPanePlaceholder={custom ? renderPlaceholder : undefined}
           restPictureFade={restPictureFade}
           runtimeState="live"
+          settledVisible={true}
           visible={visible}
         />,
       );

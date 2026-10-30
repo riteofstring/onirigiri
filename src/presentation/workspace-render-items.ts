@@ -620,6 +620,7 @@ function screenWorkspaceRenderItems(
     moving,
     viewport,
     true,
+    snapshot.presentationMode === "overview" ? overviewItems : normalItems,
   );
 }
 
@@ -734,10 +735,16 @@ function mergeSweptWorldItems(
       targetByPaneId.delete(currentItem.paneId);
     }
     const visible = currentItem.visible || targetItem?.visible === true;
-    merged.push(withSweepState(currentItem, visible, moving));
+    merged.push({
+      ...withSweepState(currentItem, visible, moving),
+      settledVisible: targetItem?.visible === true,
+    });
   }
   for (const targetItem of targetByPaneId.values()) {
-    merged.push(withSweepState(targetItem, targetItem.visible, moving));
+    merged.push({
+      ...withSweepState(targetItem, targetItem.visible, moving),
+      settledVisible: targetItem.visible,
+    });
   }
   return merged;
 }
@@ -920,10 +927,21 @@ function applyRuntimeState(
   moving: boolean,
   viewport: Rect,
   paused: boolean,
+  settledItems?: readonly PaneRenderItem[],
 ): PaneRenderItem[] {
+  const settledVisible =
+    settledItems &&
+    new Set(
+      settledItems
+        .filter((item) => paneIntersectsViewport(item, viewport))
+        .map((item) => item.paneId),
+    );
   for (const item of items) {
     const visible = paneIntersectsViewport(item, viewport);
     item.visible = visible;
+    item.settledVisible = settledVisible
+      ? settledVisible.has(item.paneId)
+      : visible;
     item.preload = moving && visible ? true : undefined;
     item.runtimeState = !visible
       ? "hidden"

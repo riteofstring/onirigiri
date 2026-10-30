@@ -63,6 +63,7 @@ export interface OnirigiriPaneRenderState {
   maximized: boolean;
   presentationMode: WorkspacePresentationMode;
   runtimeState: PaneRuntimeState;
+  settledVisible: boolean;
   visible: boolean;
 }
 

@@ -49,9 +49,7 @@ export interface PanePresentationWriteCounts {
 export class PanePresentationEngine {
   private readonly bindings = new Map<PaneId, PaneHostBinding>();
   private readonly itemByPaneId = new Map<PaneId, PaneRenderItem>();
-  private deferredActivation: ReadonlySet<PaneId> = new Set();
   private presentingMotion = false;
-  private readonly deferredActivationListeners = new Set<() => void>();
   private readonly pendingPaneRearrangements = new Map<
     PaneId,
     PaneRearrangement
@@ -123,37 +121,6 @@ export class PanePresentationEngine {
 
   presentMotion(moving: boolean): void {
     this.presentingMotion = moving;
-  }
-
-  readonly deferredActivationPaneIds = (): ReadonlySet<PaneId> =>
-    this.deferredActivation;
-
-  readonly activationIsDeferred = (paneId: PaneId): boolean =>
-    this.deferredActivation.has(paneId);
-
-  readonly subscribeDeferredActivation = (listener: () => void) => {
-    this.deferredActivationListeners.add(listener);
-    return () => {
-      this.deferredActivationListeners.delete(listener);
-    };
-  };
-
-  deferActivation(paneIds: ReadonlySet<PaneId>): void {
-    const current = this.deferredActivation;
-    if (
-      paneIds.size === current.size &&
-      [...paneIds].every((paneId) => current.has(paneId))
-    )
-      return;
-    this.deferredActivation = paneIds;
-    for (const listener of this.deferredActivationListeners) listener();
-  }
-
-  paneContentIsCovered(paneId: PaneId): boolean {
-    const renderer = this.bindings.get(paneId)?.host.dataset.onirigiriRenderer;
-    return (
-      renderer !== undefined && renderer !== "dom" && renderer !== "canvas"
-    );
   }
 
   updatePaneHostBoundary(

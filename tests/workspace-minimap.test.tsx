@@ -343,6 +343,7 @@ function paneItem(
     scale: 1,
     surfaceId: paneId,
     surfaceKind: "test",
+    settledVisible: true,
     visible: true,
     width: 500,
     z: 0,

@@ -476,6 +476,7 @@ export function pushColumnItems({
       scale,
       surfaceId: pane.surfaceId,
       surfaceKind: pane.surfaceKind,
+      settledVisible: false,
       visible: true,
       width: columnWidth,
       x,
