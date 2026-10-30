@@ -466,13 +466,9 @@ export class PaneCanvasSurface {
     request.signal.addEventListener("abort", abort, { once: true });
     this.captureAbort = controller;
     try {
-      const worker =
-        request.stage && request.background
-          ? await request.background.client.prepare(controller.signal)
-          : null;
+      const preparation = this.prepareWorker(request, controller.signal);
+      const worker = preparation ? await preparation : null;
       controller.signal.throwIfAborted();
-      if (!worker && request.background?.required)
-        throw new Error("Pane capture worker is unavailable");
       const size = this.rasterSize(request.maxRasterBytes, worker?.limit);
       const image = worker
         ? await this.captureInWorker(
@@ -501,6 +497,20 @@ export class PaneCanvasSurface {
       this.captureAbort = null;
       this.requestPaint();
     }
+  }
+
+  private prepareWorker(
+    request: PaneCanvasSnapshotRequest,
+    signal: AbortSignal,
+  ) {
+    if (!request.stage || !request.background) return null;
+    const { client, required } = request.background;
+    return client.prepare(signal).then((worker) => {
+      signal.throwIfAborted();
+      if (!worker && required)
+        throw new Error("Pane capture worker is unavailable");
+      return worker;
+    });
   }
 
   private async captureInWorker(
