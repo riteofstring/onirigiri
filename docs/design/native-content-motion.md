@@ -764,6 +764,20 @@ still necessary for content that has never produced usable pixels and for
 pictures held only at preview detail under full presentation. The engine
 retains usable old pictures rather than replacing them merely because they age.
 
+## Consumer picture extraction
+
+`captureOnirigiriPanePicture` resolves a mounted content descendant to its existing
+capture surface. Consumer extraction uses one shared worker per document and
+admits one request at a time. The worker owns raster readback and PNG encoding;
+there is no main-thread fallback for this API. Unsupported or unregistered content
+returns no picture, leaving the consumer responsible for native presentation.
+The caller supplies cancellation and validates its own visual identity before
+publishing. Surface disposal and geometry changes invalidate results. The engine
+restores the original subtree and scroll positions through the existing staged
+capture lifecycle. Extraction, worker raster/readback and encoding emit bounded
+Performance Timeline measurements; hardware pixel equivalence remains a separate
+consumer acceptance requirement.
+
 ## Public boundary and verification
 
 Consumer CSS layers, semantic variables, class/style slots and replaceable

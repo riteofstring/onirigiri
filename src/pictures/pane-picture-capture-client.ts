@@ -103,7 +103,19 @@ export class PanePictureCaptureClient {
       signal,
     );
     signal.throwIfAborted();
-    if (reply.type === "captured" && reply.id === id) return reply.image;
+    if (reply.type === "captured" && reply.id === id) {
+      for (const [phase, duration] of [
+        ["raster", reply.rasterMs],
+        ["encode", reply.encodeMs],
+      ] as const) {
+        performance.measure(`onirigiri.capture.${phase}`, {
+          start: performance.now(),
+          duration,
+        });
+        performance.clearMeasures(`onirigiri.capture.${phase}`);
+      }
+      return reply.image;
+    }
     const error = new Error("Pane capture worker returned another request");
     if (this.worker === worker) this.retire(true, error);
     throw error;

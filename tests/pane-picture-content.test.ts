@@ -3,8 +3,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PanePictureContent } from "../src/pictures/pane-picture-content";
-import { PaneCanvasSurface } from "../src/pictures/pane-picture-canvas";
-import type { PanePictureCaptureClient } from "../src/pictures/pane-picture-capture-client";
+import {
+  PaneCanvasSurface,
+  captureOnirigiriPanePicture,
+} from "../src/pictures/pane-picture-canvas";
+import { PanePictureCaptureClient } from "../src/pictures/pane-picture-capture-client";
 
 type SurfaceCallbacks = ConstructorParameters<typeof PaneCanvasSurface>[3];
 
@@ -94,6 +97,55 @@ function paneCanvas(context: object = {}) {
 }
 
 describe("PanePictureContent", () => {
+  it("leaves unregistered and unsupported content native without capture substitutes", async () => {
+    const pane = paneCanvas();
+    const signal = new AbortController().signal;
+    expect(await captureOnirigiriPanePicture(pane.input, signal)).toBeNull();
+    const surface = pane.surface(
+      Promise.reject(new Error("No HTML-in-Canvas")),
+      {},
+    );
+    await Promise.resolve();
+    pane.flushFrames();
+    expect(await captureOnirigiriPanePicture(pane.input, signal)).toBeNull();
+    expect(pane.content.querySelector("input")).toBe(pane.input);
+    expect(pane.input.value).toBe("Retained draft");
+    expect(surface.canCapture()).toBe(false);
+  });
+
+  it("keeps consumer extraction serial across mounted panes and cancels worker preparation", async () => {
+    const first = paneCanvas();
+    const second = paneCanvas();
+    const device = { lost: new Promise(() => {}) } as unknown as GPUDevice;
+    first.surface(Promise.resolve(device), {});
+    second.surface(Promise.resolve(device), {});
+    await Promise.resolve();
+    let preparedSignal: AbortSignal | undefined;
+    vi.spyOn(PanePictureCaptureClient.prototype, "prepare").mockImplementation(
+      (signal) => {
+        preparedSignal = signal;
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), {
+            once: true,
+          });
+        });
+      },
+    );
+    const controller = new AbortController();
+    const result = captureOnirigiriPanePicture(first.input, controller.signal);
+    expect(
+      await captureOnirigiriPanePicture(
+        second.input,
+        new AbortController().signal,
+      ),
+    ).toBeNull();
+    controller.abort(new DOMException("Input", "AbortError"));
+    await expect(result).rejects.toThrow("Input");
+    expect(preparedSignal?.aborted).toBe(true);
+    expect(first.input.value).toBe("Retained draft");
+    expect(second.input.value).toBe("Retained draft");
+  });
+
   it.each(["dom", "canvas"] as const)(
     "recovers %s content immediately when device loss aborts pending capture preparation",
     async (renderer) => {

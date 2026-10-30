@@ -27,7 +27,13 @@ export type PaneCaptureRequest =
 
 export type PaneCaptureReply =
   | { type: "prepared"; limit: number }
-  | { type: "captured"; id: string; image: Blob }
+  | {
+      type: "captured";
+      id: string;
+      image: Blob;
+      rasterMs: number;
+      encodeMs: number;
+    }
   | { type: "failed"; message: string };
 
 interface CaptureQueue extends GPUQueue {
@@ -91,6 +97,9 @@ async function capture(
 ): Promise<void> {
   let texture: GPUTexture | undefined;
   let image: Blob;
+  const started = performance.now();
+  let encodeStart = started;
+  let encodeMs = 0;
   try {
     if (!source) throw new Error("Pane capture worker is not prepared");
     const { canvas, device } = source;
@@ -117,13 +126,24 @@ async function capture(
       device,
       texture,
       new AbortController().signal,
-      encodeOnCurrentThread,
+      async (...args) => {
+        encodeStart = performance.now();
+        const result = await encodeOnCurrentThread(...args);
+        encodeMs = performance.now() - encodeStart;
+        return result;
+      },
     );
   } finally {
     texture?.destroy();
     request.image.close();
   }
-  reply({ type: "captured", id: request.id, image });
+  reply({
+    type: "captured",
+    id: request.id,
+    image,
+    rasterMs: encodeStart - started,
+    encodeMs,
+  });
 }
 
 self.onmessage = ({ data }: MessageEvent<PaneCaptureRequest>): void => {
