@@ -121,7 +121,6 @@ export class WorkspaceFrameScheduler {
   private lastFocusedPaneFrame: WorkspaceFocusedPaneFrame | null = null;
   private lastCursorGeometrySnapshot: WorkspaceLayoutSnapshot;
   private lastRenderedItems: readonly PaneRenderItem[] = [];
-  private livePaneIds = new Set<string>();
   private lastOverviewCameraMode: WorkspaceCameraMode;
   private lastOverviewCameraSnapshot: WorkspaceLayoutSnapshot;
   private lastPresentationBoundaryFrame: WorkspacePresentationBoundaryFrame | null =
@@ -298,14 +297,11 @@ export class WorkspaceFrameScheduler {
       sweepGrid: this.options.worldPresentation?.activeMotionGrid(),
       viewport,
     };
-    const items = this.staggerActivation(
-      workspacePaneRearrangementSweep(
-        renderInput,
-        this.renderer.render(renderInput),
-        this.activePaneRearrangementSource,
-      ).items,
-      snapshot.focusedPaneId,
-    );
+    const items = workspacePaneRearrangementSweep(
+      renderInput,
+      this.renderer.render(renderInput),
+      this.activePaneRearrangementSource,
+    ).items;
     const cursor = this.renderCursorForSnapshot(snapshot, motion.moving);
     const writes = this.options.presentation.apply(
       items,
@@ -341,35 +337,6 @@ export class WorkspaceFrameScheduler {
       motion.moving,
     );
     return writes;
-  }
-
-  private staggerActivation(
-    items: PaneRenderItem[],
-    focusedPaneId: string | null,
-  ): PaneRenderItem[] {
-    const { presentation } = this.options;
-    const deferred = presentation.deferredActivationPaneIds();
-    const uncovering = items.filter(
-      (item) =>
-        item.runtimeState === "live" &&
-        !this.livePaneIds.has(item.paneId) &&
-        (deferred.has(item.paneId) ||
-          presentation.paneContentIsCovered(item.paneId)),
-    );
-    const next =
-      uncovering.find((item) => item.paneId === focusedPaneId) ?? uncovering[0];
-    const waiting = uncovering.filter((item) => item !== next);
-    presentation.deferActivation(new Set(waiting.map((item) => item.paneId)));
-    const staggered = items.map((item) =>
-      waiting.includes(item) ? deferredItem(item) : item,
-    );
-    this.livePaneIds = new Set(
-      staggered
-        .filter((item) => item.runtimeState === "live")
-        .map((item) => item.paneId),
-    );
-    if (waiting.length > 0) this.requestFrame();
-    return staggered;
   }
 
   private publishPresentation(
@@ -934,12 +901,6 @@ export class WorkspaceFrameScheduler {
   private prefersReducedMotion(): boolean {
     return this.options.reducedMotionQuery?.matches ?? false;
   }
-}
-
-export function deferredItem(item: PaneRenderItem): PaneRenderItem {
-  return item.runtimeState === "live"
-    ? { ...item, runtimeState: "frozen" }
-    : item;
 }
 
 export function workspaceSnapshotIsMoving(

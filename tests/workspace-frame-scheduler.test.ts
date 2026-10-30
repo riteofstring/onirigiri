@@ -42,6 +42,51 @@ import {
 } from "./workspace-frame-scheduler-test-support";
 
 describe("WorkspaceFrameScheduler", () => {
+  it("restores every visible covered pane on the first stationary frame", () => {
+    const { cursor, scene } = createWorkspaceScene({
+      panes: ["a", "b", "c"].map((paneId, index) => ({
+        columnId: `column-${paneId}`,
+        columnWidth: { unit: "px" as const, value: 300 },
+        paneId,
+        slotIndex: index,
+        surfaceKind: "test",
+        title: paneId,
+      })),
+    });
+    const engine = new WorkspaceLikeLayoutEngine(scene);
+    const store = schedulerTestStore(engine, scene, cursor);
+    const wideViewport = { ...viewport, width: 1200 };
+    store.ensureFocusedPaneVisible(wideViewport);
+    const presentation = new PanePresentationEngine();
+    const hosts = ["a", "b", "c"].map((paneId) => {
+      const host = document.createElement("section");
+      host.dataset.onirigiriRenderer = "texture";
+      presentation.registerPaneHost(paneId, host);
+      return host;
+    });
+    const frameHost = new ManualAnimationFrameHost();
+    const scheduler = new WorkspaceFrameScheduler({
+      compactLayoutProvider: () => false,
+      engine,
+      store,
+      presentation,
+      frameHost,
+      viewportProvider: () => wideViewport,
+      onBoundary: () => {},
+    });
+    scheduler.start();
+    frameHost.flushOne(0);
+    expect(
+      hosts.filter((host) => host.dataset.visible === "true").length,
+    ).toBeGreaterThan(1);
+    expect(
+      hosts
+        .filter((host) => host.dataset.visible === "true")
+        .every((host) => host.dataset.runtimeState === "live"),
+    ).toBe(true);
+    scheduler.teardown();
+  });
+
   it("publishes only request and settle boundaries during a direct A-to-C trajectory", () => {
     const { cursor, scene } = createWorkspaceScene({
       panes: ["a", "b", "c"].map((paneId, index) => ({

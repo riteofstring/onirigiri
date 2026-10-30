@@ -89,6 +89,7 @@ function interpolatePaneRenderItem({
     presentationMode,
     resizing: from.resizing || to.resizing,
     scale: lerp(from.scale, to.scale, overviewProgress),
+    settledVisible: presentationMode === "overview" ? to.visible : from.visible,
     visible: from.visible || to.visible,
     width: lerp(from.width, to.width, overviewProgress),
     x: lerp(from.x, to.x, overviewProgress),

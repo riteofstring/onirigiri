@@ -50,6 +50,7 @@ interface OnirigiriPaneContentProps {
   renderPanePlaceholder?: OnirigiriWorkspaceProps["renderPanePlaceholder"];
   restPictureFade?: boolean;
   runtimeState: PaneRuntimeState;
+  settledVisible: boolean;
   visible: boolean;
 }
 
@@ -65,6 +66,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
   renderPanePlaceholder,
   restPictureFade = false,
   runtimeState,
+  settledVisible,
   visible,
 }: OnirigiriPaneContentProps) {
   const styling = useOnirigiriStyling();
@@ -170,6 +172,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
                       maximized={maximized}
                       presentationMode={presentationMode}
                       runtimeState={contentRuntime}
+                      settledVisible={settledVisible}
                       visible={visible}
                     />
                   ) : null}
@@ -205,6 +208,7 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
   maximized,
   presentationMode,
   runtimeState,
+  settledVisible,
   visible,
 }: Pick<
   OnirigiriPaneContentProps,
@@ -214,6 +218,7 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
   | "maximized"
   | "presentationMode"
   | "runtimeState"
+  | "settledVisible"
   | "visible"
 > & { content: ReturnType<typeof usePaneContentLayout>["contentDefaults"] }) {
   return renderPane(pane, {
@@ -223,6 +228,7 @@ const PaneApplicationContent = memo(function PaneApplicationContent({
     maximized,
     presentationMode,
     runtimeState,
+    settledVisible,
     visible,
   });
 });

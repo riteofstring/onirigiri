@@ -246,6 +246,7 @@ export interface PaneRenderItem {
   scale: number;
   surfaceId: SurfaceId;
   surfaceKind: SurfaceKind;
+  settledVisible: boolean;
   visible: boolean;
   width: number;
   x: number;

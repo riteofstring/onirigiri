@@ -328,6 +328,7 @@ function parkedReactItemCanBeReused(
     previous.width === next.width &&
     previous.height === next.height &&
     previous.placeholderOnly === next.placeholderOnly &&
+    previous.settledVisible === next.settledVisible &&
     !previous.visible &&
     !next.visible &&
     previous.runtimeState === "hidden" &&
@@ -354,6 +355,7 @@ function frozenVisibleMotionIdentityIsStable(
     previous.paneId === next.paneId &&
     previous.maximized === next.maximized &&
     previous.placeholderOnly === next.placeholderOnly &&
+    previous.settledVisible === next.settledVisible &&
     previous.presentationMode === next.presentationMode
   );
 }
@@ -378,6 +380,7 @@ function parkPaneRenderItem(
     maximized: item.paneId === snapshot.maximizedPaneId,
     moving,
     opacity: 0,
+    settledVisible: false,
     presentationMode: snapshot.presentationMode,
     runtimeState: "hidden",
     visible: false,

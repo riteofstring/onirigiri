@@ -148,6 +148,7 @@ export const OnirigiriPaneView = memo(function OnirigiriPaneView({
         renderPanePlaceholder={renderPanePlaceholder}
         restPictureFade={restPictureFade}
         runtimeState={item.runtimeState}
+        settledVisible={item.settledVisible}
         visible={item.visible}
       />
       <PaneResizeHandles
@@ -356,6 +357,7 @@ const hiddenPaneContentItemKeys = [
   "focused",
   "maximized",
   "placeholderOnly",
+  "settledVisible",
   "presentationMode",
 ] as const satisfies readonly (keyof PaneRenderItem)[];
 
@@ -378,6 +380,7 @@ function frozenOverviewExitItemIdentityIsStable(
     previous.paneId === next.paneId &&
     previous.maximized === next.maximized &&
     previous.placeholderOnly === next.placeholderOnly &&
+    previous.settledVisible === next.settledVisible &&
     previous.visible === next.visible
   );
 }

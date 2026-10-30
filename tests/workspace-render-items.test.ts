@@ -32,6 +32,82 @@ import { completePaneShells } from "../src/presentation/workspace-sweep-geometry
 const viewport: Rect = { height: 540, width: 360, x: 0, y: 0 };
 
 describe("workspace world render items", () => {
+  it("reports the latest destination viewport independently of the swept path", () => {
+    const { engine, store } = workspace();
+    store.ensureFocusedPaneVisible(viewport);
+    const renderer = new WorkspaceRenderItemRenderer();
+    for (const paneId of ["pane-6", "pane-2", "pane-4"]) {
+      store.focusPane(paneId);
+      const snapshot = store.getSnapshot();
+      const target = {
+        ...snapshot,
+        scrollColumn: snapshot.targetScrollColumn,
+        scrollRow: snapshot.targetScrollRow,
+        horizontalAnchorOffset: snapshot.targetHorizontalAnchorOffset,
+        verticalAnchorOffset: snapshot.targetVerticalAnchorOffset,
+      };
+      for (const view of [viewport, { ...viewport, width: 1000 }]) {
+        const moving = renderer.render({
+          ...renderInput(engine, snapshot, true),
+          viewport: view,
+        });
+        const resting = workspaceRenderItems({
+          ...renderInput(engine, target, false),
+          viewport: view,
+        });
+        expect(
+          moving
+            .filter((item) => item.settledVisible)
+            .map((item) => item.paneId)
+            .sort(),
+        ).toEqual(
+          resting
+            .filter((item) => item.visible)
+            .map((item) => item.paneId)
+            .sort(),
+        );
+        expect(
+          resting.every((item) => item.settledVisible === item.visible),
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("keeps final viewport membership current through overview reversal", () => {
+    const { engine, store } = workspace();
+    store.ensureFocusedPaneVisible(viewport);
+    const renderer = new WorkspaceRenderItemRenderer();
+    for (const presentationMode of ["overview", "normal"] as const) {
+      const snapshot = {
+        ...store.getSnapshot(),
+        presentationMode,
+        overviewProgress: 0.5,
+      };
+      const moving = renderer.render(renderInput(engine, snapshot, true));
+      const resting = workspaceRenderItems(
+        renderInput(
+          engine,
+          {
+            ...snapshot,
+            overviewProgress: presentationMode === "overview" ? 1 : 0,
+          },
+          false,
+        ),
+      );
+      expect(
+        moving
+          .filter((item) => item.settledVisible)
+          .map((item) => item.paneId)
+          .sort(),
+      ).toEqual(
+        resting
+          .filter((item) => item.visible)
+          .map((item) => item.paneId)
+          .sort(),
+      );
+    }
+  });
+
   it("reuses cursor geometry through camera frames while keeping the projection current", () => {
     const { engine, store } = workspace();
     const snapshot = store.getSnapshot();

@@ -26,6 +26,12 @@ sample, without resolving unchanged canonical grid geometry again.
 Custom engines retain the same normal/overview interpolation, with fresh
 endpoint geometry on each request.
 
+Pane render state distinguishes swept visibility from destination visibility.
+`settledVisible` identifies panes intersecting the final viewport, so consumers
+can prepare destination content without admitting every covered transit pane.
+Retargeting and overview reversal refresh that membership from the final camera;
+picture selection and presentation continue to use swept visibility.
+
 The dotted background grid retains its cached paint bounds while they cover
 the moving viewport. Settled presentation releases excess width or height,
 including after overview exit or an idle viewport resize. A contained normal
@@ -911,6 +917,6 @@ exercise synchronous DOM mutations, protected-video capability queries, iframe
 document replacement and observer cleanup without requesting graphics devices.
 
 The scheduler's latest presented motion state, rather than a pending target,
-drives picture motion configuration. Covered panes remain deferred until the
-scheduler uncovers them; a pane still settling is presented as moving. The cover
-query excludes both native DOM and live canvas renderers.
+drives picture motion configuration. At the stationary boundary every visible
+pane receives the rest presentation phase; cover readiness does not prolong
+the motion policy.

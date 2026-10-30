@@ -42,6 +42,23 @@ describe("workspace pane render interpolation", () => {
     ]);
   });
 
+  test("tracks destination visibility on overview entry and reversal", () => {
+    for (const presentationMode of ["normal", "overview"] as const) {
+      const items = interpolatePaneRenderItems({
+        normalItems: [renderItem("both", "normal", 0, 0, 300, 400, 1)],
+        overviewItems: [
+          renderItem("both", "overview", 0, 0, 300, 400, 1),
+          renderItem("extra", "overview", 0, 0, 300, 400, 1),
+        ],
+        overviewProgress: 0.5,
+        presentationMode,
+      });
+      expect(
+        items.find((item) => item.paneId === "extra")?.settledVisible,
+      ).toBe(presentationMode === "overview");
+    }
+  });
+
   test("supports a seamless reversal while exiting overview", () => {
     const items = interpolatePaneRenderItems({
       includeSecondaryOnlyItems: false,
@@ -88,6 +105,7 @@ function renderItem(
     scale,
     surfaceId: `${paneId}_surface`,
     surfaceKind: "fake-dom",
+    settledVisible: true,
     visible: true,
     width,
     x,

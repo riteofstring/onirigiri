@@ -787,6 +787,7 @@ function item(
     scale: 1,
     surfaceId: `surface-${paneId}`,
     surfaceKind: "test",
+    settledVisible: visible,
     visible,
     width: 100,
     x: 0,
