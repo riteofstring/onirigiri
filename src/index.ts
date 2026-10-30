@@ -110,3 +110,5 @@ export type {
   PanePresentationResolver,
   PanePresentationState,
 } from "./presentation/pane-presentation-policy.js";
+
+export { captureOnirigiriPanePicture } from "./pictures/pane-picture-canvas.js";

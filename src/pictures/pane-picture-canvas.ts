@@ -9,7 +9,7 @@ import {
   displayPaneCapture,
   preparePaneCaptureDisplay,
 } from "./pane-picture-texture.js";
-import type { PanePictureCaptureClient } from "./pane-picture-capture-client.js";
+import { PanePictureCaptureClient } from "./pane-picture-capture-client.js";
 import {
   documentLiveCopyBudget,
   type LiveCopyBudget,
@@ -55,7 +55,11 @@ interface PaneCanvasSnapshotRequest {
   stage: boolean;
   maxRasterBytes: number;
   maxEncodedBytes: number;
-  background?: { client: PanePictureCaptureClient; id: string };
+  background?: {
+    client: PanePictureCaptureClient;
+    id: string;
+    required?: boolean;
+  };
 }
 
 interface PaneCanvasCallbacks {
@@ -103,8 +107,35 @@ export async function createPaneCanvasDevice(
   return device;
 }
 
+const contentSurfaces = new WeakMap<HTMLElement, PaneCanvasSurface>();
+const pictureWorkers = new WeakMap<
+  Document,
+  {
+    client: PanePictureCaptureClient;
+    owners: Set<PaneCanvasSurface>;
+    active: boolean;
+  }
+>();
+
+export async function captureOnirigiriPanePicture(
+  element: HTMLElement,
+  signal: AbortSignal,
+): Promise<{ image: Blob; cssSize: { width: number; height: number } } | null> {
+  signal.throwIfAborted();
+  for (
+    let node: HTMLElement | null = element;
+    node;
+    node = node.parentElement
+  ) {
+    const surface = contentSurfaces.get(node);
+    if (surface) return surface.capturePicture(signal);
+  }
+  return null;
+}
+
 export class PaneCanvasSurface {
   private readonly canvas: ElementCanvas;
+
   private readonly resize: ResizeObserver;
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
@@ -133,6 +164,7 @@ export class PaneCanvasSurface {
     private readonly callbacks: PaneCanvasCallbacks,
   ) {
     this.canvas = canvas as ElementCanvas;
+    contentSurfaces.set(content, this);
     this.copyBudget = documentLiveCopyBudget(canvas.ownerDocument);
     this.presentation = new PanePictureResize(canvas, content);
     let primeNative = false;
@@ -339,6 +371,12 @@ export class PaneCanvasSurface {
 
   dispose(): void {
     this.disposed = true;
+    contentSurfaces.delete(this.content);
+    const worker = pictureWorkers.get(this.content.ownerDocument);
+    if (worker?.owners.delete(this) && worker.owners.size === 0) {
+      worker.client.dispose();
+      pictureWorkers.delete(this.content.ownerDocument);
+    }
     this.captureAbort?.abort();
     this.source.dispose();
     this.canvas.clearElementGeometry?.(this.content);
@@ -355,6 +393,55 @@ export class PaneCanvasSurface {
     this.context?.unconfigure();
     this.context = null;
     this.device = null;
+  }
+
+  async capturePicture(signal: AbortSignal): Promise<{
+    image: Blob;
+    cssSize: { width: number; height: number };
+  } | null> {
+    signal.throwIfAborted();
+    if (!this.initialized || this.nativeOnly || this.disposed) return null;
+    const cssSize = {
+      width: this.content.offsetWidth,
+      height: this.content.offsetHeight,
+    };
+    const document = this.content.ownerDocument;
+    let worker = pictureWorkers.get(document);
+    if (!worker) {
+      worker = {
+        client: new PanePictureCaptureClient(document),
+        owners: new Set(),
+        active: false,
+      };
+      pictureWorkers.set(document, worker);
+    }
+    worker.owners.add(this);
+    if (worker.active) return null;
+    worker.active = true;
+    try {
+      if (!(await worker.client.prepare(signal))) return null;
+      const result = await this.capture({
+        signal,
+        stage: true,
+        maxRasterBytes: 128 * 1024 * 1024,
+        maxEncodedBytes: 32 * 1024 * 1024,
+        background: {
+          client: worker.client,
+          id: "consumer-picture",
+          required: true,
+        },
+      });
+      signal.throwIfAborted();
+      if (
+        this.disposed ||
+        this.content.offsetWidth !== cssSize.width ||
+        this.content.offsetHeight !== cssSize.height
+      )
+        return null;
+      return { image: result.image, cssSize };
+    } finally {
+      worker.active = false;
+    }
   }
 
   async capture(request: PaneCanvasSnapshotRequest): Promise<{
@@ -379,6 +466,8 @@ export class PaneCanvasSurface {
           ? await request.background.client.prepare(controller.signal)
           : null;
       controller.signal.throwIfAborted();
+      if (!worker && request.background?.required)
+        throw new Error("Pane capture worker is unavailable");
       const size = this.rasterSize(request.maxRasterBytes, worker?.limit);
       const image = worker
         ? await this.captureInWorker(
@@ -692,7 +781,13 @@ export class PaneCanvasSurface {
           "This pane contains a cross-origin iframe. Use content hosted on this origin or supply a pane picture.",
         );
     }
+    const started = performance.now();
     const image = canvas.captureElementImage(this.content);
+    performance.measure("onirigiri.capture.extraction", {
+      start: started,
+      end: performance.now(),
+    });
+    performance.clearMeasures("onirigiri.capture.extraction");
     const width = this.content.offsetWidth;
     if (Math.abs(image.width - width) <= 1) return image;
     this.recordingScale *= image.width / width;

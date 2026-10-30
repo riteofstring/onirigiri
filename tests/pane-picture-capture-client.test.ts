@@ -108,7 +108,13 @@ describe("workspace capture worker ownership", () => {
       transfer: [element],
     });
     const png = new Blob(["PNG result"], { type: "image/png" });
-    worker.reply({ type: "captured", id: "capture-1", image: png });
+    worker.reply({
+      type: "captured",
+      rasterMs: 2,
+      encodeMs: 3,
+      id: "capture-1",
+      image: png,
+    });
     expect(await pending).toBe(png);
     expect(await value.prepare(controller.signal)).toBe(source);
     expect(CaptureWorker.instances).toHaveLength(1);
@@ -155,9 +161,21 @@ describe("workspace capture worker ownership", () => {
       { width: 400, height: 800 },
       new AbortController().signal,
     );
-    old.reply({ type: "captured", id: "new", image: new Blob(["stale"]) });
+    old.reply({
+      type: "captured",
+      rasterMs: 2,
+      encodeMs: 3,
+      id: "new",
+      image: new Blob(["stale"]),
+    });
     const png = new Blob(["current"]);
-    current.reply({ type: "captured", id: "new", image: png });
+    current.reply({
+      type: "captured",
+      rasterMs: 2,
+      encodeMs: 3,
+      id: "new",
+      image: png,
+    });
     expect(await next).toBe(png);
     expect(old.terminated).toBe(true);
     expect(current.terminated).toBe(false);
@@ -239,7 +257,13 @@ describe("workspace capture worker ownership", () => {
       value.capture("second", image(), { width: 400, height: 800 }, signal),
     ).rejects.toThrow("already active");
     const png = new Blob(["first"]);
-    worker.reply({ type: "captured", id: "first", image: png });
+    worker.reply({
+      type: "captured",
+      rasterMs: 2,
+      encodeMs: 3,
+      id: "first",
+      image: png,
+    });
     expect(await first).toBe(png);
     expect(worker.terminated).toBe(false);
   });
