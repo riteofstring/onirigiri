@@ -96,6 +96,7 @@ export function panePicturesStub(
       return () => listeners.delete(listener);
     },
     isContinuous: () => true,
+    canKeepNativeRendered: () => false,
     acceptsContentInput: () => true,
     isOverviewCapture: () => false,
     isPreloading: () => false,

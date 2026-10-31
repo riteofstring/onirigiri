@@ -197,6 +197,21 @@ export class PanePictures {
   getPaneError = (paneId: PaneId): string | null =>
     this.hosts.get(paneId)?.error ?? null;
   isDrawn = (paneId: PaneId): boolean => this.hosts.get(paneId)?.drawn ?? false;
+  canKeepNativeRendered = (paneId: PaneId): boolean => {
+    const host = this.hosts.get(paneId);
+    const kind = this.decision(paneId).kind;
+    return (
+      this.isContinuous() &&
+      this.acceptsContentInput() &&
+      this.visibleIds.has(paneId) &&
+      host?.renderer === "dom" &&
+      host.drawn &&
+      host.mounted() &&
+      host.readiness.getSnapshot() &&
+      (kind === "dom" || kind === "placeholder")
+    );
+  };
+
   isOverviewCapture = (paneId: PaneId): boolean =>
     this.overviewPane?.paneId === paneId;
 

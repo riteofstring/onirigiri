@@ -43,6 +43,13 @@ Native presentation displays the original subtree without requiring a successful
 capture first. This applies at rest and during live motion and overview.
 HTML-in-Canvas presentation waits for a completed draw before uncovering content.
 
+Ready, painted native subtrees in visible normal tiled panes may stay render-visible
+under a picture cover. This rendering exception ends off screen, during resizing,
+in overview or compact/fullscreen presentation, or when readiness or native paint
+is lost. It persists through camera settlement and uncovering; it changes neither
+runtime state nor inert, accessibility, activation, input shielding, or paint
+acknowledgment. The cover remains authoritative for displayed pixels.
+
 ## Presentation policies
 
 `panePresentation` supplies a workspace-wide default and `getPanePresentation`

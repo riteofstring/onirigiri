@@ -694,7 +694,9 @@
     width: 100%;
   }
 
-  .onirigiri-pane__content[data-onirigiri-continuous="true"][data-runtime-state="hidden"]
+  .onirigiri-pane__content[data-onirigiri-continuous="true"][data-runtime-state="hidden"]:not(
+      [data-onirigiri-render-visible="true"]
+    )
     .onirigiri-pane__live-content {
     content-visibility: hidden;
   }
