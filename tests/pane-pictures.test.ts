@@ -30,7 +30,13 @@ const canvasMock = vi.hoisted(() => ({
   unpainted: new WeakSet<HTMLElement>(),
   uncapturable: new WeakSet<HTMLElement>(),
   devices: new Map<HTMLElement, Promise<GPUDevice>>(),
-  callbacks: new Map<HTMLElement, { failed(error: Error): void }>(),
+  callbacks: new Map<
+    HTMLElement,
+    {
+      drawn(ready: boolean, renderer?: "dom" | "canvas"): void;
+      failed(error: Error): void;
+    }
+  >(),
   createDevice: vi.fn<() => Promise<GPUDevice>>(),
 }));
 const preparePanePictureTexture = vi.hoisted(() =>
@@ -59,7 +65,10 @@ vi.mock("../src/pictures/pane-picture-canvas", () => ({
       _canvas: HTMLCanvasElement,
       private content: HTMLElement,
       device: Promise<GPUDevice>,
-      callbacks: { drawn(ready: boolean): void; failed(error: Error): void },
+      callbacks: {
+        drawn(ready: boolean, renderer?: "dom" | "canvas"): void;
+        failed(error: Error): void;
+      },
     ) {
       canvasMock.devices.set(content, device);
       canvasMock.callbacks.set(content, callbacks);
@@ -242,6 +251,54 @@ describe("engine pane pictures", () => {
       },
     };
   }
+
+  it("keeps only ready painted mounted visible native hosts renderable through cover settlement", async () => {
+    const f = fixture();
+    const key = {};
+    const configure = () =>
+      f.pictures.configure({
+        ...f.config,
+        liveContent: true,
+        presentation: { kind: "placeholder" },
+      });
+    configure();
+    await vi.advanceTimersByTimeAsync(20);
+    const paint = canvasMock.callbacks.get(f.content)!;
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(false);
+    paint.drawn(true, "dom");
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(true);
+    f.move(true);
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(true);
+    f.move(false);
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(true);
+    f.readiness.update(key, false, 1);
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(false);
+    f.readiness.update(key, true, 1);
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(true);
+    paint.drawn(true, "canvas");
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(false);
+    paint.drawn(true, "dom");
+    f.overview(true);
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(false);
+    f.overview(false);
+    const resize = document.createElement("div");
+    resize.dataset.onirigiriSlot = "pane-resize-column";
+    document.body.append(resize);
+    resize.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(false);
+    resize.dispatchEvent(new Event("pointerup", { bubbles: true }));
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(true);
+    f.config.items = [renderItem({ paneId: "a", visible: false, x: 4000 })];
+    configure();
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(false);
+    f.config.items = [renderItem({ paneId: "a", visible: true })];
+    configure();
+    paint.drawn(false, "dom");
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(false);
+    paint.drawn(true, "dom");
+    f.unregister();
+    expect(f.pictures.canKeepNativeRendered("a")).toBe(false);
+  });
 
   function uncapturableFixture() {
     const f = fixture(capture);

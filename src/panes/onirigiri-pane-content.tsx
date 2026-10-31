@@ -40,6 +40,7 @@ import type {
 
 interface OnirigiriPaneContentProps {
   focused: boolean;
+  compactLayout?: boolean;
   maximized: boolean;
   pictures: PanePictures;
   picture: ReturnType<PanePictures["get"]>;
@@ -56,6 +57,7 @@ interface OnirigiriPaneContentProps {
 
 export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
   focused,
+  compactLayout = false,
   maximized,
   pictures,
   picture,
@@ -88,6 +90,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
     preloading,
     mounted,
     contentRuntime,
+    renderVisible,
     continuous,
     presentation,
     covered,
@@ -125,6 +128,14 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
       data-onirigiri-slot="pane-content"
       data-runtime-state={contentRuntime}
       data-onirigiri-continuous={String(continuous)}
+      data-onirigiri-render-visible={String(
+        renderVisible &&
+          mounted &&
+          visible &&
+          !compactLayout &&
+          !maximized &&
+          presentationMode === "normal",
+      )}
       style={contentSlot.style}
     >
       <span
@@ -600,6 +611,7 @@ function usePaneContentState({
     preloading,
     mounted,
     contentRuntime,
+    renderVisible: (warming & 128) !== 0,
     continuous: (warming & 16) !== 0,
     presentation,
     covered,
@@ -706,6 +718,7 @@ function paneWarmingState(
     (pictures.isContinuous() ? 16 : 0) |
     paneInputWarming(pictures, paneId, restPictureFade, placeholderInput) |
     (pictures.isDrawn(paneId) ? 4 : 0) |
+    (pictures.canKeepNativeRendered(paneId) ? 128 : 0) |
     (pictures.isOverviewCapture(paneId)
       ? 1
       : pictures.isPreloading(paneId)

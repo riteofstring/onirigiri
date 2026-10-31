@@ -35,11 +35,13 @@ afterEach(async () => {
 async function coverFixture({
   enabled,
   custom = true,
+  keepRendered = false,
   picture: initialPicture = null,
   presentation: presentationOverride = {},
 }: {
   enabled?: boolean;
   custom?: boolean;
+  keepRendered?: boolean;
   picture?: ReturnType<PanePictures["get"]>;
   presentation?: Partial<PanePresentationState>;
 } = {}) {
@@ -60,6 +62,7 @@ async function coverFixture({
   const interactive = vi.fn(() => !moving);
   const { pictures, notify } = panePicturesStub({
     isLive: () => !presentation.covered,
+    canKeepNativeRendered: () => keepRendered,
     isInteractive: interactive,
     isDrawn: () => !presentation.covered,
     getPaneError: () => error,
@@ -72,17 +75,24 @@ async function coverFixture({
     _pane: WorkspacePane,
     state: PanePresentationState,
   ) => <button data-saved-cover={state.variant}>Saved picture</button>;
-  const render = (visible = true, restPictureFade = enabled) =>
+  const render = (
+    visible = true,
+    restPictureFade = enabled,
+    compactLayout = false,
+    maximized = false,
+    presentationMode: "normal" | "overview" = "normal",
+  ) =>
     act(async () => {
       root.render(
         <OnirigiriPaneContent
           focused
-          maximized={false}
+          compactLayout={compactLayout}
+          maximized={maximized}
           picture={picture}
           pictures={pictures}
           pane={editorPane}
           placeholderOnly={false}
-          presentationMode="normal"
+          presentationMode={presentationMode}
           renderPane={renderPane}
           renderPanePlaceholder={custom ? renderPlaceholder : undefined}
           restPictureFade={restPictureFade}
@@ -508,4 +518,42 @@ it("keeps the existing texture output through the fade and releases its buffer a
   expect(release).toHaveBeenCalledOnce();
   expect(fixture.surface()?.dataset.onirigiriPictureVisible).toBe("false");
   expect(texture.dispose).not.toHaveBeenCalled();
+});
+
+it("keeps eligible native rendering stable while cover and input shielding cross motion settlement", async () => {
+  const f = await coverFixture({ keepRendered: true });
+  const wrapper = () =>
+    container.querySelector<HTMLElement>(".onirigiri-pane__content")!;
+  const live = () =>
+    container.querySelector<HTMLElement>(".onirigiri-pane__live-content")!;
+  const editor = live().querySelector("button");
+  for (const state of [
+    { covered: false },
+    { moving: true, covered: true },
+    { moving: false },
+    { covered: false },
+  ]) {
+    await f.update(state);
+    expect(wrapper().dataset.onirigiriRenderVisible).toBe("true");
+    expect(live().querySelector("button")).toBe(editor);
+    const covered = wrapper().dataset.onirigiriContentReady === "false";
+    expect(live().hasAttribute("inert")).toBe(covered);
+    expect(live().getAttribute("aria-hidden")).toBe(String(covered));
+  }
+});
+
+it("retains render skipping outside visible normal tiled presentation", async () => {
+  const f = await coverFixture({ keepRendered: true });
+  for (const args of [
+    [false],
+    [true, undefined, true],
+    [true, undefined, false, true],
+    [true, undefined, false, false, "overview"],
+  ] as const) {
+    await f.render(args[0], args[1], args[2], args[3], args[4]);
+    expect(
+      container.querySelector<HTMLElement>(".onirigiri-pane__content")!.dataset
+        .onirigiriRenderVisible,
+    ).toBe("false");
+  }
 });

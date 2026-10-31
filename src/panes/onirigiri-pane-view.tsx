@@ -137,6 +137,7 @@ export const OnirigiriPaneView = memo(function OnirigiriPaneView({
         store={store}
       />
       <OnirigiriPaneContent
+        compactLayout={compactLayout}
         focused={item.focused}
         maximized={item.maximized}
         picture={picture}
