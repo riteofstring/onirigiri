@@ -41,10 +41,10 @@ import { workspacePaneRearrangementSweep } from "./workspace-pane-rearrangement-
 import {
   workspaceGridCursorRenderItem,
   workspaceRenderItems,
-  workspaceReservedCellRenderItems,
   WorkspaceRenderItemRenderer,
   WorkspaceWorldFrameRenderer,
 } from "./workspace-render-items.js";
+import { workspaceReservedCellRenderItems } from "./workspace-reserved-cell-render-items.js";
 
 type WorkspaceFrameBoundary = "request" | "settle";
 

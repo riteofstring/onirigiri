@@ -35,7 +35,9 @@
     ]
   },
   "quality": {
-    "allowComments": false
+    "allowComments": false,
+    "maxFileLines": 1000,
+    "reviewFileLines": 800
   },
   "verification": {
     "behaviorReview": {
@@ -147,6 +149,7 @@
         "path": "docs/design/native-content-motion.md",
         "sourcePaths": [
           "src/workspace/OnirigiriWorkspace.tsx",
+          "src/workspace/use-onirigiri-workspace-commands.ts",
           "src/panes/onirigiri-pane-content.tsx",
           "src/panes/onirigiri-pane-view.tsx",
           "src/workspace/onirigiri-workspace-pane-layer.tsx",
@@ -156,14 +159,17 @@
           "src/presentation/use-workspace-world-frames.ts",
           "src/presentation/use-onirigiri-workspace-presentation.ts",
           "src/presentation/workspace-render-items.ts",
+          "src/presentation/workspace-reserved-cell-render-items.ts",
           "src/presentation/workspace-sweep-geometry.ts",
           "src/pictures/pane-picture-types.ts",
           "src/pictures/pane-pictures.ts",
+          "src/pictures/pane-picture-presentation.ts",
           "src/pictures/pane-picture-raster.ts",
           "src/pictures/pane-picture-cache.ts",
           "src/pictures/pane-picture-texture.ts",
           "tests/browser/picture-pixels.ts",
           "src/pictures/pane-picture-canvas.ts",
+          "src/pictures/pane-picture-canvas-api.ts",
           "src/pictures/pane-picture-canvas-stage.ts",
           "src/pictures/pane-picture-capture-client.ts",
           "src/pictures/pane-picture-capture-worker-factory.ts",
@@ -206,13 +212,16 @@
         "path": "docs/design/workspace-state.md",
         "sourcePaths": [
           "src/layout/layout-engine-base.ts",
+          "src/layout/layout-engine-geometry.ts",
           "src/layout/layout-engine-helpers.ts",
+          "src/layout/layout-column-visibility.ts",
           "src/layout/layout-engine-rendering.ts",
           "src/layout/overview-camera.ts",
           "src/layout/overview-scale.ts",
           "src/layout/layout-engine.ts",
           "src/state/layout-store-animation.ts",
           "src/state/layout-store.ts",
+          "src/state/layout-store-camera.ts",
           "src/state/layout-store-state.ts",
           "src/state/layout-store-restoration.ts",
           "src/state/layout-store-types.ts",

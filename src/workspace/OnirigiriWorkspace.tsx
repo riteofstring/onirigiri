@@ -1,50 +1,17 @@
-import { PaneDefaultsContext } from "../panes/pane-content-layout.js";
-import { usePanePictures } from "../pictures/use-pane-pictures.js";
 import {
   forwardRef,
   useCallback,
   useEffect,
-  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
 } from "react";
+import { PaneDefaultsContext } from "../panes/pane-content-layout.js";
+import { usePanePictures } from "../pictures/use-pane-pictures.js";
+import { useOnirigiriWorkspaceCommands } from "./use-onirigiri-workspace-commands.js";
 
-import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
-import {
-  ReservedSplitCell,
-  reservedSplitCellKey,
-} from "../panes/onirigiri-reserved-split.js";
-import {
-  OnirigiriStylingProvider,
-  type OnirigiriStylingOptions,
-} from "../styles/onirigiri-styling.js";
-import { onirigiriStylingContract } from "../styles/onirigiri-theme.js";
-import { resolveOnirigiriWorkspaceSlots } from "./onirigiri-workspace-slots.js";
-import { OnirigiriWorkspacePaneLayer } from "./onirigiri-workspace-pane-layer.js";
-import { OnirigiriWorkspaceMinimap } from "./onirigiri-workspace-minimap.js";
-import {
-  compactPanePeekIsEnabled,
-  matchingBoundaryFrame,
-  paneRowHeights,
-  selectedPaneGroupColumnId,
-} from "../presentation/onirigiri-workspace-presentation-geometry.js";
-import {
-  PaneViewportLifecycle,
-  retainedPaneShells,
-} from "../panes/pane-viewport-lifecycle.js";
-import type {
-  OnirigiriFocusPaneOptions,
-  OnirigiriWorkspaceHandle,
-  OnirigiriWorkspaceProps,
-} from "./onirigiri-workspace-types.js";
-import { useOnirigiriRuntime } from "./onirigiri-workspace-runtime.js";
-import { useOnirigiriPaneLink } from "./onirigiri-pane-link.js";
-import { useOnirigiriWorkspacePresentation } from "../presentation/use-onirigiri-workspace-presentation.js";
-import { useOnirigiriStageViewport } from "./use-onirigiri-stage-viewport.js";
-import { resolveOnirigiriWorkspaceProps } from "./onirigiri-workspace-props.js";
 import {
   focusOverviewPaneFromClick,
   focusPaneFromPointer,
@@ -53,46 +20,36 @@ import {
   beginPaneResize,
   type PaneResizeStart,
 } from "../input/pane-resize-interactions.js";
-import { paneSizingTargets } from "../layout/pane-sizing.js";
-import type {
-  ColumnFocusEdge,
-  FocusDirection,
-  OpenPaneRequest,
-  PaneId,
-  PaneInsertionPlacement,
-  PaneMoveDirection,
-  PaneSizeTarget,
-  PaneSizingMode,
-  Rect,
-} from "../types.js";
-import { useWorkspaceWorldFrames } from "../presentation/use-workspace-world-frames.js";
 import {
   focusDirections,
   WorkspaceControlsPlacement,
 } from "../input/workspace-controls.js";
-import {
-  workspaceReservedCellRenderItems,
-  WorkspaceRenderItemRenderer,
-  WorkspaceWorldFrameRenderer,
-} from "../presentation/workspace-render-items.js";
-import { workspacePaneRearrangementSweep } from "../presentation/workspace-pane-rearrangement-sweep.js";
-import { serializeWorkspaceLayout } from "./workspace-scene.js";
-import { workspaceGridCursorAnnouncement } from "./workspace-grid-cursor.js";
-import {
-  matchOnirigiriShortcutAction,
-  normalizeOnirigiriShortcutBindings,
-} from "../input/workspace-shortcuts.js";
 import {
   dispatchWorkspaceShortcut,
   handleWorkspaceEscapeShortcut,
   workspaceShortcutKeyDownHandler,
 } from "../input/workspace-shortcut-react.js";
 import {
-  workspaceSnapshotIsMoving,
-  type WorkspaceFrameMotionOptions,
-  type WorkspaceFrameScheduler,
-  type WorkspacePresentationBoundaryFrame,
-} from "../presentation/workspace-frame-scheduler.js";
+  activateApplicationShortcutWorkspaceIfEnabled,
+  eventTargetAcceptsText,
+  eventTargetIsInsideAnotherWorkspace,
+  isActiveApplicationShortcutWorkspace,
+  registerApplicationShortcutWorkspace,
+  shortcutEventIsIgnored,
+  type OnirigiriShortcutKeyboardEvent,
+} from "../input/workspace-shortcut-runtime.js";
+import {
+  matchOnirigiriShortcutAction,
+  normalizeOnirigiriShortcutBindings,
+} from "../input/workspace-shortcuts.js";
+import {
+  ReservedSplitCell,
+  reservedSplitCellKey,
+} from "../panes/onirigiri-reserved-split.js";
+import {
+  PaneViewportLifecycle,
+  retainedPaneShells,
+} from "../panes/pane-viewport-lifecycle.js";
 import {
   defaultCameraMotion,
   defaultFocusHighlightMotion,
@@ -100,15 +57,45 @@ import {
   validMotionCurve,
 } from "../presentation/motion-curve.js";
 import {
-  activateApplicationShortcutWorkspaceIfEnabled,
-  eventTargetIsInsideAnotherWorkspace,
-  isActiveApplicationShortcutWorkspace,
-  registerApplicationShortcutWorkspace,
-  eventTargetAcceptsText,
-  shortcutEventIsIgnored,
-  workspaceChromeFocusedPaneId,
-  type OnirigiriShortcutKeyboardEvent,
-} from "../input/workspace-shortcut-runtime.js";
+  compactPanePeekIsEnabled,
+  matchingBoundaryFrame,
+  paneRowHeights,
+  selectedPaneGroupColumnId,
+} from "../presentation/onirigiri-workspace-presentation-geometry.js";
+import { useOnirigiriWorkspacePresentation } from "../presentation/use-onirigiri-workspace-presentation.js";
+import { useWorkspaceWorldFrames } from "../presentation/use-workspace-world-frames.js";
+import {
+  workspaceSnapshotIsMoving,
+  type WorkspaceFrameMotionOptions,
+  type WorkspaceFrameScheduler,
+  type WorkspacePresentationBoundaryFrame,
+} from "../presentation/workspace-frame-scheduler.js";
+import { workspacePaneRearrangementSweep } from "../presentation/workspace-pane-rearrangement-sweep.js";
+import {
+  WorkspaceRenderItemRenderer,
+  WorkspaceWorldFrameRenderer,
+} from "../presentation/workspace-render-items.js";
+import { workspaceReservedCellRenderItems } from "../presentation/workspace-reserved-cell-render-items.js";
+import type { WorkspaceLayoutSnapshot } from "../state/layout-store.js";
+import {
+  OnirigiriStylingProvider,
+  type OnirigiriStylingOptions,
+} from "../styles/onirigiri-styling.js";
+import { onirigiriStylingContract } from "../styles/onirigiri-theme.js";
+import type { FocusDirection, PaneId, Rect } from "../types.js";
+import { useOnirigiriPaneLink } from "./onirigiri-pane-link.js";
+import { OnirigiriWorkspaceMinimap } from "./onirigiri-workspace-minimap.js";
+import { OnirigiriWorkspacePaneLayer } from "./onirigiri-workspace-pane-layer.js";
+import { resolveOnirigiriWorkspaceProps } from "./onirigiri-workspace-props.js";
+import { useOnirigiriRuntime } from "./onirigiri-workspace-runtime.js";
+import { resolveOnirigiriWorkspaceSlots } from "./onirigiri-workspace-slots.js";
+import type {
+  OnirigiriWorkspaceHandle,
+  OnirigiriWorkspaceProps,
+} from "./onirigiri-workspace-types.js";
+import { useOnirigiriStageViewport } from "./use-onirigiri-stage-viewport.js";
+import { workspaceGridCursorAnnouncement } from "./workspace-grid-cursor.js";
+import { serializeWorkspaceLayout } from "./workspace-scene.js";
 
 const defaultViewport: Rect = { height: 1, width: 1, x: 0, y: 0 };
 
@@ -502,191 +489,15 @@ export const OnirigiriWorkspace = forwardRef<
     );
   }, [layoutSnapshot.paneRearrangementSelection]);
 
-  const closePane = useCallback(
-    async (paneId: PaneId): Promise<boolean> => {
-      const pane = runtime.store.toScene().paneById.get(paneId);
-      if (!pane) {
-        return false;
-      }
-      const accepted = (await closeHandlerRef.current?.(pane)) ?? true;
-      if (!accepted) {
-        return false;
-      }
-      const chromePaneId = workspaceChromeFocusedPaneId(workspaceRef.current);
-      runtime.store.closePaneOrClearLastPane(paneId);
-      if (chromePaneId) {
-        pendingChromeFocusPaneIdRef.current = runtime.store.focusedPaneId();
-      }
-      return true;
-    },
-    [runtime],
-  );
-
-  const splitPane = useCallback(
-    (paneId: PaneId, direction: "up" | "down" | "left" | "right") => {
-      const chromePaneId = workspaceChromeFocusedPaneId(workspaceRef.current);
-      const createdPaneId = runtime.store.splitPane(paneId, direction);
-      if (chromePaneId) {
-        pendingChromeFocusPaneIdRef.current = createdPaneId;
-      }
-      return createdPaneId;
-    },
-    [runtime],
-  );
-
-  const splitPaneToPlane = useCallback(
-    (paneId: PaneId, direction: "up" | "down") => {
-      const chromePaneId = workspaceChromeFocusedPaneId(workspaceRef.current);
-      const createdPaneId = runtime.store.splitPaneToPlane(paneId, direction);
-      if (chromePaneId) {
-        pendingChromeFocusPaneIdRef.current = createdPaneId;
-      }
-      return createdPaneId;
-    },
-    [runtime],
-  );
-
-  const resizePanes = useCallback(
-    (mode: PaneSizingMode) => {
-      if (mode === "default") {
-        runtime.store.resetWorkspaceSizing(viewport);
-        return;
-      }
-      const snapshot = runtime.store.getSnapshot();
-      const currentSizes: PaneSizeTarget[] = [];
-      runtime.engine.renderFrame(
-        {
-          cursor: snapshot.cursor,
-          focusedPaneId: snapshot.focusedPaneId,
-          maximizedPaneId: null,
-          movementPhase: "idle",
-          presentationMode: "normal",
-          renderAllColumns: true,
-          scrollColumn: snapshot.scrollColumn,
-          scrollRow: snapshot.scrollRow,
-          verticalAnchorOffset: snapshot.verticalAnchorOffset,
-          viewport,
-        },
-        (item) =>
-          currentSizes.push({
-            heightPx: item.height,
-            paneId: item.paneId,
-            widthPx: item.width,
-          }),
-      );
-      runtime.store.resizePanes(
-        paneSizingTargets({
-          currentSizes,
-          mode,
-          scene: runtime.store.toScene(),
-          viewport,
-          workspace: workspaceRef.current,
-        }),
-        viewport,
-        mode,
-      );
-    },
-    [runtime, viewport],
-  );
-
-  useImperativeHandle(
+  const closePane = useOnirigiriWorkspaceCommands({
+    closeHandlerRef,
     forwardedRef,
-    () => ({
-      closePane,
-      configurePane(paneId: PaneId, request: OpenPaneRequest) {
-        return runtime.store.configurePane(paneId, request);
-      },
-      focusPane(paneId: PaneId, options?: OnirigiriFocusPaneOptions) {
-        return options?.exitOverview &&
-          runtime.store.getSnapshot().presentationMode === "overview"
-          ? runtime.store.focusOverviewPane(paneId, viewport)
-          : runtime.store.focusPane(paneId);
-      },
-      returnHome() {
-        return runtime.store.returnHome(viewport);
-      },
-      focus(direction: FocusDirection) {
-        return runtime.store.moveFocus(direction, viewport);
-      },
-      focusColumn(edge: ColumnFocusEdge) {
-        return runtime.store.focusColumn(edge, viewport);
-      },
-      getLayout() {
-        const snapshot = runtime.store.getSnapshot();
-        return serializeWorkspaceLayout(
-          runtime.store.toScene(),
-          snapshot.cursor,
-        );
-      },
-      getScene() {
-        return runtime.store.toScene();
-      },
-      getSnapshot() {
-        return runtime.store.getSnapshot();
-      },
-      openPane(request: OpenPaneRequest) {
-        return runtime.store.openPane(request);
-      },
-      openPaneNear(
-        paneId: PaneId,
-        placement: PaneInsertionPlacement,
-        request: OpenPaneRequest,
-      ) {
-        return runtime.store.openPaneNear(paneId, placement, request);
-      },
-      movePane(direction: PaneMoveDirection) {
-        return runtime.store.moveFocusedPane(direction);
-      },
-      movePaneGroup(direction: PaneMoveDirection) {
-        return runtime.store.moveSelectedPaneGroup(direction);
-      },
-      renamePane(paneId: PaneId, title: string) {
-        return runtime.store.renamePane(paneId, title);
-      },
-      insertPaneAsSplit(direction: "left" | "right") {
-        return runtime.store.insertFocusedPaneAsSplit(direction);
-      },
-      createReservedBlankSplit(direction: "up" | "down") {
-        return runtime.store.createFocusedReservedBlankSplit(direction);
-      },
-      removeReservedBlankSplit(direction: "up" | "down") {
-        return runtime.store.removeFocusedReservedBlankSplit(direction);
-      },
-      getCaptureStatus: pictures.getStatus,
-      getPanePresentationState: pictures.getPresentation,
-      refreshPanePictures: pictures.refresh,
-      restoreLayout(layout, options) {
-        runtime.store.restoreLayout(layout, options);
-      },
-      selectPaneGroup() {
-        return runtime.store.selectFocusedPaneGroup();
-      },
-      clearPaneRearrangementGroup() {
-        return runtime.store.clearPaneRearrangementGroup();
-      },
-      resizePanes,
-      setFocusAnchor(anchor) {
-        runtime.store.setFocusAnchor(anchor, viewport);
-      },
-      splitPane,
-      splitPaneToPlane,
-      togglePaneMaximized(paneId: PaneId) {
-        runtime.store.togglePaneMaximized(paneId);
-      },
-      toggleOverview() {
-        runtime.store.toggleOverviewMode();
-      },
-    }),
-    [
-      closePane,
-      pictures,
-      resizePanes,
-      runtime,
-      splitPane,
-      splitPaneToPlane,
-      viewport,
-    ],
-  );
+    pendingChromeFocusPaneIdRef,
+    pictures,
+    runtime,
+    viewport,
+    workspaceRef,
+  });
 
   const scene = useMemo(() => {
     void layoutSnapshot.layoutRevision;

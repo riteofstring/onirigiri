@@ -245,3 +245,11 @@ release.
 At settlement the scheduler restores every visible pane's live runtime in the
 same boundary. Cover and content readiness still govern presentation, but no
 pane remains frozen merely to spread uncovering across later stationary frames.
+
+Layout geometry owns column and row projection, viewport sizing and overview
+frames in `layout-engine-geometry.ts`; `layout-engine-base.ts` owns scene edits
+and structural sizing. Column visibility selection lives separately from cell
+and grid sizing. The layout store inherits camera and focus operations from
+`layout-store-camera.ts`, sharing its existing Zustand state through typed
+hooks. Structural commands and command publication stay in `layout-store.ts`.
+Neither boundary introduces a second scene or snapshot cache.
