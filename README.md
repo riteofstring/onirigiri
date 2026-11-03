@@ -68,8 +68,9 @@ content needs in `data`. Layouts are plain JSON, so they can be saved, restored
 and synchronized.
 
 **You render the content.** `renderPane(pane, state)` returns ordinary React.
-Onirigiri keeps that subtree mounted and moves it; it never clones or serializes
-it. `state` tells content how it is being shown:
+Onirigiri presents the original subtree and retains it while the DOM budget
+permits. Fit-to-content sizing uses a temporary inert clone for measurement.
+`state` tells content how it is being shown:
 
 | Field              | Meaning                                                                   |
 | ------------------ | ------------------------------------------------------------------------- |
@@ -427,8 +428,9 @@ the workspace if it is invalid.
 ## Development
 
 The interactive 1D and 2D demo playground lives in [`playground/`](https://github.com/riteofstring/onirigiri/tree/main/playground),
-and its lab panes come from
-[browser-surface-lab](https://github.com/riteofstring/browser-surface-lab).
+and runs independently. Optional lab panes come from
+[browser-surface-lab](https://github.com/riteofstring/browser-surface-lab) and
+require the explicit `?lab=1` option.
 Run `pnpm dev:1d` or `pnpm dev:2d`; see [Development](docs/guide/development.md).
 
 ## Known issues

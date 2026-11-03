@@ -479,34 +479,6 @@ button {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
 }
 
-.playground-command-group {
-  align-content: start;
-  background: var(--playground-surface-sunken);
-  border-radius: 8px;
-  box-shadow: inset 0 0 0 1px var(--playground-edge);
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  padding: 4px;
-}
-
-.playground-command-group__label {
-  color: var(--playground-text-tertiary);
-  font-size: var(--playground-font-size-tiny);
-  font-weight: 720;
-  letter-spacing: 0.045em;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-  text-transform: uppercase;
-}
-
-.playground-command-group__controls {
-  display: grid;
-  gap: 4px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
-  min-width: 0;
-}
-
 .playground-pane-sizing {
   align-items: center;
   background: var(--playground-surface-sunken);
@@ -847,23 +819,6 @@ button {
   background: transparent !important;
   box-shadow: none !important;
   color: var(--playground-text-secondary) !important;
-}
-
-.playground-command-group__controls > button {
-  inline-size: 100%;
-  justify-content: flex-start;
-  max-inline-size: 100%;
-  min-inline-size: 0;
-  overflow-wrap: anywhere;
-  text-align: start;
-  white-space: normal;
-}
-
-.playground-command-group__controls > button[aria-pressed="true"] {
-  box-shadow:
-    inset 0 -2px 0 var(--playground-focus),
-    0 0 0 1px var(--playground-edge-strong);
-  font-weight: 720;
 }
 
 .playground-main {

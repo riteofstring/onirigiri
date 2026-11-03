@@ -42,3 +42,10 @@ plugin uses Connect's route matching at both root and raw configured base paths;
 builds and production preview retain their normal behavior. The
 [dependency assessments](../security/dependency-assessments.md) record the
 affected input paths, verification and bounded dependency-update window.
+
+Playground production builds use relative asset URLs and can be hosted as
+independent static directories. The default catalog includes local demos and
+arcades. `?lab=1` opts into lab menu entries and their external fixture
+dependency. The development and preview lab middleware builds that sibling
+fixture only when requested; static deployments must host an optional fixture
+separately. The lab remains outside the package and standalone build artifacts.

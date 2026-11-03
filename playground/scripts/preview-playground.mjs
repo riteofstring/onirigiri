@@ -87,6 +87,7 @@ export async function launchPlaygroundPreview(options) {
 function previewUrl(port, options) {
   const url = new URL(`http://127.0.0.1:${port}/${options.example}/`);
   url.searchParams.set("count", String(options.count));
+  if (options.lab || options.fixtureOrigin) url.searchParams.set("lab", "1");
   for (const key of ["fixtureOrigin", "fixturePath", "protocol"]) {
     if (options[key]) url.searchParams.set(key, options[key]);
   }

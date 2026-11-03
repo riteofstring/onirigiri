@@ -92,6 +92,7 @@ function assertTarballContents(tarballPath) {
   const required = [
     "package/LICENSE",
     "package/README.md",
+    "package/docs/images/onirigiri-card.png",
     "package/dist/index.d.ts",
     "package/dist/onirigiri.css",
     "package/dist/onirigiri.js",

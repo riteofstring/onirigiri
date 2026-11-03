@@ -79,7 +79,7 @@ test("native live panes sustain cadence in the production playground and overvie
       "Required playground graphics capabilities",
     ).toEqual([]);
     await measure("blank");
-    await page.goto("http://127.0.0.1:4212/");
+    await page.goto("http://127.0.0.1:4212/?lab=1");
     await expect(page.locator('[data-onirigiri-slot="pane"]')).toHaveCount(100);
     await waitForPlaygroundContent(page);
     for (const key of [

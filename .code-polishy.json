@@ -118,6 +118,11 @@
       {
         "path": "docs/design/source-organization.md",
         "sourcePaths": [
+          "scripts/verify-packed-consumer.mjs",
+          "playground/shared/playground-pane-catalog.ts",
+          "playground/shared/playground-content.tsx",
+          "playground/tests/playground-lab-content.test.tsx",
+          "tests/browser/playground-overview.pw.ts",
           "scripts/disable-dev-editor.mjs",
           "scripts/disable-dev-editor.d.mts",
           "tests/dev-editor-endpoint.test.ts",

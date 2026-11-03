@@ -11,6 +11,7 @@
     "!dist/assets/pane-picture-capture-worker-*.js.map",
     "CHANGELOG.md",
     "docs/guide",
+    "docs/images/onirigiri-card.png",
     "LICENSE",
     "README.md"
   ],

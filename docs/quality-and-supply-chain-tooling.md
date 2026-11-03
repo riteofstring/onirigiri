@@ -65,6 +65,6 @@ fix does not cover them.
 `source-map-js@1.2.1` is assessed as not affected by GHSA-68fv-2mgg-jv7q in
 [dependency-assessments.md](security/dependency-assessments.md).
 
-The scheduled dependency-security workflow runs on a GitHub-hosted Linux runner. It installs Node
-25.2.1 and pnpm 10.23.0, then `./code-polishyw setup` installs the exact Code Polishy release named by
+The scheduled dependency-security workflow runs on a GitHub-hosted Linux runner. It reads the Node pin from
+`.node-version` and installs pnpm 10.23.0, then `./code-polishyw setup` installs the exact Code Polishy release named by
 `.code-polishy.lock.json` and verifies its digest before the online scan.

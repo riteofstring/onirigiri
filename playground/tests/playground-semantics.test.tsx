@@ -4,10 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { PlaygroundShortcuts } from "../shared/playground-shortcuts";
 import { DemoPane } from "../shared/demo-pane";
-import {
-  PlaygroundCommandGroup,
-  PlaygroundFrame,
-} from "../shared/playground-frame";
+import { PlaygroundFrame } from "../shared/playground-frame";
 import type { WorkspacePane } from "@riteofstring/onirigiri";
 
 describe("playground semantics", () => {
@@ -193,31 +190,6 @@ describe("playground semantics", () => {
     expect(
       previewControls.querySelector('[aria-label="Peek at adjacent panes"]'),
     ).toBeNull();
-  });
-
-  it("gives command clusters a visible and accessible workflow label", () => {
-    const container = renderMarkup(
-      <PlaygroundCommandGroup label="Split insertion and reservation">
-        <button type="button">Insert as left split</button>
-        <button disabled type="button">
-          Remove blank below
-        </button>
-      </PlaygroundCommandGroup>,
-    );
-    const group = requiredElement<HTMLElement>(
-      container,
-      '[role="group"][aria-label="Split insertion and reservation"]',
-    );
-    const label = requiredElement<HTMLElement>(
-      group,
-      ".playground-command-group__label",
-    );
-    const buttons = [...group.querySelectorAll<HTMLButtonElement>("button")];
-
-    expect(label.textContent).toBe("Split insertion and reservation");
-    expect(label.getAttribute("aria-hidden")).toBe("true");
-    expect(buttons.map((button) => button.type)).toEqual(["button", "button"]);
-    expect(buttons[1]?.disabled).toBe(true);
   });
 
   it("passes real compact-layout settings to preview-aware playground content", () => {

@@ -227,7 +227,7 @@ checks missing adapters, device creation failures, missing copy support, success
 initialization and device disposal with controlled adapters. Actual hardware
 initialization remains part of the production and Retina measurements. Both suites
 are ordinary declared verification and are available to the presentation review.
-The diagnostic contract requires Node 25.2.1 for the measurement process. When
+The diagnostic contract requires Node 24.21.0 for the measurement process. When
 the contract itself runs under a validator-owned runtime, it selects only an
 available Node executable that proves the exact project version before measurement,
 so the validator cannot silently replace the project's measurement pin.

@@ -14,19 +14,21 @@ import { PlaygroundWelcomePane } from "./playground-shortcuts";
 import {
   createPlaygroundPanes,
   fixtureUrl,
-  paneContentTypes,
+  availablePaneContentTypes,
   paneCounts,
   requestForContent,
   type PaneContentType,
   type PaneCount,
 } from "./playground-pane-catalog";
 
-const allContentTypes = paneContentTypes.map(({ kind }) => kind);
-
 export function usePlaygroundContent(
   model: "1d" | "2d",
   suppliedPanes?: readonly OnirigiriPaneDefinition[],
 ) {
+  const [contentTypes] = useState(() =>
+    availablePaneContentTypes(new URLSearchParams(location.search)),
+  );
+  const allContentTypes = contentTypes.map(({ kind }) => kind);
   const [selected, setSelected] = useState<readonly PaneContentType[]>(() => {
     const requested = new URLSearchParams(location.search)
       .get("content")
@@ -56,6 +58,7 @@ export function usePlaygroundContent(
     return validTextureMemory(value) ? value : 256;
   });
   return {
+    contentTypes,
     textureMemoryMiB,
     setTextureMemoryMiB(value: number) {
       if (!validTextureMemory(value)) return textureMemoryMiB;
@@ -203,7 +206,12 @@ export function PlaygroundContentControls({
               More memory keeps more texture detail. No time expiry.
             </p>
             <div className="playground-content-menu__selection">
-              <button type="button" onClick={() => setDraft(allContentTypes)}>
+              <button
+                type="button"
+                onClick={() =>
+                  setDraft(content.contentTypes.map(({ kind }) => kind))
+                }
+              >
                 Select all
               </button>
               <button type="button" onClick={() => setDraft([])}>
@@ -211,29 +219,33 @@ export function PlaygroundContentControls({
               </button>
             </div>
             <div className="playground-content-menu__types">
-              {(["Demos", "Lab", "Arcade"] as const).map((group) => (
-                <fieldset key={group}>
-                  <legend>{group}</legend>
-                  {paneContentTypes
-                    .filter((type) => type.group === group)
-                    .map(({ kind, label }) => (
-                      <label key={kind}>
-                        <input
-                          type="checkbox"
-                          checked={draft.includes(kind)}
-                          onChange={(event) =>
-                            setDraft((current) =>
-                              event.target.checked
-                                ? [...current, kind]
-                                : current.filter((entry) => entry !== kind),
-                            )
-                          }
-                        />
-                        <span>{label}</span>
-                      </label>
-                    ))}
-                </fieldset>
-              ))}
+              {(["Demos", "Lab", "Arcade"] as const)
+                .filter((group) =>
+                  content.contentTypes.some((type) => type.group === group),
+                )
+                .map((group) => (
+                  <fieldset key={group}>
+                    <legend>{group}</legend>
+                    {content.contentTypes
+                      .filter((type) => type.group === group)
+                      .map(({ kind, label }) => (
+                        <label key={kind}>
+                          <input
+                            type="checkbox"
+                            checked={draft.includes(kind)}
+                            onChange={(event) =>
+                              setDraft((current) =>
+                                event.target.checked
+                                  ? [...current, kind]
+                                  : current.filter((entry) => entry !== kind),
+                              )
+                            }
+                          />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                  </fieldset>
+                ))}
             </div>
             <p className="playground-add-menu__description">
               Applying restarts the workspace.

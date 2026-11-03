@@ -6,6 +6,7 @@ import { surfaceLabServer } from "../scripts/surface-lab-server.mjs";
 import { disableDevEditor } from "../../scripts/disable-dev-editor.mjs";
 
 export default defineConfig({
+  base: "./",
   plugins: [disableDevEditor(), surfaceLabServer()],
   root: fileURLToPath(new URL("./", import.meta.url)),
   resolve: librarySource.resolve,

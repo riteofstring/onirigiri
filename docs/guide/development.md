@@ -6,7 +6,8 @@ Repository layout, the demo playground and repository commands.
 
 The interactive one- and two-dimensional demo playground lives in
 [`playground/`](https://github.com/riteofstring/onirigiri/tree/main/playground)
-and shares this repository's dependencies. Its lab panes come from
+and shares this repository's dependencies. It runs and builds as a standalone
+static site without other checkouts. Optional lab panes require `?lab=1` and come from
 [browser-surface-lab](https://github.com/riteofstring/browser-surface-lab),
 placed beside this checkout:
 
@@ -18,7 +19,10 @@ browser-surface-lab/
 The playground resolves `@riteofstring/onirigiri` to `src/`, so `pnpm dev:1d`
 and `pnpm dev:2d` show library changes without a package build. `pnpm test`
 includes the playground's Vitest project, and `pnpm build:playground` builds
-both apps. See its README for the remaining playground commands.
+both apps into their respective `dist/` directories with relative asset URLs.
+Deploy either output directory to any static host, including a subdirectory.
+The optional lab fixture is not bundled. See the playground README for preview,
+lab-hosting and deployment instructions.
 
 The functional browser projects under `tests/browser/` and the CPU checks that
 open the 2D playground use its development servers and fixture pages. The native
