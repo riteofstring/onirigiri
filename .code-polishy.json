@@ -776,6 +776,13 @@
     "preferredNewDependencyAgeDays": 90,
     "auditLevel": "low",
     "allowedDependencyProtocols": ["workspace:", "file:"],
+    "releaseArtifacts": [
+      {
+        "name": "node",
+        "versionFile": ".node-version",
+        "source": "node-runtime"
+      }
+    ],
     "vulnerabilityAssessments": [
       {
         "id": "ghsa-68fv-2mgg-jv7q-unreachable",
@@ -790,9 +797,9 @@
         "reason": "The resolved callers are PostCSS and css-tree. PostCSS uses SourceMapConsumer and SourceMapGenerator; css-tree imports only SourceMapGenerator. Neither calls SourceNode.fromStringWithSourceMap, whose generated-line loop is the reported denial-of-service sink.",
         "impact": "No enabled caller reaches the unbounded SourceNode loop; build maps also originate in checked-in sources and locked tools, not uploaded or remotely supplied maps.",
         "evidence": "https://github.com/riteofstring/onirigiri/blob/main/docs/security/dependency-assessments.md",
-        "owner": "Codex",
-        "reviewed": "2026-10-10",
-        "expires": "2026-10-31"
+        "owner": "Claude",
+        "reviewed": "2026-11-03",
+        "expires": "2026-12-03"
       },
       {
         "id": "ghsa-698v-4r3x-3vcv-development-window",
