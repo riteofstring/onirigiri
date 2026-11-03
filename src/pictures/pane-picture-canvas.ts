@@ -1,20 +1,26 @@
-import {
-  paneCanvasRasterSize,
-  readPaneCanvasTexture,
-} from "./pane-picture-canvas-readback.js";
-import { PanePictureResize } from "./pane-picture-resize.js";
-import { PanePictureContent } from "./pane-picture-content.js";
-import { stagePaneCanvas } from "./pane-picture-canvas-stage.js";
-import {
-  displayPaneCapture,
-  preparePaneCaptureDisplay,
-} from "./pane-picture-texture.js";
-import { PanePictureCaptureClient } from "./pane-picture-capture-client.js";
+import type { PaneLiveRenderer } from "../presentation/pane-presentation-policy.js";
 import {
   documentLiveCopyBudget,
   type LiveCopyBudget,
 } from "./pane-live-copy-budget.js";
-import type { PaneLiveRenderer } from "../presentation/pane-presentation-policy.js";
+import type {
+  ElementCanvas,
+  ElementImage,
+  ElementPaintEvent,
+  ElementQueue,
+} from "./pane-picture-canvas-api.js";
+import {
+  paneCanvasRasterSize,
+  readPaneCanvasTexture,
+} from "./pane-picture-canvas-readback.js";
+import { stagePaneCanvas } from "./pane-picture-canvas-stage.js";
+import { PanePictureCaptureClient } from "./pane-picture-capture-client.js";
+import { PanePictureContent } from "./pane-picture-content.js";
+import { PanePictureResize } from "./pane-picture-resize.js";
+import {
+  displayPaneCapture,
+  preparePaneCaptureDisplay,
+} from "./pane-picture-texture.js";
 
 declare const GPUTextureUsage: {
   readonly COPY_SRC: number;
@@ -22,33 +28,6 @@ declare const GPUTextureUsage: {
   readonly TEXTURE_BINDING: number;
   readonly RENDER_ATTACHMENT: number;
 };
-
-interface ElementImage {
-  readonly width: number;
-  close(): void;
-}
-
-interface ElementCanvas extends HTMLCanvasElement {
-  requestPaint(): void;
-  captureElementImage(element: Element): ElementImage;
-  updateElementGeometry?(element: Element): void;
-  clearElementGeometry?(element: Element): void;
-}
-
-interface ElementPaintEvent extends Event {
-  readonly changedElements: readonly Element[];
-}
-
-interface ElementQueue extends GPUQueue {
-  copyElementImageToTexture(
-    source: { source: ElementImage },
-    destination: {
-      destination: { texture: GPUTexture; premultipliedAlpha: boolean };
-      width: number;
-      height: number;
-    },
-  ): void;
-}
 
 interface PaneCanvasSnapshotRequest {
   signal: AbortSignal;

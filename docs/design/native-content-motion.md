@@ -938,3 +938,15 @@ The scheduler's latest presented motion state, rather than a pending target,
 drives picture motion configuration. At the stationary boundary every visible
 pane receives the rest presentation phase; cover readiness does not prolong
 the motion policy.
+
+## Internal presentation boundaries
+
+`pane-picture-presentation.ts` owns content hosts, live activation, device
+lifetime and presentation policy. `PanePictures` extends that owner with
+retained-picture acquisition, supplied-image resolution and background queues.
+They share the same cache and host inventory; abstract lifecycle hooks preserve
+cancellation and publication ordering without a second service or state mirror.
+The canvas API module defines the browser extension interfaces; the surface
+retains its WebGPU device requirements. Reserved-cell projection has its own renderer, while pane and
+world-frame rendering remain together. Workspace imperative commands live in
+a React hook so composition retains the same callback and ref lifetimes.

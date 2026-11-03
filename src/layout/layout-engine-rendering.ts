@@ -3,19 +3,21 @@ import { hasOverviewCardSizeConstraint } from "./overview-scale.js";
 import {
   applyOverviewZoom,
   clamp,
-  columnsByIndexes,
   gridRowGeometryForLayout,
   gridRowRangeAt,
   type GridRowGeometry,
   minimumColumnWidth,
   overviewScale,
   pushColumnItems,
-  renderedColumnIndexesForLayout,
   scrollOffsetForGridColumn,
   scrollOffsetForGridRow,
   type ColumnGeometry,
   type OverviewCardSizeConstraints,
 } from "./layout-engine-helpers.js";
+import {
+  columnsByIndexes,
+  renderedColumnIndexesForLayout,
+} from "./layout-column-visibility.js";
 import type {
   LayoutFrameInput,
   PaneId,

@@ -1,3 +1,4 @@
+import { workspaceReservedCellRenderItems } from "../src/presentation/workspace-reserved-cell-render-items";
 import { describe, expect, it, vi } from "vitest";
 
 import { WorkspaceLikeLayoutEngine } from "../src/layout/layout-engine";
@@ -20,7 +21,6 @@ import { workspacePaneRearrangementSweep } from "../src/presentation/workspace-p
 import {
   workspaceGridCursorRenderItem,
   workspaceRenderItems,
-  workspaceReservedCellRenderItems,
   workspaceWorldRenderFrame,
   WorkspaceRenderItemRenderer,
   WorkspaceWorldFrameRenderer,
