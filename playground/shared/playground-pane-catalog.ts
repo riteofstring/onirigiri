@@ -12,7 +12,7 @@ export const playgroundPaneTypeDefaults = {
 
 export const paneCounts = [5, 10, 50, 100] as const;
 export type PaneCount = (typeof paneCounts)[number];
-export const paneContentTypes = [
+const paneContentTypes = [
   { kind: "notes", label: "Field notes", group: "Demos" },
   { kind: "lab:dom", label: "DOM document", group: "Lab" },
   { kind: "signals", label: "Signal lab", group: "Demos" },
@@ -36,6 +36,12 @@ export const paneContentTypes = [
   { kind: "arcade:orbit", label: "Orbit Dash", group: "Arcade" },
 ] as const;
 export type PaneContentType = (typeof paneContentTypes)[number]["kind"];
+
+export function availablePaneContentTypes(query: URLSearchParams) {
+  return paneContentTypes.filter(
+    (type) => type.group !== "Lab" || query.get("lab") === "1",
+  );
+}
 
 export function requestForContent(kind: PaneContentType) {
   const definition = paneContentTypes.find((content) => content.kind === kind)!;
@@ -65,7 +71,9 @@ export function createPlaygroundPanes(
   const catalog = paneContentTypes.filter(({ kind }) =>
     selected.includes(kind),
   );
-  const welcome = catalog.length === paneContentTypes.length;
+  const welcome = paneContentTypes
+    .filter((type) => type.group !== "Lab")
+    .every((type) => selected.includes(type.kind));
   return Array.from({ length: count }, (_, index) => ({
     ...(welcome && index === 0
       ? {

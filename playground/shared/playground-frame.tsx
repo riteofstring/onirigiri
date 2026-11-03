@@ -256,23 +256,6 @@ function PlaygroundStatus({ children }: { children: ReactNode }) {
   );
 }
 
-export function PlaygroundCommandGroup({
-  children,
-  label,
-}: {
-  children: ReactNode;
-  label: string;
-}) {
-  return (
-    <div aria-label={label} className="playground-command-group" role="group">
-      <span aria-hidden="true" className="playground-command-group__label">
-        {label}
-      </span>
-      <div className="playground-command-group__controls">{children}</div>
-    </div>
-  );
-}
-
 function PlaygroundDirectionControlMode({
   mode,
   onChange,

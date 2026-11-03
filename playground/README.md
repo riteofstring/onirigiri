@@ -6,14 +6,8 @@ stylesheet exactly as a downstream React application would.
 
 ## Setup
 
-The playground shares the repository's root install. Lab panes need a
-`browser-surface-lab` checkout beside `onirigiri/`:
-
-```text
-onirigiri/              https://github.com/riteofstring/onirigiri
-  playground/           this directory
-browser-surface-lab/    https://github.com/riteofstring/browser-surface-lab
-```
+The playground shares the repository's root install and works without any
+sibling checkout:
 
 ```sh
 pnpm install --frozen-lockfile --ignore-scripts
@@ -23,10 +17,41 @@ pnpm install --frozen-lockfile --ignore-scripts
 `tsconfig.json` resolve `@riteofstring/onirigiri` to `../src`, so library edits
 show up without a package build.
 
-Lab panes come from the `browser-surface-lab` checkout, which the
-development and preview servers build and serve under `/surface-lab/`. Without
-it, lab panes receive an explicit 503 response and the other demos work
-normally.
+Lab content is optional and excluded from the default workspace and content
+menu. To enable it, open the playground with `?lab=1`. For the local lab host,
+place [browser-surface-lab](https://github.com/riteofstring/browser-surface-lab)
+beside this checkout. Development and Vite preview servers then build its
+fixture on demand and serve it under `/surface-lab/`. An enabled lab without
+that checkout receives a 503 response.
+
+## Static build and deployment
+
+Run from the repository root:
+
+```sh
+pnpm build:playground
+```
+
+The standalone outputs are `playground/one-dimensional/dist/` and
+`playground/two-dimensional/dist/`. Upload each directory's contents to its
+own static hosting directory, for example `/examples/1d/` and `/examples/2d/`.
+Serve over HTTP or HTTPS with the trailing slash; both builds use relative
+asset URLs and work below a subdirectory. No Node server, rewrite rules, lab
+checkout or backend is required. Only `index.html` is a production entry;
+`fixture.html` is a development test harness.
+
+For a local production preview:
+
+```sh
+pnpm exec vite preview --config playground/one-dimensional/vite.config.ts --host 127.0.0.1 --port 4173
+pnpm exec vite preview --config playground/two-dimensional/vite.config.ts --host 127.0.0.1 --port 4174
+```
+
+Static hosting does not include the optional lab fixture or its assets. To use
+labs on a deployed site, host the lab separately and opt in with
+`?lab=1&fixtureOrigin=https://your-lab-host.example&fixturePath=/fixture.html`.
+Its host must permit embedding. Cross-origin lab content stays native; retained
+pixel capture requires same-origin hosting.
 
 ## Run
 

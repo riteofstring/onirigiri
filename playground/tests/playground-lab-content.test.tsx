@@ -126,3 +126,52 @@ test("passes host type sizes and explicit appearance overrides to lab content", 
     host.remove();
   }
 });
+
+for (const [model, Playground] of [
+  ["1d", OneDimensionalPlayground],
+  ["2d", TwoDimensionalPlayground],
+] as const) {
+  test.each([false, true])(
+    `${model} offers lab content only with explicit opt-in (%s)`,
+    async (enabled) => {
+      const originalUrl = location.href;
+      history.replaceState(
+        null,
+        "",
+        enabled
+          ? "/?lab=1&content=lab:dom&count=5"
+          : "/?content=lab:dom&count=5",
+      );
+      const container = document.createElement("div");
+      document.body.append(container);
+      const root = createRoot(container);
+      try {
+        await act(async () => root.render(<Playground />));
+        const menu = requiredElement<HTMLElement>(
+          container,
+          ".playground-content-menu",
+        );
+        const labChoices = [...menu.querySelectorAll("label")].filter(
+          (label) => label.textContent?.trim() === "DOM document",
+        );
+        expect(labChoices).toHaveLength(enabled ? 1 : 0);
+        const frame = container.querySelector("iframe");
+        if (enabled) {
+          expect(frame).not.toBeNull();
+          expect(new URL(frame!.src).pathname).toBe(
+            "/surface-lab/fixture.html",
+          );
+        } else {
+          expect(frame).toBeNull();
+          expect(
+            container.querySelector('[data-onirigiri-pane-id="pane-1"]'),
+          ).not.toBeNull();
+        }
+      } finally {
+        await act(async () => root.unmount());
+        container.remove();
+        history.replaceState(null, "", originalUrl);
+      }
+    },
+  );
+}

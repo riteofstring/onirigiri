@@ -135,7 +135,11 @@ same four visible scenes to advance alongside both video decoders.
 
 ## Lab hosting
 
-Development and preview servers mount a production build of the sibling
+Lab content is excluded from the default workspace and menu. `?lab=1` explicitly
+enables the lab choices. The ordinary production builds contain only local demo
+and arcade content by default and need no sibling checkout or lab server.
+
+When enabled, development and preview servers mount a production build of the sibling
 browser-surface-lab's fixture entry under `/surface-lab/` on the playground's
 origin. A separate build process preserves the parent server's development mode
 and leaves the fixture sources, dependencies, assets, workloads and counters
