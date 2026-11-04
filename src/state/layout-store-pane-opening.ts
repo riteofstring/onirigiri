@@ -32,7 +32,7 @@ export class WorkspacePaneOpeningController {
       adjacentToColumnId: columnId ? undefined : this.hooks.currentColumnId(),
       columnId,
     });
-    this.hooks.commitPane(paneId);
+    this.commit(paneId);
     return paneId;
   }
 
@@ -48,7 +48,7 @@ export class WorkspacePaneOpeningController {
       placement,
       request,
     );
-    this.hooks.commitPane(createdPaneId);
+    this.commit(createdPaneId);
     return createdPaneId;
   }
 
@@ -80,15 +80,40 @@ export class WorkspacePaneOpeningController {
       direction,
       this.hooks.viewport(),
     );
-    this.hooks.commitPane(createdPaneId);
+    this.commit(createdPaneId);
     return createdPaneId;
   }
 
   splitToPlane(paneId: PaneId, direction: "up" | "down"): PaneId {
     this.assertKnownPane(paneId);
     const createdPaneId = this.hooks.engine.splitPaneToPlane(paneId, direction);
-    this.hooks.commitPane(createdPaneId);
+    this.commit(createdPaneId);
     return createdPaneId;
+  }
+
+  private commit(paneId: PaneId): void {
+    this.matchRowHeight(paneId);
+    this.hooks.commitPane(paneId);
+  }
+
+  private matchRowHeight(paneId: PaneId): void {
+    const scene = this.hooks.scene();
+    const columnId = scene.paneById.get(paneId)?.columnId;
+    const column = scene.columns.find((entry) => entry.columnId === columnId);
+    if (column?.cells.length !== 1 || column.cells[0]!.heightPx !== undefined)
+      return;
+    const reference = scene.columns.find(
+      (entry) =>
+        entry !== column &&
+        entry.planeIndex === column.planeIndex &&
+        entry.cells.length > 0 &&
+        entry.cells.every((cell) => cell.heightPx !== undefined),
+    );
+    if (!reference) return;
+    const height =
+      reference.cells.reduce((sum, cell) => sum + cell.heightPx!, 0) +
+      scene.rowGap * (reference.cells.length - 1);
+    this.hooks.engine.resizeColumnRows(column.columnId, [height]);
   }
 
   private assertKnownPane(paneId: PaneId): void {
