@@ -543,6 +543,7 @@ export class PaneCanvasSurface {
     stage: boolean,
     display: GPURenderPipeline | undefined,
   ): Promise<Blob> {
+    if (!stage && !this.hasCurrentFrame()) await this.holdFrame(signal);
     const texture = this.captureTexture(size);
     let restore: (() => void) | undefined;
     try {
@@ -974,7 +975,7 @@ export class PaneCanvasSurface {
           canvas,
           (update) => update(),
           () => this.recordingScale,
-          () => this.callbacks.drawn(false),
+          () => {},
           size,
         );
       });
