@@ -500,25 +500,23 @@ export class PaneCanvasSurface {
   ): Promise<Blob> {
     const restore = this.stageWorker(canvas);
     signal.addEventListener("abort", restore, { once: true });
+    let recorded: ElementImage;
     try {
       await this.settleStage(signal);
-      const recorded = await this.recordWorkerImage(
-        canvas as ElementCanvas,
-        signal,
-      );
-      try {
-        return await background.client.capture(
-          background.id,
-          recorded,
-          size,
-          signal,
-        );
-      } finally {
-        recorded.close();
-      }
+      recorded = await this.recordWorkerImage(canvas as ElementCanvas, signal);
     } finally {
       signal.removeEventListener("abort", restore);
       restore();
+    }
+    try {
+      return await background.client.capture(
+        background.id,
+        recorded,
+        size,
+        signal,
+      );
+    } finally {
+      recorded.close();
     }
   }
 
@@ -536,6 +534,8 @@ export class PaneCanvasSurface {
         signal.addEventListener("abort", restore, { once: true });
       }
       await this.recordCapture(texture, signal, stage, display);
+      if (restore) signal.removeEventListener("abort", restore);
+      restore?.();
       return await readPaneCanvasTexture(this.device!, texture, signal);
     } finally {
       texture.destroy();
