@@ -498,6 +498,7 @@ export class PaneCanvasSurface {
     size: { width: number; height: number },
     signal: AbortSignal,
   ): Promise<Blob> {
+    await this.holdFrame(signal);
     const restore = this.stageWorker(canvas);
     signal.addEventListener("abort", restore, { once: true });
     let recorded: ElementImage;
@@ -518,6 +519,22 @@ export class PaneCanvasSurface {
     } finally {
       recorded.close();
     }
+  }
+
+  private holdFrame(signal: AbortSignal): Promise<void> {
+    if (!this.source.isNative() && this.hasCurrentFrame())
+      return Promise.resolve();
+    this.freezePending = this.source.freeze() || this.freezePending;
+    this.prepareContent();
+    return this.nextPaint(
+      this.canvas as ElementCanvas,
+      signal,
+      () =>
+        this.updateTexture({
+          changedElements: [this.content],
+        } as unknown as ElementPaintEvent) || null,
+      () => this.canvas.requestPaint(),
+    ).then(() => undefined);
   }
 
   private async captureOnMain(
