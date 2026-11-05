@@ -112,8 +112,13 @@ describe("OnirigiriWorkspace interactions", () => {
       '[data-onirigiri-pane-id="pane-2"]',
     );
     const focused = workspace.getSnapshot().focusedPaneId;
-    for (const selector of [".onirigiri-pane__content button", ".onirigiri-pane__titlebar"])
-      await act(async () => dispatchPointerDown(requiredElement(adjacentPane, selector)));
+    for (const selector of [
+      ".onirigiri-pane__content button",
+      ".onirigiri-pane__titlebar",
+    ])
+      await act(async () =>
+        dispatchPointerDown(requiredElement(adjacentPane, selector)),
+      );
     expect(workspace.getSnapshot()).toMatchObject({
       focusedPaneId: focused,
       targetScrollColumn: 0,
