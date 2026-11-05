@@ -310,7 +310,7 @@ describe("PanePictureContent", () => {
     },
   );
 
-  it("withdraws a frozen canvas frame on device loss until native content becomes live", async () => {
+  it("withdraws a frozen canvas frame on device loss and shows native content in its place", async () => {
     const { canvas, content, input, flushFrames, ...pane } = paneCanvas({
       getCurrentTexture: () => ({ width: 20, height: 12 }),
     });
@@ -354,11 +354,11 @@ describe("PanePictureContent", () => {
     lose({ reason: "destroyed", message: "Device reset" });
     await Promise.resolve();
     flushFrames();
-    expect(drawn).toHaveBeenLastCalledWith(false);
+    expect(drawn).toHaveBeenCalledWith(false);
     expect(failed).not.toHaveBeenCalled();
     expect(surface.hasCurrentFrame()).toBe(false);
     expect(content.parentElement).not.toBe(canvas);
-    expect(content.parentElement!.style.opacity).toBe("0");
+    expect(content.parentElement!.style.opacity).toBe("");
     expect(content.querySelector("input")).toBe(input);
     live = true;
     surface.requestPaint();
@@ -511,18 +511,15 @@ describe("PanePictureContent", () => {
     expect(input.value).toBe("Retained draft");
   });
 
-  it("checks focused priming once per paint and rechecks before the native handoff", async () => {
-    const { canvas, content, input, frames, flushFrames, ...pane } =
-      paneCanvas();
-    let prime = false;
+  it("shows DOM content natively while the canvas has no frame, without waiting for readiness", async () => {
+    const { canvas, content, input, flushFrames, ...pane } = paneCanvas();
     let drawn = false;
     let renderer: "canvas" | "dom" = "canvas";
-    const canPrime = vi.fn(() => prime && !drawn);
     const surface = pane.surface(
       Promise.resolve({ lost: new Promise(() => {}) } as GPUDevice),
       {
         canDraw: () => false,
-        canPrime,
+        canPrime: () => false,
         renderer: () => renderer,
         drawn: (value) => {
           drawn = value;
@@ -530,40 +527,22 @@ describe("PanePictureContent", () => {
       },
     );
     await Promise.resolve();
-    prime = true;
-    canPrime.mockClear();
     surface.requestPaint();
-    expect(canPrime).toHaveBeenCalledOnce();
+    flushFrames();
     expect(content.parentElement).toBe(canvas);
 
     renderer = "dom";
-    prime = false;
-    canPrime.mockClear();
-    surface.requestPaint();
-    expect(canPrime).toHaveBeenCalledOnce();
-    expect(frames.size).toBe(0);
-
-    prime = true;
-    canPrime.mockClear();
-    surface.requestPaint();
-    expect(canPrime).toHaveBeenCalledOnce();
-    prime = false;
-    flushFrames();
-    expect(canPrime).toHaveBeenCalledTimes(2);
-    expect(content.parentElement).toBe(canvas);
-    expect(drawn).toBe(false);
-
-    prime = true;
     surface.requestPaint();
     flushFrames();
     expect(content.parentElement).not.toBe(canvas);
+    expect(content.parentElement!.hidden).toBe(false);
     expect(content.parentElement!.style.opacity).toBe("");
     expect(drawn).toBe(true);
     expect(content.querySelector("input")).toBe(input);
     expect(input.value).toBe("Retained draft");
   });
 
-  it("prepares native-only content before readiness and reveals the same input when ready", async () => {
+  it("shows native-only content before readiness and keeps the same input when ready", async () => {
     const { canvas, content, input, frames, flushFrames, ...pane } =
       paneCanvas();
     let ready = false;
@@ -583,8 +562,8 @@ describe("PanePictureContent", () => {
     const host = content.parentElement!;
     expect(host).not.toBe(canvas);
     expect(host.hidden).toBe(false);
-    expect(host.style.opacity).toBe("0");
-    expect(drawn).toBe(false);
+    expect(host.style.opacity).toBe("");
+    expect(drawn).toBe(true);
 
     ready = true;
     surface.requestPaint();
