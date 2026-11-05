@@ -166,12 +166,13 @@ export class PaneCanvasSurface {
       canPresent: () => {
         if (
           this.disposed ||
-          !this.initialized ||
           this.resizing ||
           this.captureAbort ||
           !this.nativeRequested()
         )
           return false;
+        if (!this.hasCurrentFrame()) return true;
+        if (!this.initialized) return false;
         primeNative = this.canPrimeNative();
         return (
           this.nativeOnly ||
@@ -245,7 +246,7 @@ export class PaneCanvasSurface {
 
   private requestNativePresentation(primeNative: boolean): void {
     this.source.prepare(false);
-    const display = this.live || primeNative;
+    const display = this.live || primeNative || !this.hasCurrentFrame();
     if (display && this.source.isNative()) {
       this.source.reveal(this.live);
       this.callbacks.drawn(true, "dom");
@@ -736,6 +737,7 @@ export class PaneCanvasSurface {
         this.callbacks.continuous() ||
         this.source.isNative() ||
         !this.canCapture() ||
+        !this.hasCurrentFrame() ||
         (primeNative ?? this.canPrimeNative()))
     );
   }

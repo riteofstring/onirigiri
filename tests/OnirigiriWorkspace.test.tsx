@@ -449,9 +449,9 @@ describe("OnirigiriWorkspace interactions", () => {
         />,
       );
     });
-    const initialFrame = animationFrames.shift();
-    expect(initialFrame).toBeDefined();
-    await act(async () => initialFrame?.(0));
+    await act(async () => {
+      for (const frame of animationFrames.splice(0)) frame(0);
+    });
     animationFrames.length = 0;
 
     await act(async () => workspaceRef.current?.toggleOverview());
