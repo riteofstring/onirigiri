@@ -88,6 +88,41 @@ describe("OnirigiriWorkspace interactions", () => {
     container.remove();
   });
 
+  it("leaves focus and the camera alone on click when focusing on pointer is off", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const workspaceRef = createRef<OnirigiriWorkspaceHandle>();
+
+    await act(async () => {
+      root.render(
+        <OnirigiriWorkspace
+          cameraModes={{ normal: "fixed", overview: "fixed" }}
+          focusAnchor="start"
+          focusPaneOnPointer={false}
+          initialPanes={fixedWidthPanes(3)}
+          ref={workspaceRef}
+          renderPane={(pane) => <button type="button">Use {pane.title}</button>}
+        />,
+      );
+    });
+    const workspace = requiredWorkspaceHandle(workspaceRef.current);
+    const adjacentPane = requiredElement<HTMLElement>(
+      container,
+      '[data-onirigiri-pane-id="pane-2"]',
+    );
+    const focused = workspace.getSnapshot().focusedPaneId;
+    for (const selector of [".onirigiri-pane__content button", ".onirigiri-pane__titlebar"])
+      await act(async () => dispatchPointerDown(requiredElement(adjacentPane, selector)));
+    expect(workspace.getSnapshot()).toMatchObject({
+      focusedPaneId: focused,
+      targetScrollColumn: 0,
+    });
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
   it("renders every pane intersecting a wide viewport as live content", async () => {
     const container = document.createElement("div");
     document.body.append(container);

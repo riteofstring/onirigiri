@@ -142,6 +142,7 @@ export const OnirigiriWorkspace = forwardRef<
     getPanePresentation,
     renderPanePlaceholder,
     restPictureFade,
+    focusPaneOnPointer = true,
     liveContent,
     onCaptureStatusChange,
     onPanePresentationChange,
@@ -885,6 +886,7 @@ export const OnirigiriWorkspace = forwardRef<
               })
             }
             onPointerDownCapture={(event) =>
+              focusPaneOnPointer &&
               focusPaneFromPointer({
                 button: event.button,
                 eventTarget: event.target,
