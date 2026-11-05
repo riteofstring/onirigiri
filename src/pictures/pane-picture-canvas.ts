@@ -533,7 +533,9 @@ export class PaneCanvasSurface {
         this.updateTexture({
           changedElements: [this.content],
         } as unknown as ElementPaintEvent) || null,
-      () => this.canvas.requestPaint(),
+      () => {
+        if (typeof this.canvas.requestPaint === "function") this.canvas.requestPaint();
+      },
     ).then(() => undefined);
   }
 
@@ -543,7 +545,6 @@ export class PaneCanvasSurface {
     stage: boolean,
     display: GPURenderPipeline | undefined,
   ): Promise<Blob> {
-    if (!stage && !this.hasCurrentFrame()) await this.holdFrame(signal);
     const texture = this.captureTexture(size);
     let restore: (() => void) | undefined;
     try {
