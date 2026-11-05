@@ -34,6 +34,7 @@ interface PaneCanvasSnapshotRequest {
   stage: boolean;
   maxRasterBytes: number;
   maxEncodedBytes: number;
+  recorded?: () => void;
   background?: {
     client: PanePictureCaptureClient;
     id: string;
@@ -112,6 +113,7 @@ function pictureWorkerFor(document: Document) {
 export async function captureOnirigiriPanePicture(
   element: HTMLElement,
   signal: AbortSignal,
+  recorded?: () => void,
 ): Promise<{ image: Blob; cssSize: { width: number; height: number } } | null> {
   signal.throwIfAborted();
   for (
@@ -120,7 +122,7 @@ export async function captureOnirigiriPanePicture(
     node = node.parentElement
   ) {
     const surface = contentSurfaces.get(node);
-    if (surface) return surface.capturePicture(signal);
+    if (surface) return surface.capturePicture(signal, recorded);
   }
   return null;
 }
@@ -387,7 +389,10 @@ export class PaneCanvasSurface {
     this.device = null;
   }
 
-  async capturePicture(signal: AbortSignal): Promise<{
+  async capturePicture(
+    signal: AbortSignal,
+    recorded?: () => void,
+  ): Promise<{
     image: Blob;
     cssSize: { width: number; height: number };
   } | null> {
@@ -407,6 +412,7 @@ export class PaneCanvasSurface {
       const result = await this.capture({
         signal,
         stage: !this.callbacks.visible(),
+        recorded,
         maxRasterBytes: 128 * 1024 * 1024,
         maxEncodedBytes: 32 * 1024 * 1024,
         background: {
@@ -415,7 +421,6 @@ export class PaneCanvasSurface {
           required: true,
         },
       });
-      signal.throwIfAborted();
       if (
         this.disposed ||
         this.content.offsetWidth !== cssSize.width ||
@@ -444,6 +449,7 @@ export class PaneCanvasSurface {
     const abort = () => controller.abort(request.signal.reason);
     request.signal.addEventListener("abort", abort, { once: true });
     this.captureAbort = controller;
+    let recorded = false;
     try {
       const preparation = this.prepareWorker(request, controller.signal);
       const worker = preparation ? await preparation : null;
@@ -455,6 +461,13 @@ export class PaneCanvasSurface {
             request.background!,
             size,
             controller.signal,
+            () => {
+              recorded = true;
+              request.signal.removeEventListener("abort", abort);
+              if (this.captureAbort === controller) this.captureAbort = null;
+              this.requestPaint();
+              request.recorded?.();
+            },
           )
         : await this.captureOnMain(
             size,
@@ -462,7 +475,7 @@ export class PaneCanvasSurface {
             request.stage,
             display,
           );
-      controller.signal.throwIfAborted();
+      if (!recorded) controller.signal.throwIfAborted();
       if (image.size > request.maxEncodedBytes)
         throw new Error("Pane canvas exceeds the encoded picture budget");
       return { image, ...size };
@@ -473,7 +486,7 @@ export class PaneCanvasSurface {
         this.lastImage = null;
         this.imageSize = null;
       }
-      this.captureAbort = null;
+      if (this.captureAbort === controller) this.captureAbort = null;
       this.requestPaint();
     }
   }
@@ -497,6 +510,7 @@ export class PaneCanvasSurface {
     background: NonNullable<PaneCanvasSnapshotRequest["background"]>,
     size: { width: number; height: number },
     signal: AbortSignal,
+    onRecorded: () => void,
   ): Promise<Blob> {
     const restore = this.stageWorker(canvas);
     signal.addEventListener("abort", restore, { once: true });
@@ -508,12 +522,13 @@ export class PaneCanvasSurface {
       signal.removeEventListener("abort", restore);
       restore();
     }
+    onRecorded();
     try {
       return await background.client.capture(
         background.id,
         recorded,
         size,
-        signal,
+        new AbortController().signal,
       );
     } finally {
       recorded.close();

@@ -146,6 +146,64 @@ describe("PanePictureContent", () => {
     expect(second.input.value).toBe("Retained draft");
   });
 
+  it("finishes encoding a recorded staged capture after its signal aborts", async () => {
+    const pane = paneCanvas();
+    const device = { lost: new Promise(() => {}) } as unknown as GPUDevice;
+    const surface = pane.surface(Promise.resolve(device), {
+      visible: () => false,
+    });
+    await Promise.resolve();
+    const internals = surface as unknown as Record<string, unknown>;
+    vi.spyOn(internals as never, "stageWorker" as never).mockReturnValue(
+      (() => {}) as never,
+    );
+    vi.spyOn(internals as never, "rasterSize" as never).mockReturnValue({
+      width: 100,
+      height: 100,
+    } as never);
+    vi.spyOn(internals as never, "settleStage" as never).mockResolvedValue(
+      undefined as never,
+    );
+    vi.spyOn(
+      internals as never,
+      "recordWorkerImage" as never,
+    ).mockResolvedValue({ close: () => {} } as never);
+    let encode!: (image: Blob) => void;
+    let encodeSignal: AbortSignal | undefined;
+    const client = {
+      prepare: vi.fn(async () => ({
+        canvas: document.createElement("canvas"),
+        limit: 1024 * 1024,
+      })),
+      capture: vi.fn(
+        (_id: string, _image: unknown, _size: unknown, signal: AbortSignal) => {
+          encodeSignal = signal;
+          return new Promise<Blob>((resolve) => {
+            encode = resolve;
+          });
+        },
+      ),
+    } as unknown as PanePictureCaptureClient;
+    const controller = new AbortController();
+    const recorded = vi.fn(() =>
+      controller.abort(new DOMException("Motion", "AbortError")),
+    );
+    const capture = surface.capture({
+      stage: true,
+      signal: controller.signal,
+      recorded,
+      maxRasterBytes: 1024 * 1024,
+      maxEncodedBytes: 1024 * 1024,
+      background: { id: "recorded", client, required: true },
+    });
+    await vi.waitFor(() => expect(client.capture).toHaveBeenCalledOnce());
+    expect(recorded).toHaveBeenCalledOnce();
+    expect(controller.signal.aborted).toBe(true);
+    expect(encodeSignal?.aborted).toBe(false);
+    encode(new Blob(["pixels"]));
+    expect((await capture).image.size).toBe(6);
+  });
+
   it.each([true, false])(
     "captures consumer pixels without relocating visible content (%s)",
     async (visible) => {
