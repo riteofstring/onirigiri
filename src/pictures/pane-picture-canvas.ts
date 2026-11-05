@@ -403,21 +403,17 @@ export class PaneCanvasSurface {
     if (worker.active) return null;
     worker.active = true;
     try {
-      const available = await worker.client.prepare(signal);
+      if (!(await worker.client.prepare(signal))) return null;
       const result = await this.capture({
         signal,
         stage: !this.callbacks.visible(),
         maxRasterBytes: 128 * 1024 * 1024,
         maxEncodedBytes: 32 * 1024 * 1024,
-        ...(available
-          ? {
-              background: {
-                client: worker.client,
-                id: "consumer-picture",
-                required: true,
-              },
-            }
-          : {}),
+        background: {
+          client: worker.client,
+          id: "consumer-picture",
+          required: true,
+        },
       });
       signal.throwIfAborted();
       if (
