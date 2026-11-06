@@ -271,7 +271,13 @@ export function gridRowGeometryForLayout({
   const gridMinRow = Math.min(gridRange.minRow, ...structuralRows);
   const gridMaxRow = Math.max(gridRange.maxRow, ...structuralRows);
   const coordinateGeometry = sparseGridCoordinateGeometry({
-    defaultValue: viewportHeight,
+    defaultValue: emptyPlaneOuterHeight({
+      availableHeight,
+      fullSizePanes,
+      padding,
+      viewportHeight,
+      sizing,
+    }),
     originCoordinate: gridRange.originRow,
     overrides: structuralGeometry.heights,
     stepGap: planeGap - padding * 2,
@@ -286,6 +292,35 @@ export function gridRowGeometryForLayout({
       coordinateGeometry.valueForCoordinate(gridMaxRow) -
       coordinateGeometry.offsetForCoordinate(gridMinRow),
   };
+}
+
+function emptyPlaneOuterHeight({
+  availableHeight,
+  fullSizePanes,
+  padding,
+  viewportHeight,
+  sizing,
+}: {
+  availableHeight: number;
+  fullSizePanes: boolean;
+  padding: number;
+  viewportHeight: number;
+  sizing?: PaneGridSizing;
+}): number {
+  const defaults = resolvePaneDefaults(null, sizing?.configuration);
+  if (fullSizePanes || typeof defaults.height !== "number")
+    return Math.max(1, viewportHeight);
+  const fullPaneSizing = sizing?.configuration.fullPaneSizing ?? false;
+  return (
+    constrainPaneDimension(
+      defaults.height,
+      fullPaneSizing ? undefined : defaults.minHeight,
+      fullPaneSizing ? undefined : defaults.maxHeight,
+      availableHeight,
+      minimumPaneRenderHeightPx,
+    ) +
+    padding * 2
+  );
 }
 
 function sparseGridCoordinateGeometry({
