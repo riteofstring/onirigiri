@@ -217,6 +217,43 @@ describe("workspace grid geometry", () => {
     ).toBeCloseTo(virtual.height, 6);
   });
 
+  it("sizes rows without panes from the default pane height", () => {
+    const source = createWorkspaceScene({
+      paneDefaults: { height: 300 },
+      panes: [pane("origin", "top", 0, 0)],
+    });
+    const engine = new WorkspaceLikeLayoutEngine(source.scene);
+    const occupied = engine.gridCellBox(
+      { column: 0, row: 0, split: 0 },
+      desktopViewport,
+    );
+    const above = engine.gridCellBox(
+      { column: 0, row: -1, split: 0 },
+      desktopViewport,
+    );
+    const below = engine.gridCellBox(
+      { column: 0, row: 2, split: 0 },
+      desktopViewport,
+    );
+
+    expect(occupied.height).toBe(300);
+    expect(above).toMatchObject({ kind: "empty", height: 300 });
+    expect(below).toMatchObject({ kind: "empty", height: 300 });
+    expect(below.y - occupied.y).toBeCloseTo(2 * (occupied.y - above.y), 6);
+    expect(
+      engine.gridCursorRenderItem({
+        cursor: above.cursor,
+        focusedPaneId: null,
+        maximizedPaneId: null,
+        movementPhase: "idle",
+        presentationMode: "normal",
+        scrollColumn: 0,
+        scrollRow: -1,
+        viewport: desktopViewport,
+      }).height,
+    ).toBe(300);
+  });
+
   it("targets distant signed coordinates without camera clamping", () => {
     const { engine } = geometryHarness();
     const positive = engine.gridCameraTarget(
