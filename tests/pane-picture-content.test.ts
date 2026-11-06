@@ -153,20 +153,23 @@ describe("PanePictureContent", () => {
       visible: () => false,
     });
     await Promise.resolve();
-    const internals = surface as unknown as Record<string, unknown>;
+    const internals = surface as unknown as Record<
+      string,
+      (...args: unknown[]) => unknown
+    >;
     const stageWorker = vi
-      .spyOn(internals as never, "stageWorker" as never)
+      .spyOn(internals, "stageWorker")
       .mockReturnValue((() => {}) as never);
-    vi.spyOn(internals as never, "rasterSize" as never).mockReturnValue({
+    vi.spyOn(internals, "rasterSize").mockReturnValue({
       width: 100,
       height: 100,
     } as never);
-    vi.spyOn(internals as never, "settleStage" as never).mockResolvedValue(
+    vi.spyOn(internals, "settleStage").mockResolvedValue(
       undefined as never,
     );
     vi.spyOn(
-      internals as never,
-      "recordWorkerImage" as never,
+      internals,
+      "recordWorkerImage",
     ).mockResolvedValue({ close: () => {} } as never);
     let encode!: (image: Blob) => void;
     let encodeSignal: AbortSignal | undefined;

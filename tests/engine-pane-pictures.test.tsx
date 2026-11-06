@@ -30,7 +30,7 @@ class CaptureWorker {
   postMessage(message: PaneCaptureRequest, transfer: unknown[]) {
     if (message.type === "prepare")
       this.onmessage?.({ data: { type: "prepared", limit: 8192 } });
-    else {
+    else if (message.type === "capture") {
       this.captures.push(message);
       this.transfers.push(transfer);
     }
