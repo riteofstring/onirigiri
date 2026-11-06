@@ -36,6 +36,7 @@ import { planeIndexesForColumns } from "./layout-planes.js";
 import {
   constrainColumnWidths,
   preferredColumnWidth,
+  resolvePaneDefaults,
 } from "./pane-defaults.js";
 
 export interface WorkspaceLayoutEngineOptions {
@@ -188,8 +189,11 @@ export class WorkspaceLayoutGeometry {
             availableHeight: this.availablePaneHeight(viewport.height),
           }),
     );
+    const paneWidth = resolvePaneDefaults(null, this.scene).width;
     const defaultWidth = this.resolveColumnWidthSpec(
-      this.scene.defaultColumnWidthSpec,
+      typeof paneWidth === "number"
+        ? { unit: "px", value: paneWidth }
+        : this.scene.defaultColumnWidthSpec,
       viewportWidth,
       allowViewportOverflow,
     );
