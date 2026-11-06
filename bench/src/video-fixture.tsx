@@ -40,6 +40,7 @@ export function VideoFixture() {
           </div>
         ) : (
           <OnirigiriWorkspace
+            panePictures
             focusAnchor="start"
             initialPanes={panes}
             paneDefaults={{ height: "viewport" }}

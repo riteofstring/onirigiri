@@ -27,6 +27,7 @@ const root = createRoot(document.querySelector("#root")!);
 function render() {
   root.render(
     <OnirigiriWorkspace
+      panePictures
       ref={handle}
       focusAnchor="center"
       retainedAreaBudgetViewports={0}

@@ -208,6 +208,7 @@ export function OneDimensionalPlayground({
         focusAnchor,
       }) => (
         <OnirigiriWorkspace
+          panePictures
           chromeComponents={playgroundRendererChrome}
           captureMissingOverviewPictures
           preloadAllPanePictures={content.cacheAll}

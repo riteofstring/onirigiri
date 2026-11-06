@@ -120,6 +120,7 @@ function render() {
   root.render(
     <StrictMode>
       <OnirigiriWorkspace
+        panePictures
         {...overviewCamera}
         chromeComponents={chromeComponents}
         liveContent={parameters.has("liveContent")}

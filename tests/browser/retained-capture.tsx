@@ -44,6 +44,7 @@ function Preview() {
       </header>
       <div className="capture-preview__workspace">
         <OnirigiriWorkspace
+          panePictures
           captureMissingOverviewPictures={
             query.get("overviewCapture") === "true"
           }

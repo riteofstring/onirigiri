@@ -314,6 +314,7 @@ export function TwoDimensionalPlayground({
         focusAnchor,
       }) => (
         <OnirigiriWorkspace
+          panePictures
           chromeComponents={playgroundRendererChrome}
           ariaLabel="Interactive two-dimensional Onirigiri playground"
           compactBreakpoint={compactBreakpoint}

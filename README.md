@@ -384,6 +384,7 @@ Only `renderPane` is required.
 
 | Prop                       | Default  | Purpose                                                           |
 | -------------------------- | -------- | ----------------------------------------------------------------- |
+| `panePictures`             | `false`  | Let the engine capture pane pictures; without it, it takes none   |
 | `liveContent`              | `false`  | Keep every pane mounted and live through motion and overview      |
 | `panePresentation`         | `"auto"` | Workspace-wide presentation choice                                |
 | `getPanePresentation`      | —        | Per-pane, per-phase presentation choice                           |
