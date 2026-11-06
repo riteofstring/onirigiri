@@ -198,6 +198,7 @@ it("retains a supplied picture in the engine after content eviction and shows it
   await act(async () =>
     root.render(
       <OnirigiriWorkspace
+        panePictures
         initialPanes={Array.from({ length: 16 }, (_, index) => ({
           paneId: `pane-${index}`,
           columnId: `column-${index}`,
@@ -320,6 +321,7 @@ async function captureWorkspace() {
     act(async () =>
       root.render(
         <OnirigiriWorkspace
+          panePictures
           ref={handle}
           initialPanes={panes}
           preloadMarginPanes={0}
@@ -417,6 +419,7 @@ it("temporarily adds only the warming pane beyond the retained content budget be
     act(async () =>
       root.render(
         <OnirigiriWorkspace
+          panePictures
           ref={handle}
           initialPanes={initialPanes}
           retainedAreaBudgetViewports={1}
@@ -475,6 +478,47 @@ function PendingPaneContent({ ready }: { ready: boolean }) {
   return <input defaultValue="Retained content" />;
 }
 
+it("takes no pictures unless the host turns pane pictures on", async () => {
+  const capture = canvasMock.capture.mockImplementation(
+    async (request: { width: number; height: number }) => ({
+      image: png(request.width, request.height),
+      width: request.width,
+      height: request.height,
+    }),
+  );
+  const handle = createRef<OnirigiriWorkspaceHandle>();
+  await act(async () =>
+    root.render(
+      <OnirigiriWorkspace
+        ref={handle}
+        initialPanes={[
+          { paneId: "ordinary", title: "Ordinary", surfaceKind: "custom" },
+        ]}
+        renderPane={() => <article>Consumer-owned content</article>}
+      />,
+    ),
+  );
+  await settle();
+  const content = container.querySelector<HTMLElement>(
+    '[data-onirigiri-slot="pane-live-content"]',
+  )!;
+  vi.spyOn(content, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(40, 60, 200, 100),
+  );
+  Object.defineProperty(document, "elementFromPoint", {
+    configurable: true,
+    value: vi.fn(() => content),
+  });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(500);
+  });
+  expect(capture).not.toHaveBeenCalled();
+  expect(handle.current!.getCaptureStatus().pictures).toEqual([]);
+  expect(content.querySelector("article")?.textContent).toBe(
+    "Consumer-owned content",
+  );
+});
+
 it("captures ordinary consumer content through the engine and recovers from acquisition failure", async () => {
   const capture = canvasMock.capture.mockImplementation(
     async (request: { width: number; height: number }) => ({
@@ -487,6 +531,7 @@ it("captures ordinary consumer content through the engine and recovers from acqu
   const render = (fit: "contain" | "cover") =>
     root.render(
       <OnirigiriWorkspace
+        panePictures
         ref={handle}
         paneDefaults={{ content: { fit, aspectRatio: 16 / 9 } }}
         initialPanes={[
@@ -573,6 +618,7 @@ it("temporarily renders only one cold overview pane through the public option", 
   await act(async () =>
     root.render(
       <OnirigiriWorkspace
+        panePictures
         ref={handle}
         initialPanes={initialPanes}
         retainedAreaBudgetViewports={0}
@@ -658,6 +704,7 @@ it("unmounts temporary neighboring content when its picture capture fails", asyn
     act(async () =>
       root.render(
         <OnirigiriWorkspace
+          panePictures
           ref={handle}
           initialPanes={initialPanes}
           retainedAreaBudgetViewports={budget}

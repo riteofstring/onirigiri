@@ -98,6 +98,7 @@ export function PerformanceFixture() {
       >
         <Profiler id="onirigiri-workspace" onRender={recordReactCommit}>
           <OnirigiriWorkspace
+            panePictures
             ariaLabel={`Onirigiri performance scenario: ${scenario.label}`}
             initialPanes={scenario.panes}
             liveContent={scenario.liveContent}

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { OnirigiriRuntime } from "../workspace/onirigiri-workspace-runtime.js";
 import { PanePictures } from "./pane-pictures.js";
 import { workspaceSnapshotIsMoving } from "../presentation/workspace-frame-scheduler.js";
@@ -6,7 +6,10 @@ import { workspaceSnapshotIsMoving } from "../presentation/workspace-frame-sched
 export function usePanePictures(
   runtime: OnirigiriRuntime,
   workspace: { current: HTMLDivElement | null },
+  enabled: boolean,
 ): PanePictures {
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
   const [pictures] = useState(
     () =>
       new PanePictures(
@@ -17,6 +20,7 @@ export function usePanePictures(
           runtime.worldPresentation.hasActiveMotion(),
         () => runtime.store.getSnapshot().focusedPaneId,
         () => runtime.store.getSnapshot().presentationMode === "overview",
+        () => enabledRef.current,
       ),
   );
   useLayoutEffect(() => {

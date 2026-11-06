@@ -144,6 +144,7 @@ export const OnirigiriWorkspace = forwardRef<
     restPictureFade,
     focusPaneOnPointer = true,
     liveContent,
+    panePictures = false,
     onCaptureStatusChange,
     onPanePresentationChange,
     pictureBudgetBytes,
@@ -198,7 +199,7 @@ export const OnirigiriWorkspace = forwardRef<
   }, [cursorRunway, runtime]);
   useOnirigiriPaneLink(runtime.store, paneLink);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
-  const pictures = usePanePictures(runtime, workspaceRef);
+  const pictures = usePanePictures(runtime, workspaceRef, panePictures);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const worldRef = useRef<HTMLDivElement | null>(null);
   const worldGridRef = useRef<HTMLDivElement | null>(null);

@@ -149,6 +149,9 @@ apply across panes; they do not flatten the whole workspace into one canvas.
 
 ### Retained pictures and asynchronous content
 
+The engine captures pictures only when `panePictures` is set. Without it, it takes
+none of its own and panes stay live DOM.
+
 Graphics canvases and opaque embedded content retain their native presentation
 while mounted. Automatic capture skips content Chromium cannot record faithfully;
 provide `getPanePicture` when those panes need a picture after DOM eviction.

@@ -27,6 +27,7 @@ const renderPane: OnirigiriPaneRenderer = (pane) =>
 function configure(defaults: PaneDefaults) {
   root.render(
     <OnirigiriWorkspace
+      panePictures
       compactBreakpoint={0}
       ref={handle}
       initialPanes={panes}

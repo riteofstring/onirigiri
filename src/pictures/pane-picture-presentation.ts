@@ -292,6 +292,7 @@ export abstract class PanePicturePresentation {
     protected readonly moving: () => boolean,
     protected readonly focused: () => PaneId | null,
     protected readonly overview: () => boolean = () => false,
+    protected readonly captureEnabled: () => boolean = () => true,
   ) {}
 
   get = (paneId: PaneId): CachedPanePicture | null =>
@@ -555,6 +556,8 @@ export abstract class PanePicturePresentation {
   }
 
   protected getDevice(document: Document): Promise<GPUDevice> {
+    if (!this.captureEnabled())
+      return Promise.reject(new Error("Onirigiri pane pictures are off"));
     if (this.captureUnavailable !== null)
       return Promise.reject(new Error(this.captureUnavailable));
     if (!this.device) {
