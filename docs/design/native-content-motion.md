@@ -794,7 +794,14 @@ camera motion remain available without either capability.
 Chrome can record nested accelerated canvases at a different scale from their
 native display ([Chromium tracking issue](https://issues.chromium.org/issues/540532973)).
 The capture surface normalizes recording density using the element image's
-reported width and the source's CSS width. Reciprocal CSS zoom and scale preserve
+reported width and the source's width in canvas pixels. Since Chrome 156 an
+element image is measured in the recording canvas's drawing-buffer pixels: the
+source's CSS width scaled by the canvas's buffer width over its CSS width.
+Every recording canvas therefore takes its final buffer size before it records;
+the worker resizes and presents its canvas before staging, because the page sees
+the new size only after a presented frame. Measuring against CSS pixels instead
+shrank content on high-density displays until it matched the default
+300-by-150 buffer. Reciprocal CSS zoom and scale preserve
 the displayed bounds, while percentage sizing preserves the original content
 dimensions. Chromium rounds font and border metrics at the effective zoom, so
 live and frozen presentation share that zoom to prevent layout shifts.
