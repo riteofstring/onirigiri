@@ -254,6 +254,39 @@ describe("workspace grid geometry", () => {
     ).toBe(300);
   });
 
+  it("sizes slots without panes from the default pane width", () => {
+    const source = createWorkspaceScene({
+      paneDefaults: { width: 300 },
+      panes: [
+        {
+          columnId: "origin",
+          paneId: "top",
+          slotIndex: 0,
+          surfaceKind: "test",
+          title: "Top",
+        },
+      ],
+    });
+    const engine = new WorkspaceLikeLayoutEngine(source.scene);
+    const occupied = engine.gridCellBox(
+      { column: 0, row: 0, split: 0 },
+      desktopViewport,
+    );
+    const left = engine.gridCellBox(
+      { column: -1, row: 0, split: 0 },
+      desktopViewport,
+    );
+    const right = engine.gridCellBox(
+      { column: 2, row: 0, split: 0 },
+      desktopViewport,
+    );
+
+    expect(occupied.width).toBe(300);
+    expect(left).toMatchObject({ kind: "empty", width: 300 });
+    expect(right).toMatchObject({ kind: "empty", width: 300 });
+    expect(right.x - occupied.x).toBeCloseTo(2 * (occupied.x - left.x), 6);
+  });
+
   it("targets distant signed coordinates without camera clamping", () => {
     const { engine } = geometryHarness();
     const positive = engine.gridCameraTarget(
