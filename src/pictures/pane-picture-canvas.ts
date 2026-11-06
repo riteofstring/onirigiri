@@ -513,6 +513,7 @@ export class PaneCanvasSurface {
     signal: AbortSignal,
     onRecorded: () => void,
   ): Promise<Blob> {
+    await background.client.resize(size, signal);
     const restore = this.stageWorker(canvas);
     signal.addEventListener("abort", restore, { once: true });
     let recorded: ElementImage;
@@ -712,9 +713,7 @@ export class PaneCanvasSurface {
   }
 
   private copyTextureFrame(size: { height: number; width: number }): boolean {
-    if (!this.recordElement()) return false;
-    if (this.canvas.width !== size.width) this.canvas.width = size.width;
-    if (this.canvas.height !== size.height) this.canvas.height = size.height;
+    if (!this.recordElement(size)) return false;
     const started = performance.now();
     this.copyImage(this.lastImage!, this.context!.getCurrentTexture(), true);
     this.copyBudget.record(this, performance.now() - started);
@@ -758,16 +757,18 @@ export class PaneCanvasSurface {
     texture: GPUTexture,
     premultipliedAlpha: boolean,
   ): boolean {
-    if (!this.recordElement()) return false;
+    if (!this.recordElement(texture)) return false;
     this.copyImage(this.lastImage!, texture, premultipliedAlpha);
     return true;
   }
 
-  private recordElement(): boolean {
+  private recordElement(size: { height: number; width: number }): boolean {
     if (this.prepareContent()) {
       this.requestPaint();
       return false;
     }
+    if (this.canvas.width !== size.width) this.canvas.width = size.width;
+    if (this.canvas.height !== size.height) this.canvas.height = size.height;
     const changed = !this.hasCurrentFrame() || this.freezePending;
     const image = this.recordImage(this.canvas);
     this.lastImage?.close();
@@ -799,7 +800,8 @@ export class PaneCanvasSurface {
       end: performance.now(),
     });
     performance.clearMeasures("onirigiri.capture.extraction");
-    const width = this.content.offsetWidth;
+    const width =
+      (this.content.offsetWidth * canvas.width) / canvas.offsetWidth;
     if (Math.abs(image.width - width) <= 1) return image;
     this.recordingScale *= image.width / width;
     this.applyRecordingScale(canvas);

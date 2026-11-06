@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type { LaunchOptions } from "@playwright/test";
 
 const onLinux = platform() === "linux";
-const linuxChromeVersion = "154.0.8037.57";
+const linuxChromeVersion = "156.0.8078.80";
 const linuxChromeDirectory = join(
   homedir(),
   ".cache",
@@ -16,7 +16,7 @@ const linuxChromeDirectory = join(
 export const linuxChrome = {
   version: linuxChromeVersion,
   url: `https://storage.googleapis.com/chrome-for-testing-public/${linuxChromeVersion}/linux64/chrome-headless-shell-linux64.zip`,
-  sha256: "5a6979d0ab7cf952ea575d35164e7bdce4872b2ced8f8a215c8f8e8eda00ee09",
+  sha256: "547dcd374e02961bf998f6046a267644f8502225c36bb78ca307dab32a0b3eb4",
   directory: linuxChromeDirectory,
   executable: join(
     linuxChromeDirectory,

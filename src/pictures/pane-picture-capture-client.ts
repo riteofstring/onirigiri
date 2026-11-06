@@ -88,6 +88,21 @@ export class PanePictureCaptureClient {
     return null;
   }
 
+  async resize(
+    size: { width: number; height: number },
+    signal: AbortSignal,
+  ): Promise<void> {
+    signal.throwIfAborted();
+    if (!this.prepared) throw new Error("Pane capture worker is not ready");
+    const worker = this.worker;
+    const reply = await this.request({ type: "resize", ...size }, [], signal);
+    signal.throwIfAborted();
+    if (reply.type === "resized") return;
+    const error = new Error("Pane capture worker returned another request");
+    if (this.worker === worker) this.retire(true, error);
+    throw error;
+  }
+
   async capture(
     id: string,
     image: PaneCaptureImage,

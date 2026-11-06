@@ -154,9 +154,9 @@ describe("PanePictureContent", () => {
     });
     await Promise.resolve();
     const internals = surface as unknown as Record<string, unknown>;
-    vi.spyOn(internals as never, "stageWorker" as never).mockReturnValue(
-      (() => {}) as never,
-    );
+    const stageWorker = vi
+      .spyOn(internals as never, "stageWorker" as never)
+      .mockReturnValue((() => {}) as never);
     vi.spyOn(internals as never, "rasterSize" as never).mockReturnValue({
       width: 100,
       height: 100,
@@ -175,6 +175,7 @@ describe("PanePictureContent", () => {
         canvas: document.createElement("canvas"),
         limit: 1024 * 1024,
       })),
+      resize: vi.fn(async () => {}),
       capture: vi.fn(
         (_id: string, _image: unknown, _size: unknown, signal: AbortSignal) => {
           encodeSignal = signal;
@@ -197,6 +198,13 @@ describe("PanePictureContent", () => {
       background: { id: "recorded", client, required: true },
     });
     await vi.waitFor(() => expect(client.capture).toHaveBeenCalledOnce());
+    expect(client.resize).toHaveBeenCalledWith(
+      { width: 100, height: 100 },
+      expect.any(AbortSignal),
+    );
+    expect(
+      (client.resize as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0],
+    ).toBeLessThan(stageWorker.mock.invocationCallOrder[0]!);
     expect(recorded).toHaveBeenCalledOnce();
     expect(controller.signal.aborted).toBe(true);
     expect(encodeSignal?.aborted).toBe(false);
@@ -310,14 +318,58 @@ describe("PanePictureContent", () => {
     },
   );
 
+  it("records live content at the canvas's drawing size without rescaling it", async () => {
+    const { canvas, content, ...pane } = paneCanvas({
+      getCurrentTexture: () => ({ width: canvas.width, height: canvas.height }),
+    });
+    for (const element of [content, canvas])
+      Object.defineProperties(element, {
+        offsetWidth: { get: () => 520 },
+        offsetHeight: { get: () => 400 },
+      });
+    const recordedWidths: number[] = [];
+    Object.assign(canvas, {
+      requestPaint: vi.fn(),
+      captureElementImage: () => {
+        const width = (520 * canvas.width) / canvas.offsetWidth;
+        recordedWidths.push(width);
+        return { width, close: vi.fn() };
+      },
+    });
+    const copy = vi.fn();
+    const device = {
+      lost: new Promise(() => {}),
+      limits: { maxTextureDimension2D: 8192 },
+      queue: { copyElementImageToTexture: copy },
+    } as unknown as GPUDevice;
+    const drawn = vi.fn();
+    pane.surface(Promise.resolve(device), {
+      canDraw: () => true,
+      renderer: () => "canvas",
+      drawn,
+    });
+    await Promise.resolve();
+    expect(canvas.width).toBe(300);
+    canvas.dispatchEvent(
+      Object.assign(new Event("paint"), { changedElements: [content] }),
+    );
+    expect(drawn).toHaveBeenLastCalledWith(true, "canvas");
+    expect(recordedWidths).toEqual([520]);
+    expect(copy.mock.calls[0]![1]).toMatchObject({ width: 520, height: 400 });
+    expect(["", "1"]).toContain(
+      canvas.style.getPropertyValue("--_onirigiri-capture-scale"),
+    );
+  });
+
   it("withdraws a frozen canvas frame on device loss and shows native content in its place", async () => {
     const { canvas, content, input, flushFrames, ...pane } = paneCanvas({
       getCurrentTexture: () => ({ width: 20, height: 12 }),
     });
-    Object.defineProperties(content, {
-      offsetWidth: { get: () => 20 },
-      offsetHeight: { get: () => 12 },
-    });
+    for (const element of [content, canvas])
+      Object.defineProperties(element, {
+        offsetWidth: { get: () => 20 },
+        offsetHeight: { get: () => 12 },
+      });
     const close = vi.fn();
     Object.assign(canvas, {
       requestPaint: vi.fn(),

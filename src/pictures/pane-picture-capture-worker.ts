@@ -17,6 +17,7 @@ export interface PaneCaptureImage {
 
 export type PaneCaptureRequest =
   | { type: "prepare"; canvas: OffscreenCanvas }
+  | { type: "resize"; width: number; height: number }
   | {
       type: "capture";
       id: string;
@@ -27,6 +28,7 @@ export type PaneCaptureRequest =
 
 export type PaneCaptureReply =
   | { type: "prepared"; limit: number }
+  | { type: "resized" }
   | {
       type: "captured";
       id: string;
@@ -50,6 +52,7 @@ interface CaptureQueue extends GPUQueue {
 interface CaptureSource {
   device: GPUDevice;
   canvas: OffscreenCanvas;
+  context: GPUCanvasContext;
 }
 
 let source: CaptureSource | null = null;
@@ -84,12 +87,36 @@ async function prepare(canvas: OffscreenCanvas): Promise<void> {
     alphaMode: "premultiplied",
     usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
   });
-  source = { device, canvas };
+  source = { device, canvas, context };
   device.addEventListener("uncapturederror", (event) => failed(event.error));
   void device.lost.then((info) => {
     if (info.reason !== "destroyed") failed(new Error(info.message));
   });
   reply({ type: "prepared", limit: device.limits.maxTextureDimension2D });
+}
+
+function resize(
+  request: Extract<PaneCaptureRequest, { type: "resize" }>,
+): void {
+  if (!source) throw new Error("Pane capture worker is not prepared");
+  const { canvas, context, device } = source;
+  canvas.width = request.width;
+  canvas.height = request.height;
+  const encoder = device.createCommandEncoder();
+  encoder
+    .beginRenderPass({
+      colorAttachments: [
+        {
+          view: context.getCurrentTexture().createView(),
+          loadOp: "clear",
+          storeOp: "store",
+          clearValue: [0, 0, 0, 0],
+        },
+      ],
+    })
+    .end();
+  device.queue.submit([encoder.finish()]);
+  reply({ type: "resized" });
 }
 
 async function capture(
@@ -102,9 +129,7 @@ async function capture(
   let encodeMs = 0;
   try {
     if (!source) throw new Error("Pane capture worker is not prepared");
-    const { canvas, device } = source;
-    canvas.width = request.width;
-    canvas.height = request.height;
+    const { device } = source;
     texture = device.createTexture({
       size: [request.width, request.height],
       format: "rgba8unorm",
@@ -147,7 +172,9 @@ async function capture(
 }
 
 self.onmessage = ({ data }: MessageEvent<PaneCaptureRequest>): void => {
-  void (data.type === "prepare" ? prepare(data.canvas) : capture(data)).catch(
-    failed,
-  );
+  void (async () => {
+    if (data.type === "prepare") await prepare(data.canvas);
+    else if (data.type === "resize") resize(data);
+    else await capture(data);
+  })().catch(failed);
 };
