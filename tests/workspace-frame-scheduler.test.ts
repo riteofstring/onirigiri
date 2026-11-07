@@ -233,6 +233,33 @@ describe("WorkspaceFrameScheduler", () => {
     harness.scheduler.teardown();
   });
 
+  it("places the focus outline without gliding when a restore moves the cursor while the camera is still", () => {
+    const cursorPresentation = new WorkspaceGridCursorPresentation();
+    const cursorHost = document.createElement("div");
+    cursorPresentation.bindCursorHost(cursorHost);
+    const harness = createSchedulerHarness(undefined, cursorPresentation);
+    harness.scheduler.start();
+    harness.frameHost.flushAll();
+    const before = cursorHost.style.transform;
+    const cursor = harness.store.getSnapshot().cursor;
+
+    harness.store.restoreLayout(
+      serializeWorkspaceLayout(harness.store.toScene(), {
+        ...cursor,
+        column: cursor.column + 1,
+      }),
+      { keepPresentation: true },
+    );
+    harness.frameHost.flushFrames(1);
+
+    expect(cursorPresentation.hasActiveMotion()).toBe(false);
+    const placed = cursorHost.style.transform;
+    expect(placed).not.toBe(before);
+    harness.frameHost.flushAll();
+    expect(cursorHost.style.transform).toBe(placed);
+    harness.scheduler.teardown();
+  });
+
   it("keeps stationary panes interactive while their focus outline animates", () => {
     const cursorPresentation = new WorkspaceGridCursorPresentation();
     const cursorHost = document.createElement("div");
