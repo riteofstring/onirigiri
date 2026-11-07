@@ -642,6 +642,15 @@ export class WorkspaceFrameScheduler {
       this.settleCursorFrame(snapshot);
       return;
     }
+    if (
+      snapshot.layoutChangeKind === "restore" &&
+      snapshot.layoutRevision !== previous.layoutRevision &&
+      !workspaceSnapshotIsMoving(snapshot)
+    ) {
+      this.options.cursorPresentation?.snapMotion();
+      this.cursorMotionInitialFramePending = false;
+      return;
+    }
     this.holdOverviewCameraInitialFrame(
       snapshot,
       this.startCursorMotion(snapshot),
