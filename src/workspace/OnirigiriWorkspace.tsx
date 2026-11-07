@@ -433,8 +433,8 @@ export const OnirigiriWorkspace = forwardRef<
   });
 
   useEffect(() => {
-    runtime.store.setFocusAnchor(focusAnchor, viewport);
-  }, [focusAnchor, runtime, viewport]);
+    runtime.store.setFocusAnchor(focusAnchor, viewportRef.current);
+  }, [focusAnchor, runtime]);
 
   useEffect(() => {
     layoutChangeHandlerRef.current?.(

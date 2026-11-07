@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, createRef } from "react";
+import { act, createRef, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -856,6 +856,39 @@ describe("React pane defaults", () => {
         fit: "cover",
         aspectRatio: 16 / 9,
       });
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  });
+
+  it("keeps the focused pane centred when the host changes pane defaults right after mounting", async () => {
+    stubOnirigiriWorkspaceBrowserGlobals();
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const handle = createRef<OnirigiriWorkspaceHandle>();
+    function Host() {
+      const [width, setWidth] = useState(500);
+      useEffect(() => setWidth(700), []);
+      return (
+        <OnirigiriWorkspace
+          ref={handle}
+          initialPanes={[video]}
+          paneDefaults={{ width }}
+          renderPane={() => null}
+        />
+      );
+    }
+    try {
+      await act(async () => root.render(<Host />));
+      const snapshot = handle.current!.getSnapshot();
+      const pane = box(new OnirigiriLayoutEngine(handle.current!.getScene()));
+      expect(pane.width).toBe(700);
+      expect(snapshot.horizontalAnchorOffset).toBeCloseTo(snapshot.targetHorizontalAnchorOffset);
+      expect(
+        pane.x + pane.width / 2 - snapshot.horizontalAnchorOffset - viewport.width / 2,
+      ).toBeCloseTo(0);
     } finally {
       await act(async () => root.unmount());
       container.remove();
