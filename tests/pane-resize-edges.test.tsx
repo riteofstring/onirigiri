@@ -138,18 +138,13 @@ describe("resize edge layout", () => {
     "restores the %s vertical anchor without disturbing a horizontal resize",
     (anchor) => {
       const { screenBox, store } = layoutStore(anchor);
-      const before = screenBox();
       store.resizePaneColumn("right", { unit: "px", value: 520 }, "end");
       const horizontal = store.getSnapshot().horizontalAnchorOffset;
       store.resizePaneRow("right", 300, "end");
       store.reanchorResizedRow("right");
       const box = screenBox();
       expect(box.height).toBe(300);
-      if (anchor === "center") {
-        expect(box.y + box.height / 2).toBeCloseTo(viewport.height / 2);
-      } else {
-        expect(box.y).toBeCloseTo(before.y);
-      }
+      expect(box.y + box.height / 2).toBeCloseTo(viewport.height / 2);
       const after = store.getSnapshot();
       expect(after.horizontalAnchorOffset).toBe(horizontal);
       expect(after.targetHorizontalAnchorOffset).toBe(horizontal);
