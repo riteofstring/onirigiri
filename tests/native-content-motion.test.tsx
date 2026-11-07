@@ -154,10 +154,13 @@ vi.mock("../src/pictures/pane-picture-canvas", () => ({
     constructor(
       _canvas: HTMLCanvasElement,
       _content: HTMLElement,
-      _device: unknown,
+      device: Promise<GPUDevice>,
       private callbacks: { canDraw(): boolean; drawn(value: boolean): void },
     ) {
-      queueMicrotask(() => this.requestPaint());
+      void device.then(
+        () => this.requestPaint(),
+        () => this.requestPaint(),
+      );
     }
     requestPaint() {
       queueMicrotask(() => {

@@ -73,10 +73,13 @@ vi.mock("../src/pictures/pane-picture-canvas", () => ({
     constructor(
       _canvas: HTMLCanvasElement,
       private content: HTMLElement,
-      _device: unknown,
+      device: Promise<GPUDevice>,
       private callbacks: { canDraw(): boolean; drawn(ready: boolean): void },
     ) {
-      queueMicrotask(() => this.requestPaint());
+      void device.then(
+        () => this.requestPaint(),
+        () => this.requestPaint(),
+      );
       Object.defineProperties(content, {
         offsetWidth: {
           configurable: true,
