@@ -630,11 +630,9 @@ export class WorkspaceLikeLayoutEngine
           scrollOffsetForGridColumn(scrollColumn, columnGeometry)
         : 0;
     const verticalAnchorOffset =
-      focusAnchor === "center"
-        ? box.y + box.height / 2 - viewport.height / 2
-        : this.compactLayout
-          ? box.y - this.renderScene().padding
-          : 0;
+      focusAnchor === "start" && this.compactLayout
+        ? box.y - this.renderScene().padding
+        : box.y + box.height / 2 - viewport.height / 2;
     return {
       horizontalAnchorOffset,
       scrollColumn,
