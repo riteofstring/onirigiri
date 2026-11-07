@@ -227,6 +227,7 @@
           "src/state/layout-store-animation.ts",
           "src/state/layout-store.ts",
           "src/state/layout-store-camera.ts",
+          "src/state/layout-store-pane-opening.ts",
           "src/state/layout-store-state.ts",
           "src/state/layout-store-restoration.ts",
           "src/state/layout-store-types.ts",

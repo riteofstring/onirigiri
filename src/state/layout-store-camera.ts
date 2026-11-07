@@ -469,8 +469,6 @@ export abstract class WorkspaceLayoutCamera {
       targetScrollRow: this.getSnapshot().scrollRow,
       targetVerticalAnchorOffset: this.getSnapshot().verticalAnchorOffset,
     });
-    this.overviewCamera.targetOverviewProgress =
-      this.overviewCamera.overviewProgress;
   }
 
   protected exitOverviewToFocusedPane(): void {

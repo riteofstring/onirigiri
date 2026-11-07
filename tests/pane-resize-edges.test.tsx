@@ -452,6 +452,84 @@ describe("resize edge handles", () => {
     });
   });
 
+  it.each([
+    { paneId: "side", edge: "right", otherPaneId: "upper", end: "pointerup" },
+    {
+      paneId: "side",
+      edge: "bottom",
+      otherPaneId: "upper",
+      end: "pointercancel",
+    },
+    {
+      paneId: "upper",
+      edge: "bottom",
+      otherPaneId: "side",
+      end: "lostpointercapture",
+    },
+    { paneId: "side", edge: "right", otherPaneId: "upper", end: "blur" },
+  ])(
+    "keeps the $paneId $edge drag with its owning pointer until $end",
+    async ({ paneId, edge, otherPaneId, end }) => {
+      const changes: OnirigiriLayoutChangeMetadata[] = [];
+      const workspace = await mount({
+        onLayoutChange: (_layout, metadata) => changes.push(metadata),
+      });
+      stubPointerCapture();
+      const owner = handle(paneId, edge);
+      const before = workspace.getLayout().columns;
+      await act(async () => {
+        owner.dispatchEvent(pointerEvent("pointerdown", 1, 500));
+        window.dispatchEvent(pointerEvent("pointermove", 2, 800));
+      });
+      expect(workspace.getLayout().columns).toEqual(before);
+      await act(async () => {
+        window.dispatchEvent(pointerEvent("pointerup", 2, 800));
+        window.dispatchEvent(pointerEvent("pointercancel", 2, 800));
+        owner.dispatchEvent(pointerEvent("lostpointercapture", 2, 800));
+        handle(otherPaneId, "right").dispatchEvent(
+          pointerEvent("pointerdown", 2, 500),
+        );
+        window.dispatchEvent(pointerEvent("pointermove", 2, 800));
+      });
+      expect(workspace.getLayout().columns).toEqual(before);
+
+      const changesBefore = changes.length;
+      for (const position of [520, 540]) {
+        await act(async () => {
+          window.dispatchEvent(pointerEvent("pointermove", 1, position));
+        });
+      }
+      expect(workspace.getLayout().columns).not.toEqual(before);
+      const mutationIds = changes
+        .slice(changesBefore)
+        .filter((change) => change.kind === "user")
+        .map((change) => change.mutationId);
+      expect(mutationIds.length).toBeGreaterThan(0);
+      expect(new Set(mutationIds).size).toBe(1);
+      await act(async () => {
+        if (end === "blur") window.dispatchEvent(new Event("blur"));
+        else
+          (end === "lostpointercapture" ? owner : window).dispatchEvent(
+            pointerEvent(end, 1, 540),
+          );
+        owner.dispatchEvent(pointerEvent("lostpointercapture", 1, 540));
+      });
+      const finished = workspace.getLayout().columns;
+      await act(async () => {
+        window.dispatchEvent(pointerEvent("pointermove", 1, 700));
+      });
+      expect(workspace.getLayout().columns).toEqual(finished);
+
+      await act(async () => {
+        handle(paneId, edge).dispatchEvent(pointerEvent("pointerdown", 2, 500));
+        window.dispatchEvent(pointerEvent("pointermove", 2, 520));
+        window.dispatchEvent(pointerEvent("pointerup", 2, 520));
+      });
+      expect(workspace.getLayout().columns).not.toEqual(finished);
+      expect(changes.at(-1)?.mutationId).not.toBe(mutationIds[0]);
+    },
+  );
+
   it.each(["left", "right", "top", "bottom"] as const)(
     "finishes selected-pane %s resizing without a camera flight",
     async (edge) => {
@@ -648,6 +726,20 @@ const pointerCaptureMethods = [
   "releasePointerCapture",
   "setPointerCapture",
 ] as const;
+
+function pointerEvent(
+  type: string,
+  pointerId: number,
+  position: number,
+): MouseEvent {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    clientX: position,
+    clientY: position,
+  });
+  Object.defineProperty(event, "pointerId", { value: pointerId });
+  return event;
+}
 
 function stubPointerCapture(): void {
   for (const method of pointerCaptureMethods) {

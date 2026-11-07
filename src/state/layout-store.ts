@@ -410,7 +410,9 @@ export class WorkspaceLayoutStore extends WorkspaceLayoutCamera {
       throw new Error(`unknown workspace pane ${paneId}`);
     }
     if (this.engine.paneCount() <= 1) {
-      this.configurePane(paneId, emptyFramePaneRequest());
+      this.paneOpening.configure(paneId, emptyFramePaneRequest());
+      this.setCursorForPane(paneId);
+      this.notify();
       return paneId;
     }
     const closedPaneId = this.closePane(paneId);
@@ -581,7 +583,9 @@ export class WorkspaceLayoutStore extends WorkspaceLayoutCamera {
   }
 
   configurePane(paneId: PaneId, request: OpenPaneRequest): PaneId {
-    return this.paneOpening.configure(paneId, request);
+    const configuredPaneId = this.paneOpening.configure(paneId, request);
+    this.notify();
+    return configuredPaneId;
   }
 
   splitFocusedPane(direction: "up" | "down" | "left" | "right"): PaneId | null {

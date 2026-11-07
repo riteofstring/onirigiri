@@ -19,6 +19,13 @@ Neither frame interpolation nor those camera adjustments emit command events.
 The frame scheduler owns presentation boundaries, so React does not rerender the
 pane tree on each interpolated frame.
 
+Configuring an existing pane replaces its surface and publishes a layout change
+without selecting it or retargeting the camera. Hosts use this operation for
+asynchronous content updates while another pane or an empty cell is selected.
+Opening and explicit focus remain navigation commands. Clearing the sole pane
+explicitly selects the emptied frame after configuration, then publishes one
+complete command with the updated surface and camera destination.
+
 Focused-pane frame notifications carry the presentation's motion state even when
 the final geometry is unchanged, so hosts can wait for actual settlement instead
 of guessing the camera's duration; they never schedule or pause consumer content.
@@ -48,6 +55,12 @@ camera joins an existing outline move, they share any owed starting frame.
 Pane rearrangements retain their shared initial frame so their geometry, world
 and outline start together. Normal navigation and independently timed normal-view
 outlines retain their existing timing.
+
+Rearrangement holds camera translation without replacing the requested overview
+zoom endpoint. Entry must still settle at one and exit at zero, including when
+rearrangement interrupts the transition or reduced motion snaps it. An
+intermediate zoom value cannot become a terminal target: the scheduler uses the
+presentation mode's endpoint to decide when content can become live again.
 
 Store-driven navigation resets the overview presenter only when that presenter
 has an active motion to cancel. Resetting an idle presenter would reapply its
@@ -196,6 +209,12 @@ camera position. Overview keeps its own camera. Split and width gestures,
 keyboard split or width changes and their resets retain their adjusted placement.
 Ordinary navigation and explicit focus-anchor changes still choose their normal
 camera destinations.
+
+A pointer resize has one owner per workspace. Another pointer cannot change its
+geometry, consume its termination listeners or join its mutation group; new
+resize starts wait until the owner finishes. Owner release, cancellation, lost
+capture and window blur end that group once and release the session. The next
+drag can then start independently. Different workspaces retain separate owners.
 
 Normal camera coordinates remain logical rows and columns, with local pixel
 anchors for centering and compact alignment. Geometry is projected relative to
