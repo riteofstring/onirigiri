@@ -60,9 +60,7 @@ export class WorkspacePaneOpeningController {
     ) {
       throw paneLimitError(limitState.surfaceKind);
     }
-    const configuredPaneId = this.hooks.engine.configurePane(paneId, request);
-    this.hooks.commitPane(configuredPaneId);
-    return configuredPaneId;
+    return this.hooks.engine.configurePane(paneId, request);
   }
 
   limitState(request: { surfaceKind?: SurfaceKind }): WorkspacePaneLimitState {

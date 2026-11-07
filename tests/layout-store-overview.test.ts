@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { WorkspaceLikeLayoutEngine } from "../src/layout/layout-engine";
+import { workspaceSnapshotIsMoving } from "../src/presentation/workspace-frame-scheduler";
 import { workspaceWorldRenderFrame } from "../src/presentation/workspace-render-items";
 import { WorkspaceLayoutStore } from "../src/state/layout-store";
 import type { WorkspaceLayoutStoreOptions } from "../src/state/layout-store-types";
@@ -27,15 +28,91 @@ function sceneStore(
   return { engine, store };
 }
 
-describe("workspace pane titles", () => {
-  it.each([
-    { presentation: "normal", selection: "pane" },
-    { presentation: "normal", selection: "empty cell" },
-    { presentation: "overview", selection: "pane" },
-    { presentation: "overview", selection: "empty cell" },
-  ] as const)(
-    "renames another pane without moving the $selection in $presentation",
-    ({ presentation, selection }) => {
+describe.each(["normal", "overview"] as const)(
+  "rearrangement during a transition to %s",
+  (presentationMode) => {
+    const operations = [
+      {
+        name: "pane move",
+        run: (store: WorkspaceLayoutStore) => store.moveFocusedPane("right"),
+      },
+      {
+        name: "group move",
+        run: (store: WorkspaceLayoutStore) => {
+          store.selectFocusedPaneGroup();
+          return store.moveSelectedPaneGroup("right");
+        },
+      },
+      {
+        name: "split insertion",
+        run: (store: WorkspaceLayoutStore) =>
+          store.insertFocusedPaneAsSplit("right"),
+      },
+    ];
+
+    describe.each(["animate", "snap"] as const)(
+      "%s settlement",
+      (settlement) => {
+        it.each(operations)("completes the zoom after $name", ({ run }) => {
+          const { store } = sceneStore(
+            {
+              gridAxes: "spatial",
+              panes: [0, 1, 2].map((index) => ({
+                columnId: `column-${index}`,
+                paneId: `pane-${index}`,
+                slotIndex: index,
+                surfaceKind: "test",
+                title: `Pane ${index}`,
+              })),
+            },
+            { height: 800, width: 1280, x: 0, y: 0 },
+            { initialCameraModes: { normal: "follow", overview: "follow" } },
+          );
+          store.snapAnimationsToTarget();
+          if (presentationMode === "normal") {
+            store.toggleOverviewMode();
+            store.snapAnimationsToTarget();
+          }
+          store.toggleOverviewMode();
+          store.advanceFrame(32);
+          expect(store.getSnapshot().overviewProgress).toBeGreaterThan(0);
+          expect(store.getSnapshot().overviewProgress).toBeLessThan(1);
+
+          expect(run(store)).toBe(true);
+          if (settlement === "snap") store.snapAnimationsToTarget();
+          else
+            for (let frame = 0; frame < 300; frame += 1) store.advanceFrame(16);
+
+          expect(store.getSnapshot()).toMatchObject({
+            overviewProgress: presentationMode === "overview" ? 1 : 0,
+            presentationMode,
+          });
+          expect(workspaceSnapshotIsMoving(store.getSnapshot())).toBe(false);
+          store.toggleOverviewMode();
+          store.snapAnimationsToTarget();
+          expect(store.getSnapshot().overviewProgress).toBe(
+            presentationMode === "overview" ? 0 : 1,
+          );
+          expect(workspaceSnapshotIsMoving(store.getSnapshot())).toBe(false);
+        });
+      },
+    );
+  },
+);
+
+describe("workspace pane configuration", () => {
+  it.each(
+    [
+      { presentation: "normal", selection: "pane" },
+      { presentation: "normal", selection: "empty cell" },
+      { presentation: "overview", selection: "pane" },
+      { presentation: "overview", selection: "empty cell" },
+    ].flatMap((state) =>
+      ["rename", "configure"].map((operation) => ({ ...state, operation })),
+    ),
+  )(
+    "$operation another pane without moving the $selection in $presentation",
+    ({ operation, presentation, selection }) => {
       const viewport = { height: 800, width: 1280, x: 0, y: 0 };
       const { engine, store } = sceneStore(
         {
@@ -65,7 +142,26 @@ describe("workspace pane titles", () => {
         });
       const beforeCell = selectedCell();
 
-      expect(store.renamePane("pane-0", "Updated title")).toBe(true);
+      const published = vi.fn();
+      store.subscribe(published);
+      if (operation === "configure") {
+        expect(
+          store.configurePane("pane-0", {
+            surfaceKind: "thread",
+            title: "Updated title",
+          }),
+        ).toBe("pane-0");
+        expect(store.toScene().paneById.get("pane-0")?.surfaceKind).toBe(
+          "thread",
+        );
+      } else {
+        expect(store.renamePane("pane-0", "Updated title")).toBe(true);
+      }
+      expect(published).toHaveBeenCalledTimes(1);
+      expect(published.mock.calls[0]?.[0]).toBe(store.getSnapshot());
+      expect(store.getSnapshot().layoutRevision).toBe(
+        before.layoutRevision + 1,
+      );
 
       expect(store.toScene().paneById.get("pane-0")?.title).toBe(
         "Updated title",
@@ -84,8 +180,34 @@ describe("workspace pane titles", () => {
         targetVerticalAnchorOffset: before.targetVerticalAnchorOffset,
       });
       expect(selectedCell()).toEqual(beforeCell);
+      store.focusPane("pane-0");
+      expect(store.getSnapshot().focusedPaneId).toBe("pane-0");
     },
   );
+
+  it("selects the sole pane when explicitly clearing it from an empty cell", () => {
+    const viewport = { height: 800, width: 1280, x: 0, y: 0 };
+    const { store } = sceneStore(
+      {
+        gridAxes: "spatial",
+        panes: [{ paneId: "only", surfaceKind: "thread", title: "Only" }],
+      },
+      viewport,
+    );
+    store.moveFocus("right", viewport);
+    expect(store.getSnapshot().focusedPaneId).toBe(null);
+    const published = vi.fn();
+    store.subscribe(published);
+
+    expect(store.closePaneOrClearLastPane("only")).toBe("only");
+
+    expect(store.getSnapshot().focusedPaneId).toBe("only");
+    expect(store.toScene().paneById.get("only")?.surfaceKind).toBe(
+      "empty-frame",
+    );
+    expect(published).toHaveBeenCalledTimes(1);
+    expect(published.mock.calls[0]?.[0]).toBe(store.getSnapshot());
+  });
 });
 
 describe("workspace overview pan recovery", () => {

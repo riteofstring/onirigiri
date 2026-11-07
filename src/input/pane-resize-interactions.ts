@@ -27,6 +27,8 @@ interface BeginPaneResizeInput {
   store: WorkspaceLayoutStore;
 }
 
+const activeResizes = new WeakSet<WorkspaceLayoutStore>();
+
 export function beginPaneResize({
   adjacentItem,
   edge,
@@ -39,15 +41,16 @@ export function beginPaneResize({
   event.preventDefault();
   event.stopPropagation();
   const ownerWindow = event.currentTarget.ownerDocument.defaultView;
-  if (!ownerWindow) {
+  if (!ownerWindow || activeResizes.has(store)) {
     return;
   }
   const handle = event.currentTarget;
   const pointerId = event.pointerId;
   handle.setPointerCapture(pointerId);
+  activeResizes.add(store);
   store.beginLayoutMutationGroup();
   const layoutRevision = store.getSnapshot().layoutRevision;
-  const move = paneResizeMoveHandler({
+  const resize = paneResizeMoveHandler({
     adjacentItem,
     edge,
     item,
@@ -57,13 +60,18 @@ export function beginPaneResize({
     startY: event.clientY,
     store,
   });
-  const end = () => {
+  const move = (next: PointerEvent) => {
+    if (next.pointerId === pointerId) resize(next);
+  };
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
     ownerWindow.removeEventListener("pointermove", move);
     ownerWindow.removeEventListener("pointerup", end);
     ownerWindow.removeEventListener("pointercancel", end);
+    ownerWindow.removeEventListener("blur", finish);
     handle.removeEventListener("lostpointercapture", end);
-    if (handle.hasPointerCapture(pointerId))
-      handle.releasePointerCapture(pointerId);
     store.endLayoutMutationGroup();
     if (
       (edge === "top" || edge === "bottom") &&
@@ -72,11 +80,18 @@ export function beginPaneResize({
     ) {
       store.reanchorResizedRow(item.paneId);
     }
+    activeResizes.delete(store);
+    if (handle.hasPointerCapture(pointerId))
+      handle.releasePointerCapture(pointerId);
+  };
+  const end = (next: PointerEvent) => {
+    if (next.pointerId === pointerId) finish();
   };
   ownerWindow.addEventListener("pointermove", move);
-  ownerWindow.addEventListener("pointerup", end, { once: true });
-  ownerWindow.addEventListener("pointercancel", end, { once: true });
-  handle.addEventListener("lostpointercapture", end, { once: true });
+  ownerWindow.addEventListener("pointerup", end);
+  ownerWindow.addEventListener("pointercancel", end);
+  ownerWindow.addEventListener("blur", finish);
+  handle.addEventListener("lostpointercapture", end);
 }
 
 function paneResizeMoveHandler({
