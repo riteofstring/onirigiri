@@ -36,10 +36,10 @@ async function settled(page: Page) {
   await page.waitForTimeout(100);
 }
 
-test("maximize and full sizing fill the viewport despite pane size limits", async ({
+test("maximize retains the height cap while full sizing fills the viewport", async ({
   page,
 }) => {
-  await page.setViewportSize({ height: 1300, width: 1600 });
+  await page.setViewportSize({ height: 2160, width: 3840 });
   await page.goto(
     `${server.origin}/@fs${server.repositoryRoot}tests/browser/pane-defaults.html`,
   );
@@ -67,7 +67,10 @@ test("maximize and full sizing fill the viewport despite pane size limits", asyn
   await frame.getByRole("button", { name: "Maximize pane" }).click();
   await expect(frame).toHaveAttribute("data-maximized", "true");
   await settled(page);
-  expect((await paneAndStage(page, "frame")).pane).toEqual(filled);
+  expect((await paneAndStage(page, "frame")).pane).toEqual({
+    ...filled,
+    height: 900,
+  });
 
   await frame.getByRole("button", { name: "Restore pane" }).click();
   await expect(frame).toHaveAttribute("data-maximized", "false");
