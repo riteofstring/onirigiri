@@ -25,12 +25,15 @@ less workspace padding, rather than the physical display or browser chrome.
 Viewport bounds win over oversized minimums, even on unusually small workspaces.
 Stored desired sizes survive viewport shrinkage and can grow back when space
 returns. The existing explicit viewport-overflow option can permit wider panes.
-A maximized pane and `resizePanes("full")` fill the available viewport: per-pane
-minimums and maximums shape panes within the tiled layout, not these explicit
-viewport-filling commands. Restoring a maximized pane returns it to its bounded
-size. Full sizing suspends per-pane bounds until another sizing mode, including
-the default reset, is chosen; like maximization, that state is not part of the
-serialized layout, so a restored layout is bounded again.
+A maximized pane fills the available width and grows toward the available height
+while respecting its resolved `maxHeight`. Maximization still bypasses width
+bounds and minimum height. Restoring the pane returns to its prior bounded size.
+The separate `resizePanes("full")` mode fills both viewport dimensions and
+suspends per-pane bounds until another sizing mode, including the default reset,
+is chosen. Like maximization, full sizing is not part of the serialized layout,
+so a restored layout is bounded again. A host's fullscreen presentation can omit
+its workspace height cap while fullscreen is applied and restore it afterward;
+the host retains the saved preference independently of effective pane defaults.
 
 Columns in a grid slot share width. The largest preferred width reserves the
 slot, constrained by its panes' shared minimum/maximum interval; the strictest
@@ -72,10 +75,10 @@ dimensions. Viewport clamping and manual resizing keep that content centered and
 complete. Explicit navigation fixtures retain their own initial dimensions.
 
 Engine tests cover precedence, creation and restoration, small and large
-viewports, configured bounds, viewport-filling maximize and full sizing,
+viewports, configured bounds, height-capped maximize and full sizing,
 resize/reset behavior, and grid/overview agreement. A headless CPU browser check
-in `cpu-capability-browser` maximizes and fully sizes a bounded pane and compares
-it with the stage.
+in `cpu-capability-browser` verifies that a maximized pane retains its height cap
+at 4K while full sizing fills the stage.
 Headless engine split resizing accepts the current viewport so preferred heights
 and type bounds can be resolved; the layout store supplies it automatically.
 Browser checks cover 1D row height, real media and iframe fitting, changed fit

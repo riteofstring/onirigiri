@@ -660,7 +660,9 @@ export function paneHeightsForColumn(
     constrainPaneDimension(
       height,
       limited(index) ? defaults[index]?.minHeight : undefined,
-      limited(index) ? defaults[index]?.maxHeight : undefined,
+      sizing?.configuration.fullPaneSizing
+        ? undefined
+        : defaults[index]?.maxHeight,
       availableHeight,
       minimumPaneRenderHeightPx,
     );

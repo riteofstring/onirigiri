@@ -80,6 +80,11 @@ Titles and serialized layouts still publish immediately. Each command compares
 its destination with the active motion's endpoint, so a rename cannot conceal
 a resize before the next animation frame.
 
+Single-pane maximization retains the resolved maximum height while expanding
+width. Host fullscreen presentation omits its workspace height cap only while
+fullscreen is applied; exit reinstates it at the same boundary as ordinary
+geometry. The saved preference and explicit pane sizes survive both commands.
+
 Moving the focus outline alone does not mark stationary panes as moving. Content
 stays live and accepts the original pointer gesture when focus changes without
 revealing a new camera position. The scheduler continues the outline's timeline

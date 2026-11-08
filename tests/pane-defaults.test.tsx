@@ -211,31 +211,46 @@ describe("pane type defaults", () => {
     expect(box(engine)).toMatchObject({ width: 640, height: 320 });
   });
 
-  it("lets a maximized pane fill the viewport despite pane size limits and restores the limits", () => {
-    const tall = { ...viewport, width: 1600, height: 1300 };
-    const limits = { maxHeight: 900, maxWidth: 1000, minWidth: 300 };
-    const { engine, store } = workspace({
-      paneDefaults: limits,
-      panes: [
-        { ...video, columnId: "stack" },
-        { ...video, paneId: "lower", columnId: "stack" },
-        { ...video, paneId: "side" },
-      ],
-    });
-    const maximized = () =>
-      engine
-        .paneWorldBoxes(tall, store.getSnapshot().maximizedPaneId)
-        .find((pane) => pane.paneId === "video");
-    const limited = maximized();
-    expect(limited!.width).toBeLessThanOrEqual(1000);
-    expect(limited!.height).toBeLessThanOrEqual(900);
+  it.each([
+    { width: 1600, height: 1300, maxHeight: 900 },
+    { width: 3840, height: 2160, maxHeight: 1200 },
+    { width: 3840, height: 2160, maxHeight: 880 },
+    { width: 3840, height: 2160, maxHeight: undefined },
+  ])(
+    "retains the height cap when maximizing at $width × $height with cap $maxHeight",
+    ({ width, height, maxHeight }) => {
+      const tall = { ...viewport, width, height };
+      const limits = {
+        ...(maxHeight === undefined ? {} : { maxHeight }),
+        maxWidth: 1000,
+        minWidth: 300,
+      };
+      const { engine, store } = workspace({
+        paneDefaults: limits,
+        panes: [
+          { ...video, columnId: "stack" },
+          { ...video, paneId: "lower", columnId: "stack" },
+          { ...video, paneId: "side" },
+        ],
+      });
+      const maximized = () =>
+        engine
+          .paneWorldBoxes(tall, store.getSnapshot().maximizedPaneId)
+          .find((pane) => pane.paneId === "video");
+      const limited = maximized();
+      expect(limited!.width).toBeLessThanOrEqual(1000);
+      expect(limited!.height).toBeLessThanOrEqual(maxHeight ?? height - 20);
 
-    store.togglePaneMaximized("video");
-    expect(maximized()).toMatchObject({ width: 1580, height: 1280 });
+      store.togglePaneMaximized("video");
+      expect(maximized()).toMatchObject({
+        width: width - 20,
+        height: Math.min(maxHeight ?? height, height - 20),
+      });
 
-    store.togglePaneMaximized("video");
-    expect(maximized()).toEqual(limited);
-  });
+      store.togglePaneMaximized("video");
+      expect(maximized()).toEqual(limited);
+    },
+  );
 
   it("fills the viewport for full sizing despite pane size limits until another sizing mode", () => {
     const tall = { ...viewport, width: 1600, height: 1100 };
@@ -262,6 +277,13 @@ describe("pane type defaults", () => {
       width: 1580,
       height: 1080,
     });
+    store.togglePaneMaximized("video");
+    expect(
+      engine
+        .paneWorldBoxes(tall, store.getSnapshot().maximizedPaneId)
+        .find((pane) => pane.paneId === "video"),
+    ).toMatchObject({ width: 1580, height: 1080 });
+    store.togglePaneMaximized("video");
 
     resize("minimum");
     expect(box(engine, tall).height).toBe(400);
@@ -885,9 +907,14 @@ describe("React pane defaults", () => {
       const snapshot = handle.current!.getSnapshot();
       const pane = box(new OnirigiriLayoutEngine(handle.current!.getScene()));
       expect(pane.width).toBe(700);
-      expect(snapshot.horizontalAnchorOffset).toBeCloseTo(snapshot.targetHorizontalAnchorOffset);
+      expect(snapshot.horizontalAnchorOffset).toBeCloseTo(
+        snapshot.targetHorizontalAnchorOffset,
+      );
       expect(
-        pane.x + pane.width / 2 - snapshot.horizontalAnchorOffset - viewport.width / 2,
+        pane.x +
+          pane.width / 2 -
+          snapshot.horizontalAnchorOffset -
+          viewport.width / 2,
       ).toBeCloseTo(0);
     } finally {
       await act(async () => root.unmount());

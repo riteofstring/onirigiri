@@ -35,8 +35,10 @@ Width and height accept CSS pixels, `"viewport"`, or `"auto"` to clear an inheri
 size. `aspectRatio` derives a missing dimension; two explicit dimensions take precedence.
 Viewport-height panes share the available row height when stacked. Users can resize preferred
 sizes; `minWidth`, `maxWidth`, `minHeight` and `maxHeight` continue to constrain them. A maximized
-pane and `resizePanes("full")` fill the viewport regardless of those bounds; restoring the pane or
-choosing another sizing mode applies them again.
+pane fills the available width and grows toward the available height, respecting `maxHeight`.
+It bypasses width bounds and minimum height; restoring it recovers its previous bounded size.
+`resizePanes("full")` fills both viewport dimensions regardless of those bounds until another
+sizing mode is chosen.
 
 By default, even an oversized minimum is clamped to the available workspace viewport. A requested
 4K pane fits a small browser and grows back when room returns. Aligned grid columns share width;
