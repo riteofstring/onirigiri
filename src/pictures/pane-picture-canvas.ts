@@ -164,13 +164,7 @@ export class PaneCanvasSurface {
     let primeNative = false;
     this.source = new PanePictureContent(canvas, content, {
       canPresent: () => {
-        if (
-          this.disposed ||
-          this.resizing ||
-          this.captureAbort ||
-          !this.nativeRequested()
-        )
-          return false;
+        if (this.presentationBlocked() || !this.nativeRequested()) return false;
         if (!this.hasCurrentFrame()) return true;
         if (!this.initialized) return false;
         primeNative = this.canPrimeNative();
@@ -255,6 +249,10 @@ export class PaneCanvasSurface {
       this.source.present();
   }
 
+  private presentationBlocked(): boolean {
+    return this.disposed || this.resizing || this.captureAbort !== null;
+  }
+
   private canPrimeNative(): boolean {
     return !this.callbacks.continuous() && this.callbacks.canPrime();
   }
@@ -288,10 +286,7 @@ export class PaneCanvasSurface {
     return this.source.capabilities.hasVideo();
   }
 
-  private requestCanvasPresentation(
-    native: boolean,
-    primeNative: boolean,
-  ): void {
+  private requestCanvasPresentation(native: boolean, primeNative: boolean) {
     if (this.source.isNative()) {
       if (this.live && !this.captureAbort && native) return;
       this.freezePending = this.source.freeze() || this.freezePending;
@@ -482,11 +477,7 @@ export class PaneCanvasSurface {
       return { image, ...size };
     } finally {
       request.signal.removeEventListener("abort", abort);
-      if (request.stage) {
-        this.lastImage?.close();
-        this.lastImage = null;
-        this.imageSize = null;
-      }
+      if (request.stage) this.releaseStagedImage();
       if (this.captureAbort === controller) this.captureAbort = null;
       this.requestPaint();
     }
@@ -563,6 +554,12 @@ export class PaneCanvasSurface {
 
   private needsCaptureDisplay(stage: boolean): boolean {
     return this.live && !stage && !this.hasCurrentFrame();
+  }
+
+  private releaseStagedImage(): void {
+    this.lastImage?.close();
+    this.lastImage = null;
+    this.imageSize = null;
   }
 
   private assertCapturable(): void {
@@ -725,26 +722,26 @@ export class PaneCanvasSurface {
     return true;
   }
 
-  private usesNativePresentation(
-    native?: boolean,
-    primeNative?: boolean,
-  ): boolean {
+  private usesNativePresentation(native: boolean, primeNative: boolean) {
     return (
       !this.captureAbort &&
-      (native ?? this.nativeRequested()) &&
+      native &&
       (this.live ||
         this.callbacks.continuous() ||
         this.source.isNative() ||
         !this.canCapture() ||
         !this.hasCurrentFrame() ||
-        (primeNative ?? this.canPrimeNative()))
+        primeNative)
     );
   }
 
   private paintAllowed(): boolean {
     return Boolean(
       this.context &&
-      !this.usesNativePresentation() &&
+      !this.usesNativePresentation(
+        this.nativeRequested(),
+        this.canPrimeNative(),
+      ) &&
       !this.source.isNative() &&
       !this.captureAbort &&
       ((this.freezePending && this.callbacks.visible()) ||

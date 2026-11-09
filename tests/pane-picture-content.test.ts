@@ -164,13 +164,10 @@ describe("PanePictureContent", () => {
       width: 100,
       height: 100,
     } as never);
-    vi.spyOn(internals, "settleStage").mockResolvedValue(
-      undefined as never,
-    );
-    vi.spyOn(
-      internals,
-      "recordWorkerImage",
-    ).mockResolvedValue({ close: () => {} } as never);
+    vi.spyOn(internals, "settleStage").mockResolvedValue(undefined as never);
+    vi.spyOn(internals, "recordWorkerImage").mockResolvedValue({
+      close: () => {},
+    } as never);
     let encode!: (image: Blob) => void;
     let encodeSignal: AbortSignal | undefined;
     const client = {
