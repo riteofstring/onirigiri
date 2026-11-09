@@ -8,6 +8,11 @@ architecture enforcement, pnpm lock validation, dependency licensing, and vulner
 `.code-polishy.json` contains only Onirigiri-specific architecture, build, test, package-contract,
 and supply-chain facts.
 
+`pnpm-workspace.yaml` sets only options that pnpm 10.23.0 reads: `minimumReleaseAge`
+and `trustPolicy: no-downgrade`. The stricter release-age, lockfile-trust and exotic
+sub-dependency options are not set because this pnpm version ignores them; the release
+age, source and lock checks in `./code-polishyw supply-chain` enforce those boundaries.
+
 Install target dependencies without lifecycle scripts before running policy checks:
 
 ```sh
@@ -57,7 +62,7 @@ in a separate test project; neither compiler is added to the runtime package.
 The existing jsdom dependency now resolves the aged security release
 `undici@7.29.1`, published September 4, 2026, within jsdom's existing range.
 This removes the September WebSocket, interceptor and BalancedPool advisories
-without changing jsdom or introducing an override. Three later October Undici
+without changing jsdom or introducing an override. Eight later October Undici
 advisories still require the exact assessments in
 [dependency-assessments.md](security/dependency-assessments.md); the September
 fix does not cover them.

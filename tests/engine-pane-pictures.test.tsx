@@ -555,6 +555,7 @@ it("shows no supplied pictures unless the host turns pane pictures on", async ()
     container.querySelector('[data-onirigiri-slot="pane-picture"]'),
   ).toBeNull();
   expect(handle.current!.getCaptureStatus().pictures).toEqual([]);
+  expect(getPanePicture).not.toHaveBeenCalled();
 });
 
 it("captures ordinary consumer content through the engine and recovers from acquisition failure", async () => {

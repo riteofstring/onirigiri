@@ -168,14 +168,15 @@ describe("pane type defaults", () => {
   });
 
   it.each([
-    { cap: 500, expected: 500 },
-    { cap: undefined, expected: 880 },
+    { height: "viewport" as const, cap: 500, expected: 500 },
+    { height: "viewport" as const, cap: undefined, expected: 880 },
+    { height: undefined, cap: 500, expected: 500 },
   ])(
-    "sizes an empty row like a viewport-height pane with cap $cap",
-    ({ cap, expected }) => {
+    "sizes an empty row like a default pane with height $height and cap $cap",
+    ({ height, cap, expected }) => {
       const { engine } = workspace({
         paneDefaults: {
-          height: "viewport",
+          ...(height === undefined ? {} : { height }),
           ...(cap === undefined ? {} : { maxHeight: cap }),
         },
       });

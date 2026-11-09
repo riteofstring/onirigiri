@@ -227,8 +227,8 @@ alongside its PNG to supply both after a reload. Those bounds belong to the
 accepted capture, so no later DOM measurement is needed.
 To capture on demand, call `captureOnirigiriPanePicture(element, signal, recorded?)`
 with an element inside a mounted pane. It resolves to `{ image, cssSize }`, or
-`null` when the pane has no capture surface, another capture is running, or the
-pane changes size first. For an offscreen pane, `recorded` runs once its pixels
+`null` when pictures are off or unsupported, the pane has no capture surface,
+another capture is running, or the pane changes size first. For an offscreen pane, `recorded` runs once its pixels
 are recorded, before encoding.
 Developers can set both retention budgets:
 

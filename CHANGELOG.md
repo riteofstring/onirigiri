@@ -7,7 +7,8 @@
 - `focusPaneOnPointer` (default `true`) can stop a pointer press from focusing
   its pane, for hosts that focus panes themselves.
 - `captureOnirigiriPanePicture(element, signal, recorded?)` captures a PNG of a mounted
-  pane's content for host-managed persistence, or returns `null` when it cannot.
+  pane's content for host-managed persistence, or returns `null` when it cannot,
+  including when `panePictures` is off.
 - Pane render state includes `settledVisible`: whether the pane is visible where
   the current navigation will come to rest.
 

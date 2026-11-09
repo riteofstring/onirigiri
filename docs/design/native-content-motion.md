@@ -1,8 +1,8 @@
 # Pane content and retained pictures
 
-Pictures are opt-in. Without `panePictures`, the pictures owner never acquires a
-WebGPU device: every capture surface becomes native-only, supplied pictures are
-not shown, and panes stay live DOM. Hosts that do not need pictures therefore
+Pictures are opt-in. Without `panePictures`, the pictures scheduler does not run
+and the pictures owner never acquires a WebGPU device: every capture surface
+becomes native-only, `getPanePicture` is not called, and panes stay live DOM. Hosts that do not need pictures therefore
 pay no GPU, capture or retention cost. The setting is read through the pictures
 owner when a surface acquires its device, so it is a mount-time choice; a later
 change does not reconcile surfaces or pictures that already exist.

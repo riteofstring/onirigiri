@@ -4,8 +4,8 @@ Each assessment applies only to its exact package version, advisory and lockfile
 scope in `.code-polishy.json`. Owners, review dates and expiry dates are recorded
 per decision. Scanner findings remain visible. No fresh-release admission is used.
 
-The source-map-js decision below was reviewed by Codex on 2026-10-10 and expires
-on 2026-10-31.
+The source-map-js decision below was re-reviewed by Claude on 2026-11-03 and
+expires on 2026-12-03.
 
 ## Dependency and input boundaries
 
@@ -36,7 +36,7 @@ Retain the aged, unaffected version for this release. Reassess immediately if a
 build adds a source-map consumer or the resolved version changes. This decision
 does not cover consumer applications that independently use the vulnerable APIs.
 
-Complete the next intentional dependency update by 2026-10-31: resolve
+Complete the next intentional dependency update by 2026-12-03: resolve
 source-map-js to at least 1.2.2, remove the assessment that no longer matches, review
 the complete candidate dependency graph, install frozen without scripts, and
 verify the test/build consumers. Registry metadata records source-map-js 1.2.2
