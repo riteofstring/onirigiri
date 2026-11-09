@@ -24,6 +24,28 @@
 - An empty row takes the height a default pane would get, so its grid cursor
   matches capped rows.
 - Default titlebars of panes outside the viewport are hidden.
+- Covered visible panes all return to live content on the first stationary
+  frame after navigation, instead of one per frame.
+- `focusAnchor="start"` aligns only the left edge; the focused row stays
+  vertically centred.
+- `configurePane` updates an existing pane without selecting it or moving the
+  camera. Opening and focusing panes still navigate.
+- A new pane in a row whose height was resized takes that row's height, and an
+  empty column slot takes the default pane width.
+- A pointer resize has one owner per workspace; other pointers wait until it
+  ends.
+
+### Fixed
+
+- Element images are recorded at the canvas's drawing size, so Chrome 156
+  pictures are no longer misscaled.
+- A pane whose canvas has no frame to show presents its content directly.
+- A capture that is aborted after recording still finishes encoding.
+- Overview entry and exit settle at their endpoints when rearrangement
+  interrupts them.
+- Changing pane defaults right after mounting keeps the camera centred.
+- A still restore that moves the cursor places the focus outline without
+  gliding.
 
 ### Removed
 

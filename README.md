@@ -345,7 +345,7 @@ Only `renderPane` is required.
 
 | Prop                                               | Default      | Purpose                                                          |
 | -------------------------------------------------- | ------------ | ---------------------------------------------------------------- |
-| `focusAnchor`                                      | `"center"`   | Center the focused pane, or keep it at the `"start"` edge        |
+| `focusAnchor`                                      | `"center"`   | Center the focused pane, or align its left edge with `"start"`   |
 | `focusPaneOnPointer`                               | `true`       | Focus a pane when it is pressed; `false` leaves focus to you     |
 | `gridAxes`                                         | `"spatial"`  | `"horizontal"` restricts navigation to one row of columns        |
 | `cameraModes`                                      | follow both  | `"fixed"` or `"follow"` camera per presentation mode             |
