@@ -308,12 +308,14 @@ function emptyPlaneOuterHeight({
   sizing?: PaneGridSizing;
 }): number {
   const defaults = resolvePaneDefaults(null, sizing?.configuration);
-  if (fullSizePanes || typeof defaults.height !== "number")
+  const height =
+    defaults.height === "viewport" ? availableHeight : defaults.height;
+  if (fullSizePanes || typeof height !== "number")
     return Math.max(1, viewportHeight);
   const fullPaneSizing = sizing?.configuration.fullPaneSizing ?? false;
   return (
     constrainPaneDimension(
-      defaults.height,
+      height,
       fullPaneSizing ? undefined : defaults.minHeight,
       fullPaneSizing ? undefined : defaults.maxHeight,
       availableHeight,
