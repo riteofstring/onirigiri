@@ -167,6 +167,33 @@ describe("pane type defaults", () => {
     );
   });
 
+  it.each([
+    { cap: 500, expected: 500 },
+    { cap: undefined, expected: 880 },
+  ])(
+    "sizes an empty row like a viewport-height pane with cap $cap",
+    ({ cap, expected }) => {
+      const { engine } = workspace({
+        paneDefaults: {
+          height: "viewport",
+          ...(cap === undefined ? {} : { maxHeight: cap }),
+        },
+      });
+      expect(box(engine).height).toBe(expected);
+      const empty = engine.gridCursorRenderItem({
+        cursor: { column: 0, row: 1, split: 0 },
+        focusedPaneId: null,
+        maximizedPaneId: null,
+        movementPhase: "idle",
+        presentationMode: "normal",
+        scrollColumn: 0,
+        scrollRow: 1,
+        viewport,
+      });
+      expect(empty).toMatchObject({ kind: "empty", height: expected });
+    },
+  );
+
   it("fills both viewport dimensions and shares viewport height between stacked panes", () => {
     const { engine } = workspace({
       paneDefaults: { width: "viewport", height: "viewport" },

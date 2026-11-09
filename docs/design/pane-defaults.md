@@ -23,6 +23,8 @@ Displayed dimensions obey configured bounds and, by default, the available
 workspace viewport. The viewport is the stage inside the embedding application,
 less workspace padding, rather than the physical display or browser chrome.
 Viewport bounds win over oversized minimums, even on unusually small workspaces.
+An empty row takes the height a default pane would get, so a viewport-height
+default with a `maxHeight` gives empty rows and their grid cursor the capped height.
 Stored desired sizes survive viewport shrinkage and can grow back when space
 returns. The existing explicit viewport-overflow option can permit wider panes.
 A maximized pane fills the available width and grows toward the available height
