@@ -303,16 +303,18 @@ export function workspaceNavigationIsMoving(
   snapshot: WorkspaceLayoutSnapshot,
 ): boolean {
   return (
-    Math.abs(snapshot.scrollColumn - snapshot.targetScrollColumn) > 0.001 ||
-    Math.abs(
+    !withinSettleThreshold(
+      snapshot.scrollColumn - snapshot.targetScrollColumn,
+    ) ||
+    !withinSettleThreshold(
       snapshot.horizontalAnchorOffset - snapshot.targetHorizontalAnchorOffset,
-    ) > 0.001 ||
+    ) ||
     !workspaceScrollRowIsSettled(
       snapshot.scrollRow,
       snapshot.targetScrollRow,
     ) ||
-    Math.abs(
+    !withinSettleThreshold(
       snapshot.verticalAnchorOffset - snapshot.targetVerticalAnchorOffset,
-    ) > 0.001
+    )
   );
 }
