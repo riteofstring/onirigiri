@@ -75,7 +75,7 @@ export class PanePictures extends PanePicturePresentation {
   }
 
   protected async tick(): Promise<void> {
-    if (!this.root) return;
+    if (!this.root || !this.captureEnabled()) return;
     if (this.busy || !this.pictureWorkAllowed()) {
       this.wake(100);
       return;

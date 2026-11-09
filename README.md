@@ -77,7 +77,7 @@ permits. Fit-to-content sizing uses a temporary inert clone for measurement.
 | `runtimeState`     | `"live"`, `"frozen"` (moving or overview) or `"hidden"` (offscreen)       |
 | `visible`          | The pane intersects the viewport                                          |
 | `focused`          | The pane has workspace focus                                              |
-| `maximized`        | The pane fills the workspace                                              |
+| `maximized`        | The pane is maximized: full width, height up to its `maxHeight`           |
 | `presentationMode` | `"normal"` or `"overview"`                                                |
 | `settledVisible`   | The pane will be visible where the current navigation comes to rest       |
 | `frozen`           | Shorthand for `runtimeState === "frozen"`                                 |
