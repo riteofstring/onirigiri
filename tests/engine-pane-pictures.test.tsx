@@ -522,6 +522,41 @@ it("takes no pictures unless the host turns pane pictures on", async () => {
   );
 });
 
+it("shows no supplied pictures unless the host turns pane pictures on", async () => {
+  const image = png(10, 10);
+  const getPanePicture = vi.fn(() => ({ image }));
+  const handle = createRef<OnirigiriWorkspaceHandle>();
+  await act(async () =>
+    root.render(
+      <OnirigiriWorkspace
+        ref={handle}
+        initialPanes={Array.from({ length: 4 }, (_, index) => ({
+          paneId: `pane-${index}`,
+          columnId: `column-${index}`,
+          slotIndex: index,
+          columnWidth: { unit: "px" as const, value: 520 },
+          surfaceKind: "custom",
+          title: `Pane ${index}`,
+        }))}
+        getPanePicture={getPanePicture}
+        renderPane={(pane) => <article>{pane.title} content</article>}
+      />,
+    ),
+  );
+  await settle();
+  await act(async () => {
+    handle.current!.toggleOverview();
+  });
+  await settle();
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(500);
+  });
+  expect(
+    container.querySelector('[data-onirigiri-slot="pane-picture"]'),
+  ).toBeNull();
+  expect(handle.current!.getCaptureStatus().pictures).toEqual([]);
+});
+
 it("captures ordinary consumer content through the engine and recovers from acquisition failure", async () => {
   const capture = canvasMock.capture.mockImplementation(
     async (request: { width: number; height: number }) => ({

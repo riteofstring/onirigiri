@@ -5,7 +5,8 @@
 ### Changed
 
 - Breaking: pane pictures are opt-in. Pass `panePictures` to let the engine
-  capture pane pictures; without it the engine takes none and panes stay live.
+  capture and show pane pictures; without it the engine takes none, shows none,
+  including pictures from `getPanePicture`, and panes stay live.
 - A maximized pane respects its resolved `maxHeight`. Full sizing still uses
   the whole viewport height.
 
