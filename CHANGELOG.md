@@ -12,8 +12,8 @@
 
 ### Removed
 
-- Breaking: the `cursorTargets` option is removed. Keyboard navigation always
-  includes empty cells.
+- Breaking: the `cursorTargets` option is removed. Arrow keys always step into
+  empty cells; they never skip to the next pane.
 
 ## 0.4.0-beta.1 - 2026-10-27
 
