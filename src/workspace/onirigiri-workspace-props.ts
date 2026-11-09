@@ -12,11 +12,13 @@ type DefaultedOnirigiriWorkspaceProp =
   | "compactPanePeek"
   | "directionControlMode"
   | "focusAnchor"
+  | "focusPaneOnPointer"
   | "gridAxes"
   | "initialLayout"
   | "initialPanes"
   | "keepHeightWhenSplitting"
   | "minimapAdjustable"
+  | "panePictures"
   | "pictureBudgetBytes"
   | "pictureRasterBudgetBytes"
   | "pictureMinLongEdgePx"
@@ -40,10 +42,12 @@ const defaults: Required<
   compactPanePeek: 0,
   directionControlMode: "focus",
   focusAnchor: "center",
+  focusPaneOnPointer: true,
   gridAxes: defaultWorkspaceGridAxes,
   initialLayout: null,
   initialPanes: [],
   minimapAdjustable: true,
+  panePictures: false,
   pictureBudgetBytes: 256 * 1024 * 1024,
   pictureRasterBudgetBytes: 256 * 1024 * 1024,
   pictureMinLongEdgePx: 128,
