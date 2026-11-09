@@ -1,5 +1,12 @@
 # Pane content and retained pictures
 
+Pictures are opt-in. Without `panePictures`, the pictures owner never acquires a
+WebGPU device: every capture surface becomes native-only, supplied pictures are
+not shown, and panes stay live DOM. Hosts that do not need pictures therefore
+pay no GPU, capture or retention cost. The setting is read through the pictures
+owner when a surface acquires its device, so it is a mount-time choice; a later
+change does not reconcile surfaces or pictures that already exist.
+
 Onirigiri automatically presents ordinary content and video through their original
 DOM. Without live presentation enabled, applications receive the frozen runtime
 state during motion and overview, but a pane already presenting native content
@@ -7,7 +14,8 @@ keeps that native presentation instead of copying a fresh frame into a texture;
 a copy at motion start costs a synchronous GPU readback that can stall the first
 frame on discrete GPUs. Retained WebGPU textures cover panes that were not
 presenting natively, and retained pictures cover cold content. The original subtree supplies browser
-layout, styling and input semantics; it is neither cloned nor serialized.
+layout, styling and input semantics; presentation neither clones nor serializes it.
+Only fit-to-content measurement uses a temporary inert clone.
 State-preserving `moveBefore` transfers that same subtree between its capture
 canvas and native host without reloading iframe documents or replacing inputs.
 Pane shells, titlebars and controls remain ordinary DOM with stable creation
@@ -768,9 +776,12 @@ retains usable old pictures rather than replacing them merely because they age.
 
 `captureOnirigiriPanePicture` resolves a mounted content descendant to its existing
 capture surface. Consumer extraction uses one shared worker per document and
-admits one request at a time. The worker owns raster readback and PNG encoding;
-there is no main-thread fallback for this API. Unsupported or unregistered content
-returns no picture, leaving the consumer responsible for native presentation.
+admits one request at a time. An offscreen pane is staged into the worker, which
+owns raster readback and PNG encoding, and its optional `recorded` callback runs
+once the element image is recorded. A visible pane is recorded in place without
+staging and read back through the ordinary capture path, so `recorded` does not
+run. Unsupported or unregistered content, or a busy worker, returns no picture,
+leaving the consumer responsible for native presentation.
 The caller supplies cancellation and validates its own visual identity before
 publishing. Surface disposal and geometry changes invalidate results. The engine
 restores the original subtree and scroll positions through the existing staged

@@ -515,8 +515,8 @@ export class PaneCanvasSurface {
       signal.removeEventListener("abort", restore);
       restore();
     }
-    onRecorded();
     try {
+      onRecorded();
       return await background.client.capture(
         background.id,
         recorded,

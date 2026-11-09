@@ -11,10 +11,10 @@ Onirigiri is in **beta**. The API is settling; see [Known issues](#known-issues)
 
 ## Browser support
 
-| Capability                                             | Requirement                                                                   |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| Workspace, navigation, overview, native content        | Current Chrome and Edge; Firefox and Safari pass smoke checks only            |
-| Retained pane pictures and HTML-in-Canvas presentation | Chrome with WebGPU and HTML-in-Canvas (`chrome://flags/#canvas-draw-element`) |
+| Capability                                             | Requirement                                                                                        |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Workspace, navigation, overview, native content        | Current Chrome and Edge; Firefox and Safari pass smoke checks only                                 |
+| Retained pane pictures and HTML-in-Canvas presentation | `panePictures`, plus Chrome with WebGPU and HTML-in-Canvas (`chrome://flags/#canvas-draw-element`) |
 
 Without WebGPU or HTML-in-Canvas nothing is blocked: panes present their native
 content, requested canvas or texture presentation falls back to native, and panes
@@ -79,6 +79,8 @@ permits. Fit-to-content sizing uses a temporary inert clone for measurement.
 | `focused`          | The pane has workspace focus                                              |
 | `maximized`        | The pane fills the workspace                                              |
 | `presentationMode` | `"normal"` or `"overview"`                                                |
+| `settledVisible`   | The pane will be visible where the current navigation comes to rest       |
+| `frozen`           | Shorthand for `runtimeState === "frozen"`                                 |
 | `content`          | Content-fit preferences from [pane defaults](docs/guide/pane-defaults.md) |
 
 Pause expensive work when a pane is not live:
@@ -344,6 +346,7 @@ Only `renderPane` is required.
 | Prop                                               | Default      | Purpose                                                          |
 | -------------------------------------------------- | ------------ | ---------------------------------------------------------------- |
 | `focusAnchor`                                      | `"center"`   | Center the focused pane, or keep it at the `"start"` edge        |
+| `focusPaneOnPointer`                               | `true`       | Focus a pane when it is pressed; `false` leaves focus to you     |
 | `gridAxes`                                         | `"spatial"`  | `"horizontal"` restricts navigation to one row of columns        |
 | `cameraModes`                                      | follow both  | `"fixed"` or `"follow"` camera per presentation mode             |
 | `cameraMotion`                                     | follow       | Curves for navigation, overview moves and the overview zoom      |
@@ -382,18 +385,18 @@ Only `renderPane` is required.
 
 ### Presentation and pictures
 
-| Prop                       | Default  | Purpose                                                                              |
-| -------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `panePictures`             | `false`  | Engine pictures: capture and show them; without it, none, even from `getPanePicture` |
-| `liveContent`              | `false`  | Keep every pane mounted and live through motion and overview                         |
-| `panePresentation`         | `"auto"` | Workspace-wide presentation choice                                                   |
-| `getPanePresentation`      | —        | Per-pane, per-phase presentation choice                                              |
-| `renderPanePlaceholder`    | icon     | Custom placeholder content                                                           |
-| `restPictureFade`          | `false`  | Fade departing pictures or custom covers for 100 ms at rest                          |
-| `getPanePicture`           | —        | Supply your own pictures for panes that are not mounted                              |
-| `onPanePictureCaptured`    | —        | Receive each captured picture, for example to save it                                |
-| `onPanePresentationChange` | —        | Observe each pane's effective presentation                                           |
-| `onCaptureStatusChange`    | —        | Observe picture capture, including `"unavailable"` and its reason                    |
+| Prop                       | Default  | Purpose                                                                                            |
+| -------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `panePictures`             | `false`  | Engine pictures: capture and show them; without it, none, even from `getPanePicture`. Set at mount |
+| `liveContent`              | `false`  | Keep every pane mounted and live through motion and overview                                       |
+| `panePresentation`         | `"auto"` | Workspace-wide presentation choice                                                                 |
+| `getPanePresentation`      | —        | Per-pane, per-phase presentation choice                                                            |
+| `renderPanePlaceholder`    | icon     | Custom placeholder content                                                                         |
+| `restPictureFade`          | `false`  | Fade departing pictures or custom covers for 100 ms at rest                                        |
+| `getPanePicture`           | —        | Supply your own pictures for panes that are not mounted                                            |
+| `onPanePictureCaptured`    | —        | Receive each captured picture, for example to save it                                              |
+| `onPanePresentationChange` | —        | Observe each pane's effective presentation                                                         |
+| `onCaptureStatusChange`    | —        | Observe picture capture, including `"unavailable"` and its reason                                  |
 
 Advanced tuning, rarely needed: `retainedAreaBudgetViewports` (8),
 `preloadMarginPanes` (1), `preloadAllPanePictures` (false),

@@ -2,13 +2,27 @@
 
 ## Unreleased
 
+### Added
+
+- `focusPaneOnPointer` (default `true`) can stop a pointer press from focusing
+  its pane, for hosts that focus panes themselves.
+- `captureOnirigiriPanePicture(element, signal, recorded?)` captures a PNG of a mounted
+  pane's content for host-managed persistence, or returns `null` when it cannot.
+- Pane render state includes `settledVisible`: whether the pane is visible where
+  the current navigation will come to rest.
+
 ### Changed
 
 - Breaking: pane pictures are opt-in. Pass `panePictures` to let the engine
   capture and show pane pictures; without it the engine takes none, shows none,
   including pictures from `getPanePicture`, and panes stay live.
+- Set `panePictures` when the workspace mounts. Changing it on a mounted
+  workspace is not supported; remount the workspace instead.
 - A maximized pane respects its resolved `maxHeight`. Full sizing still uses
   the whole viewport height.
+- An empty row takes the height a default pane would get, so its grid cursor
+  matches capped rows.
+- Default titlebars of panes outside the viewport are hidden.
 
 ### Removed
 
@@ -53,7 +67,6 @@
   geometry, original iframe state and useful pictures through recovery.
 - Custom placeholders observe input eligibility through motion and rest;
   opted-in editing shortcuts work in text fields.
-
 - Changing overview card width constraints updates the mounted workspace,
   including the follow camera, without replacing pane content.
 - Restoring a layout preserves current workspace and pane-type defaults.

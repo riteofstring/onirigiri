@@ -102,6 +102,7 @@ semantic inputs change, not for every camera position.
 ```tsx
 <OnirigiriWorkspace
   liveContent
+  panePictures
   panePresentation="auto"
   getPanePresentation={(pane, context) => {
     if (pane.surfaceKind === "game") return "dom";
@@ -149,8 +150,10 @@ apply across panes; they do not flatten the whole workspace into one canvas.
 
 ### Retained pictures and asynchronous content
 
-The engine captures pictures only when `panePictures` is set. Without it, it takes
-none of its own and panes stay live DOM.
+The engine captures and shows pictures only when `panePictures` is set. Without
+it, it takes none, shows none, including pictures from `getPanePicture`, and
+panes stay live DOM. Set it when the workspace mounts; changing it on a mounted
+workspace is not supported.
 
 Graphics canvases and opaque embedded content retain their native presentation
 while mounted. Automatic capture skips content Chromium cannot record faithfully;
@@ -163,7 +166,7 @@ offscreen panes covered by background caching.
 
 Onirigiri defaults to original DOM. Panes already showing native content keep it
 through motion and overview while applications receive the frozen runtime state;
-HTML-in-Canvas and WebGPU supply pictures for panes that were not showing native
+with `panePictures`, HTML-in-Canvas and WebGPU supply pictures for panes that were not showing native
 content and a brief transition before the native content appears.
 Focus resumes first, then visible panes progressively outward. State-preserving
 DOM moves keep iframe documents, native input and edited forms intact through
@@ -189,6 +192,7 @@ they contain an image.
 
 ```tsx
 <OnirigiriWorkspace
+  panePictures
   getPanePicture={(pane) => savedPngs.get(pane.paneId) ?? null}
   pictureBudgetBytes={256 * 1024 * 1024}
   pictureRasterBudgetBytes={512 * 1024 * 1024}
@@ -221,6 +225,11 @@ still match the pane when preparation finishes.
 Save `receipt.bounds.width` and `receipt.bounds.height` as the image's `cssSize`
 alongside its PNG to supply both after a reload. Those bounds belong to the
 accepted capture, so no later DOM measurement is needed.
+To capture on demand, call `captureOnirigiriPanePicture(element, signal, recorded?)`
+with an element inside a mounted pane. It resolves to `{ image, cssSize }`, or
+`null` when the pane has no capture surface, another capture is running, or the
+pane changes size first. For an offscreen pane, `recorded` runs once its pixels
+are recorded, before encoding.
 Developers can set both retention budgets:
 
 - `pictureBudgetBytes`: retained PNG bytes, default 256 MiB.
