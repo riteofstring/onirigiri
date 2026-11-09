@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Breaking: pane pictures are opt-in. Pass `panePictures` to let the engine
+  capture pane pictures; without it the engine takes none and panes stay live.
+- A maximized pane respects its resolved `maxHeight`. Full sizing still uses
+  the whole viewport height.
+
+### Removed
+
+- Breaking: the `cursorTargets` option is removed. Keyboard navigation always
+  includes empty cells.
+
 ## 0.4.0-beta.1 - 2026-10-27
 
 ### Added
@@ -9,8 +23,8 @@
 - `onFocusedPaneFrame(frame, moving)` reports displayed pane geometry and the
   motion boundary so hosts can defer expensive work until navigation rests.
 - `useOnirigiriPaneInteractive()` reports when live content accepts input.
-- `focusPane` can exit overview, and `restoreLayout` can retain the current
-  presentation mode.
+- `cursorTargets="panes"` skips empty cells. `focusPane` can exit overview,
+  and `restoreLayout` can retain the current presentation mode.
 - Supplied pictures accept their captured `cssSize`. Images remain anchored
   at the top-left, clip when panes shrink, and expose the background when
   panes grow. `onPanePictureCaptured` provides a PNG and its capture bounds
