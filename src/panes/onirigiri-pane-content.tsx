@@ -143,13 +143,14 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
       >
         <canvas
           className="onirigiri-pane__live-surface"
-          {...{ layoutsubtree: "" }}
+          {...{ content: "drawable" }}
         >
           <div
             aria-hidden={!interactive}
             className={liveSlot.className}
             data-onirigiri-slot="pane-live-content"
             data-onirigiri-content-fit={contentFit}
+            {...{ drawable: "" }}
             {...inertAttribute(
               liveContentInert(presentationMode, covered, contentRuntime),
             )}

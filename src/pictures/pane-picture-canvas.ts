@@ -3,11 +3,13 @@ import {
   documentLiveCopyBudget,
   type LiveCopyBudget,
 } from "./pane-live-copy-budget.js";
-import type {
-  ElementCanvas,
-  ElementImage,
-  ElementPaintEvent,
-  ElementQueue,
+import {
+  canDrawElementImages,
+  drawElementImage,
+  markElementCanvas,
+  type ElementCanvas,
+  type ElementImage,
+  type ElementPaintEvent,
 } from "./pane-picture-canvas-api.js";
 import {
   paneCanvasRasterSize,
@@ -69,6 +71,7 @@ export async function createPaneCanvasDevice(
   if (
     !gpu ||
     typeof canvas.captureElementImage !== "function" ||
+    typeof canvas.getElementImageDefaultSize !== "function" ||
     typeof canvas.requestPaint !== "function" ||
     typeof canvas.showPopover !== "function" ||
     typeof canvas.moveBefore !== "function"
@@ -77,10 +80,7 @@ export async function createPaneCanvasDevice(
   const adapter = await gpu.requestAdapter();
   if (!adapter) throw new Error("Onirigiri could not acquire a WebGPU adapter");
   const device = await adapter.requestDevice();
-  if (
-    typeof (device.queue as ElementQueue).copyElementImageToTexture !==
-    "function"
-  ) {
+  if (!canDrawElementImages(device.queue)) {
     device.destroy();
     throw new Error(paneCanvasRequirement);
   }
@@ -192,7 +192,7 @@ export class PaneCanvasSurface {
       },
     });
     this.applyRecordingScale();
-    canvas.setAttribute("layoutsubtree", "");
+    markElementCanvas(canvas);
     content.setAttribute("drawable", "");
     canvas.addEventListener("paint", this.paint);
     this.resize = new ResizeObserver(this.requestPaint);
@@ -799,8 +799,9 @@ export class PaneCanvasSurface {
     performance.clearMeasures("onirigiri.capture.extraction");
     const width =
       (this.content.offsetWidth * canvas.width) / canvas.offsetWidth;
-    if (Math.abs(image.width - width) <= 1) return image;
-    this.recordingScale *= image.width / width;
+    const imageWidth = canvas.getElementImageDefaultSize(image).width;
+    if (Math.abs(imageWidth - width) <= 1) return image;
+    this.recordingScale *= imageWidth / width;
     this.applyRecordingScale(canvas);
     image.close();
     if (canvas === this.canvas) this.requestPaint();
@@ -869,14 +870,7 @@ export class PaneCanvasSurface {
     texture: GPUTexture,
     premultipliedAlpha: boolean,
   ): void {
-    (this.device!.queue as ElementQueue).copyElementImageToTexture(
-      { source: image },
-      {
-        destination: { texture, premultipliedAlpha },
-        width: texture.width,
-        height: texture.height,
-      },
-    );
+    drawElementImage(this.device!.queue, image, texture, premultipliedAlpha);
   }
 
   private captureTexture(size: { width: number; height: number }): GPUTexture {
@@ -965,7 +959,7 @@ export class PaneCanvasSurface {
         this.prepareContent();
         canvas.className = this.canvas.className;
         canvas.style.cssText = this.canvas.style.cssText;
-        canvas.setAttribute("layoutsubtree", "");
+        markElementCanvas(canvas);
         canvas.setAttribute("data-onirigiri-recording", "");
         this.canvas.after(canvas);
         canvas.moveBefore(this.content, null);
