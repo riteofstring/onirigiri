@@ -335,12 +335,16 @@ describe("PanePictureContent", () => {
         recordedWidths.push(width);
         return { width, close: vi.fn() };
       },
+      getElementImageDefaultSize: (image: { width: number }) => ({
+        width: image.width,
+        height: 400,
+      }),
     });
     const copy = vi.fn();
     const device = {
       lost: new Promise(() => {}),
       limits: { maxTextureDimension2D: 8192 },
-      queue: { copyElementImageToTexture: copy },
+      queue: { drawElementImageToTexture: copy },
     } as unknown as GPUDevice;
     const drawn = vi.fn();
     pane.surface(Promise.resolve(device), {
@@ -355,7 +359,10 @@ describe("PanePictureContent", () => {
     );
     expect(drawn).toHaveBeenLastCalledWith(true, "canvas");
     expect(recordedWidths).toEqual([520]);
-    expect(copy.mock.calls[0]![1]).toMatchObject({ width: 520, height: 400 });
+    expect(copy.mock.calls[0]![1].texture).toMatchObject({
+      width: 520,
+      height: 400,
+    });
     expect(["", "1"]).toContain(
       canvas.style.getPropertyValue("--_onirigiri-capture-scale"),
     );
@@ -373,7 +380,8 @@ describe("PanePictureContent", () => {
     const close = vi.fn();
     Object.assign(canvas, {
       requestPaint: vi.fn(),
-      captureElementImage: () => ({ width: 20, close }),
+      captureElementImage: () => ({ close }),
+      getElementImageDefaultSize: () => ({ width: 20, height: 12 }),
     });
     let lose!: (info: GPUDeviceLostInfo) => void;
     const device = {
@@ -381,7 +389,7 @@ describe("PanePictureContent", () => {
         lose = resolve;
       }),
       limits: { maxTextureDimension2D: 8192 },
-      queue: { copyElementImageToTexture: vi.fn() },
+      queue: { drawElementImageToTexture: vi.fn() },
     } as unknown as GPUDevice;
     let live = true;
     const drawn = vi.fn();

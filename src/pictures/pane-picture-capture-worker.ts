@@ -1,4 +1,8 @@
 import {
+  canDrawElementImages,
+  drawElementImage,
+} from "./pane-picture-canvas-api.js";
+import {
   encodeOnCurrentThread,
   readPaneCanvasTexture,
 } from "./pane-picture-canvas-readback.js";
@@ -11,7 +15,6 @@ declare const GPUTextureUsage: {
 };
 
 export interface PaneCaptureImage {
-  readonly width: number;
   close(): void;
 }
 
@@ -38,16 +41,6 @@ export type PaneCaptureReply =
     }
   | { type: "failed"; message: string };
 
-interface CaptureQueue extends GPUQueue {
-  copyElementImageToTexture(
-    source: { source: PaneCaptureImage },
-    destination: {
-      destination: { texture: GPUTexture; premultipliedAlpha: boolean };
-      width: number;
-      height: number;
-    },
-  ): void;
-}
 
 interface CaptureSource {
   device: GPUDevice;
@@ -75,8 +68,7 @@ async function prepare(canvas: OffscreenCanvas): Promise<void> {
   const context = canvas.getContext("webgpu") as GPUCanvasContext | null;
   if (
     !context ||
-    typeof (device.queue as CaptureQueue).copyElementImageToTexture !==
-      "function"
+    !canDrawElementImages(device.queue)
   ) {
     device.destroy();
     throw new Error("Pane capture worker lacks HTML-in-Canvas");
@@ -139,14 +131,7 @@ async function capture(
         GPUTextureUsage.TEXTURE_BINDING |
         GPUTextureUsage.RENDER_ATTACHMENT,
     });
-    (device.queue as CaptureQueue).copyElementImageToTexture(
-      { source: request.image },
-      {
-        destination: { texture, premultipliedAlpha: false },
-        width: request.width,
-        height: request.height,
-      },
-    );
+    drawElementImage(device.queue, request.image, texture, false);
     image = await readPaneCanvasTexture(
       device,
       texture,

@@ -1,3 +1,4 @@
+import { markElementCanvas } from "./pane-picture-canvas-api.js";
 import { createPaneCaptureWorker } from "./pane-picture-capture-worker-factory.js";
 import type {
   PaneCaptureImage,
@@ -36,7 +37,7 @@ export class PanePictureCaptureClient {
       this.worker = worker;
       this.listen(worker);
       const canvas = this.document.createElement("canvas");
-      canvas.setAttribute("layoutsubtree", "");
+      markElementCanvas(canvas);
       const offscreen = canvas.transferControlToOffscreen();
       const reply = await this.request(
         { type: "prepare", canvas: offscreen },
