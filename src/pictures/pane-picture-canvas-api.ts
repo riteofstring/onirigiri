@@ -1,5 +1,5 @@
 export interface ElementImage {
-  /** Chrome 156 and earlier; later builds report the size through the canvas. */
+  /** Present on Chrome 152 and 156; Chrome 157 reports the size through the canvas. */
   readonly width?: number;
   close(): void;
 }
