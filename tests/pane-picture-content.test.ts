@@ -442,6 +442,38 @@ describe("PanePictureContent", () => {
     expect(input.value).toBe("Retained draft");
   });
 
+  it("watches a device for loss once however many panes draw on it, and not for a disposed pane", async () => {
+    let lose!: (info: GPUDeviceLostInfo) => void;
+    const lost = new Promise<GPUDeviceLostInfo>((resolve) => {
+      lose = resolve;
+    });
+    const watched = vi.spyOn(lost, "then");
+    const device = {
+      lost,
+      limits: { maxTextureDimension2D: 8192 },
+      queue: { drawElementImageToTexture: vi.fn() },
+    } as unknown as GPUDevice;
+    const panes = [paneCanvas(), paneCanvas(), paneCanvas()].map((pane) => ({
+      context: pane.context,
+      surface: pane.surface(Promise.resolve(device), {
+        canDraw: () => true,
+        renderer: () => "canvas",
+        drawn: vi.fn(),
+      }),
+    }));
+    await Promise.resolve();
+    expect(watched).toHaveBeenCalledOnce();
+    panes[0]!.surface.dispose();
+    const unconfigured = panes.map(
+      ({ context }) => context.unconfigure.mock.calls.length,
+    );
+    lose({ reason: "destroyed", message: "Device reset" });
+    await Promise.resolve();
+    expect(
+      panes.map(({ context }) => context.unconfigure.mock.calls.length),
+    ).toEqual([unconfigured[0], unconfigured[1]! + 1, unconfigured[2]! + 1]);
+  });
+
   it("keeps native input live while shared display preparation outlasts an aborted capture", async () => {
     const { canvas, content, input, flushFrames, ...pane } = paneCanvas();
     Object.defineProperties(content, {

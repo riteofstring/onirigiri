@@ -224,7 +224,7 @@ for (const mode of ["available", "missing-copy", "device-failure"] as const) {
       mode === "available"
         ? []
         : mode === "missing-copy"
-          ? ["copyElementImageToTexture"]
+          ? ["element image drawing"]
           : ["WebGPU initialization: Error: device unavailable"],
     );
     expect(result.adapterInfo?.vendor).toBe("fixture");

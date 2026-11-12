@@ -21,8 +21,9 @@ mode falls back to software compositing and reports its WebGPU adapter
 intermittently, while the headless shell composites and rasterizes on the GPU.
 The browser cache under `~/.cache/onirigiri/chrome-for-testing` lies outside
 disposable checkouts, so every checkout of the same user shares one executable.
-Playwright's bundled Chromium 149 predates the `copyElementImageToTexture`
-signature the engine uses. Browser and performance runs first require a
+Playwright's bundled Chromium 149 predates both element-image signatures the
+engine uses (`copyElementImageToTexture` on Chrome 152 and 156,
+`drawElementImageToTexture` on Chrome 157). Browser and performance runs first require a
 hardware adapter and fail on a software fallback. The NVIDIA Vulkan driver
 loads the GLVND `libEGL.so.1` (Debian/Ubuntu `libegl1`); without it the driver
 reports no Vulkan device and Chrome falls back to software.
