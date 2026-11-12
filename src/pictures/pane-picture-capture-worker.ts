@@ -15,6 +15,7 @@ declare const GPUTextureUsage: {
 };
 
 export interface PaneCaptureImage {
+  readonly width?: number;
   close(): void;
 }
 

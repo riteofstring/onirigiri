@@ -1,11 +1,14 @@
 export interface ElementImage {
+  /** Chrome 156 and earlier; later builds report the size through the canvas. */
+  readonly width?: number;
   close(): void;
 }
 
 export interface ElementCanvas extends HTMLCanvasElement {
   requestPaint(): void;
   captureElementImage(element: Element): ElementImage;
-  getElementImageDefaultSize(image: ElementImage): {
+  /** Chrome 157 and later. */
+  getElementImageDefaultSize?(image: ElementImage): {
     width: number;
     height: number;
   };
@@ -17,22 +20,46 @@ export interface ElementPaintEvent extends Event {
   readonly changedElements: readonly Element[];
 }
 
+// HTML-in-Canvas is experimental and its shape differs by Chrome version. The desktop app embeds
+// Chrome 152 (Electron 44) while browsers are on 157 or later, so both shapes are supported:
+//   up to 156: <canvas layoutsubtree>, ElementImage.width, queue.copyElementImageToTexture
+//   157 on:    <canvas content="drawable"> with drawable children,
+//              canvas.getElementImageDefaultSize, queue.drawElementImageToTexture
 export interface ElementQueue extends GPUQueue {
-  drawElementImageToTexture(
+  copyElementImageToTexture?(
+    source: { source: ElementImage },
+    destination: {
+      destination: { texture: GPUTexture; premultipliedAlpha: boolean };
+      width: number;
+      height: number;
+    },
+  ): void;
+  drawElementImageToTexture?(
     source: { source: ElementImage },
     destination: { texture: GPUTexture; premultipliedAlpha: boolean },
   ): void;
 }
 
-/** Makes a canvas lay out and draw its children (Chrome 157: `content="drawable"`). */
+/** Makes a canvas lay out and draw its children, in the attribute each Chrome shape reads. */
 export function markElementCanvas(canvas: Element): void {
+  canvas.setAttribute("layoutsubtree", "");
   canvas.setAttribute("content", "drawable");
 }
 
+/** The captured image's width in canvas buffer pixels. */
+export function elementImageWidth(
+  canvas: ElementCanvas,
+  image: ElementImage,
+): number {
+  return image.width ?? canvas.getElementImageDefaultSize!(image).width;
+}
+
 export function canDrawElementImages(queue: GPUQueue): boolean {
+  const { copyElementImageToTexture, drawElementImageToTexture } =
+    queue as ElementQueue;
   return (
-    typeof (queue as Partial<ElementQueue>).drawElementImageToTexture ===
-    "function"
+    typeof copyElementImageToTexture === "function" ||
+    typeof drawElementImageToTexture === "function"
   );
 }
 
@@ -42,8 +69,19 @@ export function drawElementImage(
   texture: GPUTexture,
   premultipliedAlpha: boolean,
 ): void {
-  (queue as ElementQueue).drawElementImageToTexture(
-    { source: image },
-    { texture, premultipliedAlpha },
-  );
+  const elementQueue = queue as ElementQueue;
+  if (elementQueue.copyElementImageToTexture)
+    elementQueue.copyElementImageToTexture(
+      { source: image },
+      {
+        destination: { texture, premultipliedAlpha },
+        width: texture.width,
+        height: texture.height,
+      },
+    );
+  else
+    elementQueue.drawElementImageToTexture!(
+      { source: image },
+      { texture, premultipliedAlpha },
+    );
 }
