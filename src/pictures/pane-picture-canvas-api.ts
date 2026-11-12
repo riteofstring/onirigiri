@@ -40,10 +40,15 @@ export interface ElementQueue extends GPUQueue {
   ): void;
 }
 
-/** Makes a canvas lay out and draw its children, in the attribute each Chrome shape reads. */
+/** Makes a canvas lay out and draw its children: one attribute for each Chrome shape. */
+export const ELEMENT_CANVAS_ATTRIBUTES = {
+  layoutsubtree: "",
+  content: "drawable",
+} as const;
+
 export function markElementCanvas(canvas: Element): void {
-  canvas.setAttribute("layoutsubtree", "");
-  canvas.setAttribute("content", "drawable");
+  for (const [name, value] of Object.entries(ELEMENT_CANVAS_ATTRIBUTES))
+    canvas.setAttribute(name, value);
 }
 
 /** The captured image's width in canvas buffer pixels. */

@@ -22,6 +22,7 @@ import {
   PaneContentReadiness,
   PaneReadinessContext,
 } from "./pane-content-readiness.js";
+import { ELEMENT_CANVAS_ATTRIBUTES } from "../pictures/pane-picture-canvas-api.js";
 import type { PanePictures } from "../pictures/pane-pictures.js";
 import {
   resolveOnirigiriSlotProps,
@@ -143,7 +144,7 @@ export const OnirigiriPaneContent = memo(function OnirigiriPaneContent({
       >
         <canvas
           className="onirigiri-pane__live-surface"
-          {...{ content: "drawable" }}
+          {...ELEMENT_CANVAS_ATTRIBUTES}
         >
           <div
             aria-hidden={!interactive}
