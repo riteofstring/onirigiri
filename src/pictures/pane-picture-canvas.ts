@@ -136,6 +136,7 @@ export class PaneCanvasSurface {
   private initialized = false;
   private captureAbort: AbortController | null = null;
   private disposed = false;
+  private unwatchDeviceLoss: (() => void) | null = null;
   private readonly presentation: PanePictureResize;
   private readonly source: PanePictureContent;
   private live = false;
@@ -361,6 +362,7 @@ export class PaneCanvasSurface {
 
   dispose(): void {
     this.disposed = true;
+    this.unwatchDeviceLoss?.();
     contentSurfaces.delete(this.content);
     const worker = pictureWorkers.get(this.content.ownerDocument);
     if (worker?.owners.delete(this) && worker.owners.size === 0) {
@@ -613,18 +615,36 @@ export class PaneCanvasSurface {
     }
     this.configure();
     this.initialized = true;
-    PaneCanvasSurface.watchDeviceLoss(device, new WeakRef(this));
+    this.unwatchDeviceLoss = PaneCanvasSurface.watchDeviceLoss(
+      device,
+      new WeakRef(this),
+    );
     this.requestPaint();
   };
 
+  private static readonly deviceSurfaces = new WeakMap<
+    GPUDevice,
+    Set<WeakRef<PaneCanvasSurface>>
+  >();
+
   // The device outlives every pane. A reaction created inside an instance method keeps that
   // instance, and its pane's content, alive through the method's scope even behind a WeakRef;
-  // this static scope holds the WeakRef alone.
+  // this static scope holds WeakRefs alone, behind one reaction per device.
   private static watchDeviceLoss(
     device: GPUDevice,
     surface: WeakRef<PaneCanvasSurface>,
-  ): void {
-    void device.lost.then((info) => surface.deref()?.lost(info));
+  ): () => void {
+    let surfaces = PaneCanvasSurface.deviceSurfaces.get(device);
+    if (!surfaces) {
+      const watched = new Set<WeakRef<PaneCanvasSurface>>();
+      surfaces = watched;
+      PaneCanvasSurface.deviceSurfaces.set(device, watched);
+      void device.lost.then((info) => {
+        for (const lost of watched) lost.deref()?.lost(info);
+      });
+    }
+    surfaces.add(surface);
+    return () => surfaces.delete(surface);
   }
 
   private captureUnavailable = (): void => {

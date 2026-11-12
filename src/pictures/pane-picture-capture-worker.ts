@@ -42,7 +42,6 @@ export type PaneCaptureReply =
     }
   | { type: "failed"; message: string };
 
-
 interface CaptureSource {
   device: GPUDevice;
   canvas: OffscreenCanvas;

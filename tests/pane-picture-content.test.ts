@@ -318,55 +318,70 @@ describe("PanePictureContent", () => {
     },
   );
 
-  it("records live content at the canvas's drawing size without rescaling it", async () => {
-    const { canvas, content, ...pane } = paneCanvas({
-      getCurrentTexture: () => ({ width: canvas.width, height: canvas.height }),
-    });
-    for (const element of [content, canvas])
-      Object.defineProperties(element, {
-        offsetWidth: { get: () => 520 },
-        offsetHeight: { get: () => 400 },
+  it.each([
+    "Chrome 152 (copyElementImageToTexture)",
+    "Chrome 157 (drawElementImageToTexture)",
+  ])(
+    "records live content at the canvas's drawing size without rescaling it on %s",
+    async (shape) => {
+      const legacy = shape.startsWith("Chrome 152");
+      const { canvas, content, ...pane } = paneCanvas({
+        getCurrentTexture: () => ({ width: canvas.width, height: canvas.height }),
       });
-    const recordedWidths: number[] = [];
-    Object.assign(canvas, {
-      requestPaint: vi.fn(),
-      captureElementImage: () => {
-        const width = (520 * canvas.width) / canvas.offsetWidth;
-        recordedWidths.push(width);
-        return { width, close: vi.fn() };
-      },
-      getElementImageDefaultSize: (image: { width: number }) => ({
-        width: image.width,
+      for (const element of [content, canvas])
+        Object.defineProperties(element, {
+          offsetWidth: { get: () => 520 },
+          offsetHeight: { get: () => 400 },
+        });
+      const recordedWidths: number[] = [];
+      Object.assign(canvas, {
+        requestPaint: vi.fn(),
+        captureElementImage: () => {
+          const width = (520 * canvas.width) / canvas.offsetWidth;
+          recordedWidths.push(width);
+          return legacy ? { width, close: vi.fn() } : { close: vi.fn() };
+        },
+        ...(legacy
+          ? {}
+          : {
+              getElementImageDefaultSize: () => ({
+                width: recordedWidths.at(-1)!,
+                height: 400,
+              }),
+            }),
+      });
+      const copy = vi.fn();
+      const device = {
+        lost: new Promise(() => {}),
+        limits: { maxTextureDimension2D: 8192 },
+        queue: legacy
+          ? { copyElementImageToTexture: copy }
+          : { drawElementImageToTexture: copy },
+      } as unknown as GPUDevice;
+      const drawn = vi.fn();
+      pane.surface(Promise.resolve(device), {
+        canDraw: () => true,
+        renderer: () => "canvas",
+        drawn,
+      });
+      await Promise.resolve();
+      expect(canvas.width).toBe(300);
+      canvas.dispatchEvent(
+        Object.assign(new Event("paint"), { changedElements: [content] }),
+      );
+      expect(drawn).toHaveBeenLastCalledWith(true, "canvas");
+      expect(recordedWidths).toEqual([520]);
+      const destination = copy.mock.calls[0]![1];
+      expect((legacy ? destination.destination : destination).texture).toMatchObject({
+        width: 520,
         height: 400,
-      }),
-    });
-    const copy = vi.fn();
-    const device = {
-      lost: new Promise(() => {}),
-      limits: { maxTextureDimension2D: 8192 },
-      queue: { drawElementImageToTexture: copy },
-    } as unknown as GPUDevice;
-    const drawn = vi.fn();
-    pane.surface(Promise.resolve(device), {
-      canDraw: () => true,
-      renderer: () => "canvas",
-      drawn,
-    });
-    await Promise.resolve();
-    expect(canvas.width).toBe(300);
-    canvas.dispatchEvent(
-      Object.assign(new Event("paint"), { changedElements: [content] }),
-    );
-    expect(drawn).toHaveBeenLastCalledWith(true, "canvas");
-    expect(recordedWidths).toEqual([520]);
-    expect(copy.mock.calls[0]![1].texture).toMatchObject({
-      width: 520,
-      height: 400,
-    });
-    expect(["", "1"]).toContain(
-      canvas.style.getPropertyValue("--_onirigiri-capture-scale"),
-    );
-  });
+      });
+      if (legacy) expect(destination).toMatchObject({ width: 520, height: 400 });
+      expect(["", "1"]).toContain(
+        canvas.style.getPropertyValue("--_onirigiri-capture-scale"),
+      );
+    },
+  );
 
   it("withdraws a frozen canvas frame on device loss and shows native content in its place", async () => {
     const { canvas, content, input, flushFrames, ...pane } = paneCanvas({
