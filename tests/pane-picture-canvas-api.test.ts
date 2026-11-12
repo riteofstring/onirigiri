@@ -18,7 +18,7 @@ describe("HTML-in-Canvas shapes", () => {
     expect(canvas.getAttribute("content")).toBe("drawable");
   });
 
-  it("reads an image's width from the image up to Chrome 156 and from the canvas after", () => {
+  it("reads an image's width from the image where it has one and from the canvas otherwise", () => {
     const sized = vi.fn(() => ({ width: 1040, height: 800 }));
     const canvas = { getElementImageDefaultSize: sized } as unknown as ElementCanvas;
     expect(elementImageWidth(canvas, { width: 520, close() {} })).toBe(520);

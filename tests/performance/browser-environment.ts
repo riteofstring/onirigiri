@@ -38,7 +38,7 @@ export async function browserGraphicsCapabilities(page: Page) {
               : null;
             const device = await adapter.requestDevice();
             try {
-              // Chrome 156 and earlier copy element images; Chrome 157 and later draw them.
+              // Chrome 152 and 156 copy element images; Chrome 157 draws them.
               if (
                 ["copyElementImageToTexture", "drawElementImageToTexture"].every(
                   (name) =>
