@@ -22,9 +22,11 @@ export interface ElementPaintEvent extends Event {
 
 // HTML-in-Canvas is experimental and its shape differs by Chrome version. The desktop app embeds
 // Chrome 152 (Electron 44) while browsers are on 157 or later, so both shapes are supported:
-//   up to 156: <canvas layoutsubtree>, ElementImage.width, queue.copyElementImageToTexture
-//   157 on:    <canvas content="drawable"> with drawable children,
-//              canvas.getElementImageDefaultSize, queue.drawElementImageToTexture
+//   seen on 152 and 156: <canvas layoutsubtree>, ElementImage.width,
+//                        queue.copyElementImageToTexture
+//   seen on 157:         <canvas content="drawable"> with drawable children,
+//                        canvas.getElementImageDefaultSize, queue.drawElementImageToTexture
+// Each helper picks by what the browser offers, not by version.
 export interface ElementQueue extends GPUQueue {
   copyElementImageToTexture?(
     source: { source: ElementImage },

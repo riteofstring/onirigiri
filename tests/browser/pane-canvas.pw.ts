@@ -1161,14 +1161,16 @@ test.describe("live detail at Retina resolution", () => {
       const queue = (
         window as unknown as {
           GPUQueue: {
-            prototype: {
-              copyElementImageToTexture: (...args: unknown[]) => unknown;
-            };
+            prototype: Record<string, (...args: unknown[]) => unknown>;
           };
         }
       ).GPUQueue.prototype;
-      const copy = queue.copyElementImageToTexture;
-      queue.copyElementImageToTexture = function (...args) {
+      const method =
+        "copyElementImageToTexture" in queue
+          ? "copyElementImageToTexture"
+          : "drawElementImageToTexture";
+      const copy = queue[method]!;
+      queue[method] = function (...args) {
         window.__paneCanvasCopies++;
         return copy.apply(this, args);
       };

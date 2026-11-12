@@ -36,10 +36,15 @@ for (const dpr of [1, 2]) {
         );
         const capture = await page.evaluateHandle((reduced) => {
           const fixture = window.__paneCanvasFixture;
-          const queue = fixture.device!.queue as GPUQueue & {
-            copyElementImageToTexture(...args: unknown[]): void;
-          };
-          const copy = queue.copyElementImageToTexture;
+          const queue = fixture.device!.queue as unknown as Record<
+            string,
+            (...args: unknown[]) => void
+          >;
+          const method =
+            "copyElementImageToTexture" in queue
+              ? "copyElementImageToTexture"
+              : "drawElementImageToTexture";
+          const copy = queue[method]!;
           const post = Worker.prototype.postMessage;
           let copies = 0;
           let release!: () => void;
@@ -50,7 +55,7 @@ for (const dpr of [1, 2]) {
             failed = reject;
           });
           const gate = new Promise<void>((resolve) => (release = resolve));
-          queue.copyElementImageToTexture = function (...args) {
+          queue[method] = function (...args) {
             copies++;
             return copy.apply(this, args);
           };
@@ -72,7 +77,7 @@ for (const dpr of [1, 2]) {
             maxEncodedBytes: 8 * 1024 * 1024,
           };
           const completion = fixture.surface.capture(options).finally(() => {
-            queue.copyElementImageToTexture = copy;
+            queue[method] = copy;
             Worker.prototype.postMessage = post;
           });
           void completion.catch(failed);
