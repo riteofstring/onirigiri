@@ -513,11 +513,16 @@ export class PaneCanvasSurface {
     try {
       await this.settleStage(signal);
       recorded = await this.recordWorkerImage(canvas as ElementCanvas, signal);
+    } catch (error) {
+      restore();
+      throw error;
     } finally {
       signal.removeEventListener("abort", restore);
-      restore();
     }
     try {
+      // The capture no longer blocks presentation, so content that was native returns there in the same step.
+      if (this.captureAbort?.signal === signal) this.captureAbort = null;
+      restore();
       onRecorded();
       return await background.client.capture(
         background.id,
@@ -971,7 +976,7 @@ export class PaneCanvasSurface {
       width: this.canvas.offsetWidth,
       height: this.canvas.offsetHeight,
     };
-    this.freezePending = this.source.freeze() || this.freezePending;
+    let native = false;
     let restoreStage: (() => void) | undefined;
     let restored = false;
     const restore = () => {
@@ -981,15 +986,18 @@ export class PaneCanvasSurface {
         this.canvas.moveBefore(this.content, null);
         restoreStage?.();
         canvas.remove();
+        if (native) this.source.presentNow();
       });
     };
     try {
       this.source.preserveScroll(() => {
+        native = this.source.freeze();
+        this.freezePending = native || this.freezePending;
         this.prepareContent();
         canvas.className = this.canvas.className;
         canvas.style.cssText = this.canvas.style.cssText;
         markElementCanvas(canvas);
-        canvas.setAttribute("data-onirigiri-recording", "");
+        canvas.setAttribute("data-onirigiri-recording", "staged");
         this.canvas.after(canvas);
         canvas.moveBefore(this.content, null);
         restoreStage = stagePaneCanvas(

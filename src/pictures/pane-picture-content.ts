@@ -21,6 +21,7 @@ export class PanePictureContent {
   private readonly scrolled = new Set<Element>();
   private readonly scrollObserver: MutationObserver;
   private scrolledBeforeTracking = true;
+  private preservingScroll = false;
   private videosActive = false;
   private readonly recordScroll = (event: Event): void => {
     if (event.target instanceof Element) this.scrolled.add(event.target);
@@ -63,21 +64,29 @@ export class PanePictureContent {
     this.frame = this.canvas.ownerDocument.defaultView!.requestAnimationFrame(
       () => {
         this.frame = null;
-        if (!this.callbacks.canPresent()) return;
-        this.preserveScroll(() => {
-          this.host.style.setProperty(
-            "--_onirigiri-capture-scale",
-            this.canvas.style.getPropertyValue("--_onirigiri-capture-scale"),
-          );
-          this.canvas.before(this.host);
-          this.host.hidden = false;
-          moveInto(this.host, this.content);
-        });
-        this.native = true;
-        this.canvas.dataset.onirigiriNativeActive = "true";
-        this.callbacks.presented();
+        this.presentNow();
       },
     );
+  }
+
+  /** Presents in the caller's step, so a move that precedes it shares one restyle of the content. */
+  presentNow(): void {
+    if (this.native || !this.callbacks.canPresent()) return;
+    if (this.frame !== null)
+      this.canvas.ownerDocument.defaultView!.cancelAnimationFrame(this.frame);
+    this.frame = null;
+    this.preserveScroll(() => {
+      this.host.style.setProperty(
+        "--_onirigiri-capture-scale",
+        this.canvas.style.getPropertyValue("--_onirigiri-capture-scale"),
+      );
+      this.canvas.before(this.host);
+      this.host.hidden = false;
+      moveInto(this.host, this.content);
+    });
+    this.native = true;
+    this.canvas.dataset.onirigiriNativeActive = "true";
+    this.callbacks.presented();
   }
 
   reveal(live: boolean): void {
@@ -190,6 +199,11 @@ export class PanePictureContent {
   }
 
   preserveScroll(update: () => void): void {
+    // Restoring offsets lays the content out, so nested updates share the outermost restore.
+    if (this.preservingScroll) {
+      update();
+      return;
+    }
     if (this.scrolledBeforeTracking) {
       this.scrolledBeforeTracking = false;
       for (const element of this.content.querySelectorAll("*")) {
@@ -205,7 +219,12 @@ export class PanePictureContent {
         left: element.scrollLeft,
         top: element.scrollTop,
       }));
-    update();
+    this.preservingScroll = true;
+    try {
+      update();
+    } finally {
+      this.preservingScroll = false;
+    }
     for (const { element, left, top } of offsets) {
       element.scrollTo({ left, top, behavior: "instant" });
     }
