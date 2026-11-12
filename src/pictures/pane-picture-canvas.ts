@@ -6,6 +6,7 @@ import {
 import {
   canDrawElementImages,
   drawElementImage,
+  elementImageWidth,
   markElementCanvas,
   type ElementCanvas,
   type ElementImage,
@@ -71,7 +72,6 @@ export async function createPaneCanvasDevice(
   if (
     !gpu ||
     typeof canvas.captureElementImage !== "function" ||
-    typeof canvas.getElementImageDefaultSize !== "function" ||
     typeof canvas.requestPaint !== "function" ||
     typeof canvas.showPopover !== "function" ||
     typeof canvas.moveBefore !== "function"
@@ -808,7 +808,7 @@ export class PaneCanvasSurface {
     performance.clearMeasures("onirigiri.capture.extraction");
     const width =
       (this.content.offsetWidth * canvas.width) / canvas.offsetWidth;
-    const imageWidth = canvas.getElementImageDefaultSize(image).width;
+    const imageWidth = elementImageWidth(canvas, image);
     if (Math.abs(imageWidth - width) <= 1) return image;
     this.recordingScale *= imageWidth / width;
     this.applyRecordingScale(canvas);
