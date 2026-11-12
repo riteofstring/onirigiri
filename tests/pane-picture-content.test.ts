@@ -756,4 +756,47 @@ describe("PanePictureContent", () => {
     content.remove();
     canvas.remove();
   });
+
+  it("restores scroll once for nested moves and presents native content in the caller's step", () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) =>
+      frames.push(callback),
+    );
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    const canvas = document.createElement("canvas");
+    const content = document.createElement("div");
+    const timeline = document.createElement("div");
+    content.append(timeline);
+    canvas.append(content);
+    document.body.append(canvas);
+    const presented = vi.fn();
+    const source = new PanePictureContent(canvas, content, {
+      canPresent: () => true,
+      changed: () => {},
+      interactive: () => true,
+      presented,
+    });
+    scrolledTo(timeline, 480);
+    const scrollTo = vi.fn();
+    timeline.scrollTo = scrollTo;
+
+    source.presentNow();
+    expect(source.isNative()).toBe(true);
+    expect(content.parentElement).not.toBe(canvas);
+    expect(presented).toHaveBeenCalledOnce();
+    expect(frames).toHaveLength(0);
+
+    scrollTo.mockClear();
+    source.preserveScroll(() => {
+      expect(source.freeze()).toBe(true);
+      expect(content.parentElement).toBe(canvas);
+      source.presentNow();
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+    expect(source.isNative()).toBe(true);
+    expect(scrollTo).toHaveBeenCalledOnce();
+
+    source.dispose();
+    canvas.remove();
+  });
 });

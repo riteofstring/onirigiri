@@ -699,6 +699,13 @@
     content-visibility: hidden;
   }
 
+  /* Hidden content staged for its picture is rendered only inside the recording canvas, so entering and leaving it each restyle the content once. */
+  .onirigiri-pane__content[data-onirigiri-continuous="true"][data-runtime-state="hidden"]
+    canvas[data-onirigiri-recording="staged"]
+    > .onirigiri-pane__live-content {
+    content-visibility: visible;
+  }
+
   :is(
       .onirigiri-pane__live-surface,
       .onirigiri-pane__native-surface
