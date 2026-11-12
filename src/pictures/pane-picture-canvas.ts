@@ -613,10 +613,19 @@ export class PaneCanvasSurface {
     }
     this.configure();
     this.initialized = true;
-    const surface = new WeakRef(this);
-    void device.lost.then((info) => surface.deref()?.lost(info));
+    PaneCanvasSurface.watchDeviceLoss(device, new WeakRef(this));
     this.requestPaint();
   };
+
+  // The device outlives every pane. A reaction created inside an instance method keeps that
+  // instance, and its pane's content, alive through the method's scope even behind a WeakRef;
+  // this static scope holds the WeakRef alone.
+  private static watchDeviceLoss(
+    device: GPUDevice,
+    surface: WeakRef<PaneCanvasSurface>,
+  ): void {
+    void device.lost.then((info) => surface.deref()?.lost(info));
+  }
 
   private captureUnavailable = (): void => {
     if (this.disposed) return;
