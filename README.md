@@ -25,8 +25,11 @@ without a picture show a placeholder while moving or in overview.
 Install this beta with its exact version:
 
 ```sh
-pnpm add @riteofstring/onirigiri@0.4.0-beta.1
+pnpm add @riteofstring/onirigiri@0.4.0-beta.2
 ```
+
+Without a version, `pnpm add @riteofstring/onirigiri` installs the stable 0.3.0
+release, which lacks parts of the API described here.
 
 React 18.2 or 19 is required as a peer dependency.
 
