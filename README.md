@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://onirigiri.dev"><img src="docs/images/onirigiri-card.png" alt="Onirigiri: pnpm add @riteofstring/onirigiri" width="880"></a>
+  <a href="https://onirigiri.dev"><img src="docs/images/onirigiri-card.png" alt="Onirigiri: a niri-like spatial window system for React" width="880"></a>
 </p>
 
 Onirigiri is a React window system for spatially arranged panes. You supply pane
