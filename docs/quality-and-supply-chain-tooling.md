@@ -58,15 +58,13 @@ the harness self-contained and limits its additional dependency graph to the
 compiler's Babel types and two type helpers. It transforms only pane content
 in a separate test project; neither compiler is added to the runtime package.
 
-The existing jsdom dependency now resolves the aged security release
-`undici@7.29.1`, published September 4, 2026, within jsdom's existing range.
-This removes the September WebSocket, interceptor and BalancedPool advisories
-without changing jsdom or introducing an override. Eight later October Undici
-advisories still require the exact assessments in
-[dependency-assessments.md](security/dependency-assessments.md); the September
-fix does not cover them.
+The existing jsdom dependency resolves the aged security release
+`undici@7.30.1`, published October 15, 2026, within jsdom's existing range.
+This removes the September and October Undici advisories without changing jsdom
+or introducing an override.
 
-`source-map-js@1.2.1` is assessed as not affected by GHSA-68fv-2mgg-jv7q in
+`source-map-js@1.2.1` is assessed as not affected by GHSA-68fv-2mgg-jv7q, and
+`picomatch@4.0.5` by GHSA-fc5q-39xc-vjpf, in
 [dependency-assessments.md](security/dependency-assessments.md).
 
 The scheduled dependency-security workflow runs on a GitHub-hosted Linux runner. It reads the Node pin from
