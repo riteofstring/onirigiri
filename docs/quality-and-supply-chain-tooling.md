@@ -46,8 +46,7 @@ build and packed-consumer test also remain local because their artifact and down
 semantics are specific to this library.
 
 The repository pins pnpm and its Node toolchain. `pnpm-workspace.yaml` enforces exact saves, strict
-peers, the shared minimum release age, no trust downgrade, no exotic transitive sources, and an
-empty lifecycle-build allowlist. Allowed dependency licenses, exact temporary release-age
+peers, the shared minimum release age, no trust downgrade, and an empty lifecycle-build allowlist. Allowed dependency licenses, exact temporary release-age
 assessments, and any future reviewed exceptions live in `.code-polishy.json` as the single policy
 authority.
 
