@@ -113,6 +113,7 @@ function ConsumerApp() {
       </header>
       <div className="consumer-workspace">
         <OnirigiriWorkspace
+          panePictures
           chromeComponents={chromeComponents}
           classNames={workspaceClassNames}
           initialPanes={panes}
@@ -165,6 +166,7 @@ function CaptureApp() {
       </header>
       <div className="consumer-workspace">
         <OnirigiriWorkspace
+          panePictures
           initialPanes={capturePanes}
           preloadAllPanePictures={preload}
           preloadMarginPanes={0}

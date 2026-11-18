@@ -81,6 +81,7 @@ export function PictureGeometryConsumer({ grid }: { grid: boolean }) {
       </header>
       <div className="consumer-workspace">
         <OnirigiriWorkspace
+          panePictures
           ref={workspace}
           initialPanes={panes}
           gridAxes={grid ? "spatial" : "horizontal"}
