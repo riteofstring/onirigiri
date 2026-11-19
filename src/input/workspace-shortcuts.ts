@@ -256,7 +256,7 @@ export function matchOnirigiriShortcutAction(
   return null;
 }
 
-function isAppleKeyboard(): boolean {
+export function isAppleKeyboard(): boolean {
   return (
     typeof navigator !== "undefined" &&
     /Mac|iPhone|iPad|iPod/.test(navigator.platform)

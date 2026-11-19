@@ -3,6 +3,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { WorkspaceLayoutStore } from "../state/layout-store.js";
 import type { PaneId, Rect } from "../types.js";
 import { workspaceGridCursorAnnouncement } from "../workspace/workspace-grid-cursor.js";
+import { isAppleKeyboard } from "./workspace-shortcuts.js";
 import type {
   OnirigiriShortcutAction,
   OnirigiriShortcutScope,
@@ -89,7 +90,9 @@ function shortcutEventIsComposing(
     native.isComposing ||
     native.key === "Process" ||
     native.keyCode === 229 ||
-    native.getModifierState("AltGraph")
+    // Firefox on macOS reports Option, the shortcut modifier there, as
+    // AltGraph; elsewhere AltGraph means a character is being typed.
+    (native.getModifierState("AltGraph") && !isAppleKeyboard())
   );
 }
 

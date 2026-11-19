@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Option shortcuts work again in Firefox on macOS, which reports Option as
+  AltGraph. AltGraph still leaves keys to text input on other keyboards.
+
 ## 0.4.0-beta.2 - 2026-11-17
 
 ### Added

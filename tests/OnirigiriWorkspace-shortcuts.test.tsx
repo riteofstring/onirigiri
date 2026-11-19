@@ -31,12 +31,15 @@ describe("OnirigiriWorkspace keyboard shortcuts", () => {
   });
 
   it.each([
-    ["MacIntel", "ø", true, "⌥ Option + O"],
-    ["Win32", "o", true, "Alt + O"],
-    ["Win32", "ø", false, "Alt + O"],
+    ["MacIntel", "ø", true, "⌥ Option + O", false],
+    // Firefox on macOS reports Option as AltGraph.
+    ["MacIntel", "ø", true, "⌥ Option + O", true],
+    ["Win32", "o", true, "Alt + O", false],
+    ["Win32", "ø", false, "Alt + O", false],
+    ["Win32", "o", false, "Alt + O", true],
   ] as const)(
-    "handles overview key %s / %s with matching labels",
-    async (platform, key, active, label) => {
+    "handles overview key %s / %s with matching labels (AltGraph %s)",
+    async (platform, key, active, label, modifierAltGraph) => {
       vi.spyOn(navigator, "platform", "get").mockReturnValue(platform);
       const container = document.createElement("div");
       document.body.append(container);
@@ -82,6 +85,7 @@ describe("OnirigiriWorkspace keyboard shortcuts", () => {
               altKey: true,
               code: "KeyO",
               key,
+              modifierAltGraph,
             });
             expect(event.defaultPrevented).toBe(active);
           });
